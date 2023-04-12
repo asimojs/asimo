@@ -1,0 +1,20 @@
+{
+    "name": "asimo-root",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/asimojs/asimo.git"
+    },
+    "license": "MIT",
+    "scripts": {
+        "test-asimo": "yarn workspace @asimojs/asimo test run",
+        "test-example": "yarn workspace @asimojs/example test run",
+        "test": "yarn test-asimo && yarn test-example",
+        "build-asimo": "yarn workspace @asimojs/asimo build",
+        "build-example": "yarn workspace @asimojs/example build",
+        "build": "yarn build-asimo && yarn build-example"
+    }
+}
