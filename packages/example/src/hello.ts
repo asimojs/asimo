@@ -1,7 +1,9 @@
-import { hello } from '@asimojs/asimo';
+// import { asm } from '@asimojs/asimo';
+
+// Under construction
 
 export function myhello() {
-    return "my " + hello();
+    return "my hello world";
 }
 
-console.log(myhello());
+// console.log(myhello());
