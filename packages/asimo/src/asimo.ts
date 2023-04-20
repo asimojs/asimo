@@ -32,49 +32,56 @@ function createContext(parent?: AsmContext): AsmContext {
             factories.set(OBJECT + iid.ns, factory);
         },
         /** Get a service or an object instance (services have priority) */
-        get<T>(iid: InterfaceId<T>): Promise<T | null> {
-            const serviceId = SERVICE + iid.ns;
-            const srv = services.get(serviceId);
-            if (srv !== undefined) {
-                // already created
-                return srv;
+        get(...iids: InterfaceId<any>[]): Promise<any> {
+            if (iids.length === 1) {
+                return get(iids[0]);
             }
-            const f = factories.get(serviceId);
-            if (f) {
-                // instanciate the service
-                let p = getPromise(f);
-                let resolve: (v: T | null) => void;
-                const pr = new Promise((r) => {
-                    resolve = r;
-                });
-
-                p.then((v: any) => {
-                    if (v && typeof v === "object") {
-                        services.set(serviceId, p);
-                        resolve(v);
-                    } else {
-                        // transform undefined into null
-                        services.set(serviceId, NULL_PROMISE);
-                        resolve(null);
-                    }
-                });
-                services.set(serviceId, pr); // will be changed when pr is resolved
-                return pr as Promise<T | null>;
-            } else {
-                const f2 = factories.get(OBJECT + iid.ns);
-                if (f2) {
-                    return getPromise(f2);
-                } else if (parent) {
-                    return parent.get(iid);
-                }
-            }
-            return NULL_PROMISE;
+            return Promise.all(iids.map((iid) => get(iid)));
         },
         createChildContext(): AsmContext {
             return createContext(ctxt);
         }
     }
     return ctxt;
+
+    function get<T>(iid: InterfaceId<T>): Promise<T | null> {
+        const serviceId = SERVICE + iid.ns;
+        const srv = services.get(serviceId);
+        if (srv !== undefined) {
+            // already created
+            return srv;
+        }
+        const f = factories.get(serviceId);
+        if (f) {
+            // instanciate the service
+            let p = getPromise(f);
+            let resolve: (v: T | null) => void;
+            const pr = new Promise((r) => {
+                resolve = r;
+            });
+
+            p.then((v: any) => {
+                if (v && typeof v === "object") {
+                    services.set(serviceId, p);
+                    resolve(v);
+                } else {
+                    // transform undefined into null
+                    services.set(serviceId, NULL_PROMISE);
+                    resolve(null);
+                }
+            });
+            services.set(serviceId, pr); // will be changed when pr is resolved
+            return pr as Promise<T | null>;
+        } else {
+            const f2 = factories.get(OBJECT + iid.ns);
+            if (f2) {
+                return getPromise(f2);
+            } else if (parent) {
+                return parent.get(iid);
+            }
+        }
+        return NULL_PROMISE;
+    }
 
     function getPromise<T>(f: () => T | Promise<T>) {
         let p = f() as Promise<any>;

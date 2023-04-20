@@ -233,9 +233,27 @@ describe('Asimo', () => {
         });
     });
 
+    describe('Multi getter', () => {
+        it('should return multiple object instances', async () => {
+            const [m1, m2] = await asm.get(MultiplierIID, MultiplierIID);
+            expect(m1.multiply(2, 5)).toBe(10);
+            expect(m1.numberOfCalls).toBe(1);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m2.multiply(2, 21)).toBe(42);
+        });
+
+        it('should return object and service instances', async () => {
+            const [m, c1, c2] = await asm.get(MultiplierIID, CalculatorIID, CalculatorIID);
+            expect(m.multiply(2, 5)).toBe(10);
+            expect(c1).toBe(c2);
+            expect(m.numberOfCalls).toBe(1);
+            expect(c1.add(3, 4)).toBe(7);
+            expect(c2.numberOfCalls).toBe(1); // c2 === c1
+        });
+    });
+
     // TODO
-    // multi getter
     // factory crash error
-    // error management
+    // error management / throwOnError / errLogger
     // 2 different interface id objects with the same namespace should resolve to the same object
 });
