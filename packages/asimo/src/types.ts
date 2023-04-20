@@ -12,6 +12,15 @@ export interface AsmContext {
      */
     registerService<T>(iid: InterfaceId<T>, factory:()=>T | Promise<T>): void;
     /**
+     * Register an object factory. The factory will be called any time the get method is called
+     * for this interface id. On the contrary to services, there is no restriction on the number
+     * of objects that can be creatd. Besides asimo doesn't keep any reference to the object
+     * created.
+     * @param iid the interface id
+     * @param factory a factory that will be called to create an object instance
+     */
+    registerFactory<T>(iid: InterfaceId<T>, factory:()=>T | Promise<T>): void;
+    /**
      * Retrieve a service object
      * @param iid the service interface id
      */

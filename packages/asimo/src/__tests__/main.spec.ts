@@ -4,6 +4,7 @@ import { Calculator, CalculatorIID, CalculatorService } from './calculator';
 import { AsmContext } from '../types';
 import { SyncIncrementorIID, SyncIncrementorService } from './syncincrementor';
 import { AsyncIncrementorIID, AsyncIncrementorService } from './asyncincrementor';
+import { MultiplierIID, MultiplierImpl } from './multiplier';
 
 const rootAsm = asm;
 
@@ -84,7 +85,6 @@ describe('Asimo', () => {
         const calc = await asm.get(CalcIID)!;
         expect(calc).toBe(null);
     });
-
 
     describe('Invalid factories', () => {
         it('should return null when factory return undefined', async () => {
@@ -190,6 +190,46 @@ describe('Asimo', () => {
             expect(await inc.increment(42)).toBe(45);
             expect(rootCalc.numberOfCalls).toBe(2); // calc service was called
             expect(calc.numberOfCalls).toBe(0); // no changes as root calc was used
+        });
+    });
+
+    describe('Object factories', () => {
+        it('should create multiple instances of a given object (root context)', async () => {
+            const m1 = (await asm.get(MultiplierIID))!;
+            const m2 = (await asm.get(MultiplierIID))!;
+
+            expect(m1).not.toBe(m2);
+            expect(m1.numberOfCalls).toBe(0);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m1.multiply(2, 4)).toBe(8);
+            expect(m1.multiply(4)).toBe(8);
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m2.multiply(5, 4)).toBe(20);
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(1);
+        });
+
+        it('should create multiple instances of a given object (sub context)', async () => {
+            asm.registerFactory(MultiplierIID, () => {
+                const m = new MultiplierImpl();
+                m.defaultArg = 3;
+                return m;
+            });
+
+            const m1 = (await asm.get(MultiplierIID))!;
+            const m2 = (await asm.get(MultiplierIID))!;
+
+            expect(m1).not.toBe(m2);
+            expect(m1.numberOfCalls).toBe(0);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m1.multiply(2, 4)).toBe(8);
+            expect(m1.multiply(4)).toBe(12); // defaultArg is 3
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m2.multiply(5)).toBe(15); // defaultArg is 3
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(1);
         });
     });
 

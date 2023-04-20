@@ -10,11 +10,12 @@ export function interfaceId<T>(ns: InterfaceNamespace): InterfaceId<T> {
 }
 
 const SERVICE = "service:"
+const OBJECT = "object:"
 const NULL_PROMISE = Promise.resolve(null);
 
 function createContext(parent?: AsmContext): AsmContext {
     // registered factories - keys have the following format:
-    // [factory|service]:[interfaceNamespace]
+    // "[object|service]:[interfaceNamespace]"
     const factories = new Map<string, () => any | Promise<any>>();
     // services that have already been instanciated
     const services = new Map<string, Promise<any>>();
@@ -25,7 +26,12 @@ function createContext(parent?: AsmContext): AsmContext {
             // TODO: validate args
             factories.set(SERVICE + iid.ns, factory);
         },
-        /** Get a service instance */
+        /** Register an object factory */
+        registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
+            // TODO: validate args
+            factories.set(OBJECT + iid.ns, factory);
+        },
+        /** Get a service or an object instance (services have priority) */
         get<T>(iid: InterfaceId<T>): Promise<T | null> {
             const serviceId = SERVICE + iid.ns;
             const srv = services.get(serviceId);
@@ -36,15 +42,7 @@ function createContext(parent?: AsmContext): AsmContext {
             const f = factories.get(serviceId);
             if (f) {
                 // instanciate the service
-                let p = f();
-                if (p && typeof p === "object") {
-                    if (typeof p.then !== "function") {
-                        // wrap p as a promise
-                        p = Promise.resolve(p);
-                    }
-                } else {
-                    p = NULL_PROMISE;
-                }
+                let p = getPromise(f);
                 let resolve: (v: T | null) => void;
                 const pr = new Promise((r) => {
                     resolve = r;
@@ -62,8 +60,13 @@ function createContext(parent?: AsmContext): AsmContext {
                 });
                 services.set(serviceId, pr); // will be changed when pr is resolved
                 return pr as Promise<T | null>;
-            } else if (parent) {
-                return parent.get(iid);
+            } else {
+                const f2 = factories.get(OBJECT + iid.ns);
+                if (f2) {
+                    return getPromise(f2);
+                } else if (parent) {
+                    return parent.get(iid);
+                }
             }
             return NULL_PROMISE;
         },
@@ -72,6 +75,19 @@ function createContext(parent?: AsmContext): AsmContext {
         }
     }
     return ctxt;
+
+    function getPromise<T>(f: () => T | Promise<T>) {
+        let p = f() as Promise<any>;
+        if (p && typeof p === "object") {
+            if (typeof p.then !== "function") {
+                // wrap p as a promise
+                p = Promise.resolve(p);
+            }
+        } else {
+            p = NULL_PROMISE;
+        }
+        return p;
+    }
 }
 
 /**
