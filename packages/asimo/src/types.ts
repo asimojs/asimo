@@ -21,6 +21,14 @@ export interface AsmContext {
      */
     registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
     /**
+     * Register a group loader that will be used to asynchronously load multiple
+     * service and object factories on-demand (i.e. the group code will only be loaded when
+     * an explicit get is done on one of its service or object interfaces)
+     * @param iids the list of interface ids that are packaged in this group
+     * @param loader an async factory that should dynamically import() the required modules
+     */
+    registerGroup(iids:InterfaceId<any>[], loader: () => Promise<unknown>): void;
+    /**
      * Retrieve a service object
      * @param iid the service interface id
      */
