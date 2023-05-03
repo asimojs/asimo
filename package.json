@@ -15,6 +15,7 @@
         "test": "yarn test-asimo && yarn test-example",
         "build-asimo": "yarn workspace @asimojs/asimo build",
         "build-example": "yarn workspace @asimojs/example build",
-        "build": "yarn build-asimo && yarn build-example"
+        "build": "yarn build-asimo && yarn build-example",
+        "prepublish": "yarn build && yarn test"
     }
 }
