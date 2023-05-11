@@ -1,6 +1,8 @@
 .DS_Store
 coverage
 dist
+dist-bundles
 lib
+misc
 node_modules
 *.log

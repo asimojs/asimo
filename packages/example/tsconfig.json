@@ -3,7 +3,8 @@
     "compilerOptions": {
       "jsx": "react-jsx",
       "outDir": "./lib",
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "module": "ESNext"
     },
     "include": [
       "src/**/*"

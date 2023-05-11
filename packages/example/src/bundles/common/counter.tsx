@@ -1,5 +1,7 @@
+import { asm } from "@asimojs/asimo";
 import { Store, trax } from "@traxjs/trax";
-import { component, componentId, useStore } from "@traxjs/trax-react";
+import { component, componentId, useStore } from "@traxjs/trax-preact";
+import { NavServiceIID } from "../../stores/nav";
 
 // example adapted from https://www.solidjs.com/examples/counter
 interface CounterData {
@@ -17,6 +19,10 @@ export function createCounterStore() {
             },
             reset() {
                 data.count = 0;
+            },
+            async home() {
+                const nav = await asm.get(NavServiceIID);
+                nav?.home();
             }
         }
     });
@@ -29,5 +35,6 @@ export const Counter = component("Counter", () => {
     return <div data-id={componentId()} className='counter'
         title="Click to reset" onClick={cs.reset}>
         <h1> Counter:  <span className="counter-value">{cs.data.count}</span></h1>
+        <button onClick={cs.home}> Navigate Home </button>
     </div>
 });

@@ -82,8 +82,8 @@ function createContext(parent?: AsmContext): AsmContext {
             });
 
             p.then((v: any) => {
-                if (v && typeof v === "object") {
-                    services.set(serviceId, p);
+                if (v && (typeof v === "object" || typeof v === "function")) {
+                    services.set(serviceId, v);
                     resolve(v);
                 } else {
                     // transform undefined into null
@@ -118,7 +118,7 @@ function createContext(parent?: AsmContext): AsmContext {
 
     function getPromise<T>(f: () => T | Promise<T>) {
         let p = f() as Promise<any>;
-        if (p && typeof p === "object") {
+        if (p && (typeof p === "object" || typeof p === "function")) {
             if (typeof p.then !== "function") {
                 // wrap p as a promise
                 p = Promise.resolve(p);
