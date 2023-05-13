@@ -3,46 +3,6 @@ import { LML } from '../types';
 
 describe('LML - List-based Markup Language', () => {
 
-    // Text node
-    const ex1: LML =
-        // Hello World
-        "Hello World";
-
-    // Span, no attribues
-    const ex2: LML =
-        // <span class="hello"> Hello <em> World! </em></span>
-        ["#span.hello", "Hello", ["#em", "World!"]]
-
-    // Span with attributes
-    const ex3: LML =
-        // <span class="hello" "title"="Greetings!"> Hello <em> World! </em></span>
-        ["#span.hello", { "title": "Greetings" }, "Hello", ["#em", "World!"]]
-
-    // Fragment
-    const ex4: LML =
-        // <><em>Hello</em>World!</>
-        [["#em", "Hello"], "World!"]
-
-    // Component
-    const ex5: LML =
-        // <MyCpt className="abc" foo="bar"> Some <span class="em">content...</span> </MyCpt>
-        ["*MyCpt.abc", { "foo": "bar" }, " Some ", ["#span.em", "content... "]]
-
-    // Node with type, id and empty attribute (here: checked - value will be ignored)
-    const ex6: LML =
-        // <input type="checkbox" class="abc" id="subscribeNews" name="subscribe" value="newsletter" checked />
-        ["#input-checkbox.abc", { "id": "subscribeNews", "name": "subscribe", "value": "newsletter", "!checked": 1 }]
-
-    // Advanced component with bundle id + JSON and LML attributes
-    const ex7: LML =
-        ["*b:MyCpt", { // b = bundle id
-            "logo": ["*c:img", { "height": 22, "width": 22, "src": "..." }],
-            "columnWidths": [1, 2, 3, 4]
-        },
-            ["#span.hello", "Some ", ["#em", "content..."]]
-        ]
-
-
     // positives
     // - easy to read/write for humans compared to JSON
     // - fast parsing on the client side
@@ -67,10 +27,7 @@ describe('LML - List-based Markup Language', () => {
         return r;
     }
 
-    const ELT_PREFIX = "#";
     const CPT_PREFIX = "*";
-    const NS_SEPARATOR = ":";
-    const ATT_TYPE_SEPARATOR = "-";
     const ATT_CLASS_SEPARATOR = ".";
     const ATT_SINGLE_PREFIX = "!";
     const RX_NODE_NAME = /^(\#|\*)(\w+\:)?(\w+)(\-\w+)?((\.\w+)*)$/;

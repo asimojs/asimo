@@ -15,6 +15,7 @@
         "build": "tsc && vite build && yarn bundle && bash copy-statics.bash",
         "test": "vitest",
         "dev": "vite",
+        "coverage": "vitest run --coverage",
         "serve": "vite preview",
         "bundle": "rollup --config rollup.config.js --bundleConfigAsCjs"
     },

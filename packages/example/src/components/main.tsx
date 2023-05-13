@@ -13,7 +13,6 @@ export const MainLayout = component("MainLayout", (props: { nav: NavService }) =
             content = searchResultsPanel(mainView.$store, nav);
         }
     }
-
     return <div data-id={componentId()}>
         <div>
             <button onClick={search}> Search </button>
