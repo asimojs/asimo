@@ -13,10 +13,12 @@ export const MainLayout = component("MainLayout", (props: { nav: NavService }) =
             content = searchResultsPanel(mainView.$store, nav);
         }
     }
+
+    const className = "px-3 py-1 bg-slate-600 rounded-lg text-white mx-1";
     return <div data-id={componentId()}>
-        <div>
-            <button onClick={search}> Search </button>
-            <button onClick={nav.home}> Home </button>
+        <div className="bg-gray-100 text-cyan-800">
+            <button className={className} onClick={search}> Search </button>
+            <button className={className} onClick={nav.home}> Home </button>
         </div>
         {content}
     </div>
@@ -49,7 +51,7 @@ function searchResultsList(ss: SearchService, res: SearchResults) {
     const r = res.results;
 
     return <div className="searchResults" lang="en">
-        <div> About {r.totalMatchCount} results ({r.processingTime} seconds) </div>
+        <div> About <b className="font-bold">{r.totalMatchCount}</b>results ({r.processingTime} seconds) </div>
 
 
         [...]
