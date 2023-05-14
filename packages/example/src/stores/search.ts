@@ -88,7 +88,7 @@ export function createSearchStore(): SearchService {
         async function showResults(w?: any) {
             const navs = await asm.get(NavServiceIID);
             navs.data.mainView = {
-                name: "ex",
+                name: "search",
                 panel: "results",
                 $store: srv,
                 testWidget: w
