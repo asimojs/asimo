@@ -1,7 +1,7 @@
 {
     "name": "@asimojs/asimo",
     "version": "0.0.1",
-    "description": "Asynchronous module loader / dependency injection",
+    "description": "Asynchronous dependency injection for Typescript projects",
     "main": "lib/asimo.js",
     "files": [
         "src",

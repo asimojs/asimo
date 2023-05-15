@@ -1,5 +1,6 @@
 {
     "name": "asimo-root",
+    "description": "Asynchronous dependency injection for Typescript projects",
     "private": true,
     "workspaces": [
         "packages/*"
