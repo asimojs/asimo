@@ -29,7 +29,10 @@ export interface AsmContext {
      */
     registerGroup(iids:InterfaceId<any>[], loader: () => Promise<unknown>): void;
     /**
-     * Retrieve a service object
+     * Retrieve a service or an object instance. For each interface id, asimo will first look in the current
+     * context for services or object factories or groups registered for the interface (in this order) - if not found
+     * it will then perform the same lookup in its parent context (recursively, up to the root context).
+     * This method allows to retrieve up to 5 dependencies in one call.
      * @param iid the service interface id
      */
     get<T>(iid: InterfaceId<T>): Promise<T>;
@@ -38,7 +41,7 @@ export interface AsmContext {
     get<T1, T2, T3, T4>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>, iid3: InterfaceId<T3>, iid4: InterfaceId<T4>): Promise<[T1, T2, T3, T4]>;
     get<T1, T2, T3, T4, T5>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>, iid3: InterfaceId<T3>, iid4: InterfaceId<T4>, iid5: InterfaceId<T5>): Promise<[T1, T2, T3, T4, T5]>;
     /**
-     * Create a child context that can override some of the dependencies defined in its parent
+     * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      */
     createChildContext(): AsmContext;
 }

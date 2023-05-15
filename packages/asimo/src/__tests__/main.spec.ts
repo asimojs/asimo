@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { asm, interfaceId } from '../asimo';
+import { asm as rootAsm, interfaceId } from '../asimo';
 import { Calculator, CalculatorIID, CalculatorService } from './calculator';
 import { AsmContext } from '../types';
 import { SyncIncrementorIID, SyncIncrementorService } from './syncincrementor';
 import { AsyncIncrementorIID, AsyncIncrementorService } from './asyncincrementor';
 import { MultiplierIID, MultiplierImpl } from './multiplier';
+import { AdderIID, add as _add } from './adder';
 
-const rootAsm = asm;
 
 describe('Asimo', () => {
     let asm: AsmContext;
@@ -15,9 +15,10 @@ describe('Asimo', () => {
         const c = rootAsm.createChildContext();
 
         // override calculator service
-        c.registerService(CalculatorIID, () => new CalculatorService());
+        c.registerService(CalculatorIID, async () => new CalculatorService());
         c.registerService(SyncIncrementorIID, () => new SyncIncrementorService());
         c.registerService(AsyncIncrementorIID, () => new AsyncIncrementorService());
+        c.registerService(AdderIID, () => _add);
         return c;
     }
 
@@ -32,8 +33,8 @@ describe('Asimo', () => {
 
         expect(c1).not.toBe(c2);
 
-        const s1 = await c1.get(CalculatorIID)!;
-        const s2 = await c2.get(CalculatorIID)!;
+        const s1 = await c1.get(CalculatorIID);
+        const s2 = await c2.get(CalculatorIID);
 
         expect(s1).not.toBe(s2);
 
@@ -160,6 +161,11 @@ describe('Asimo', () => {
             expect(rootCalc.numberOfCalls).toBe(2); // calc service was called
             expect(calc.numberOfCalls).toBe(0); // was never called
         });
+
+        it('should support function services', async () => {
+            const add = await asm.get(AdderIID);
+            expect(add(39, 3)).toBe(42);
+        });
     });
 
     describe('Async style service dependencies', () => {
@@ -178,7 +184,7 @@ describe('Asimo', () => {
         });
         it('should load a service with the default context', async () => {
             const rootCalc = (await rootAsm.get(CalculatorIID))!;
-            const calc = (await asm.get(CalculatorIID))!;
+            const calc = await asm.get(CalculatorIID);
             const inc = (await asm.get(AsyncIncrementorIID))!;
 
             rootCalc.numberOfCalls = 0; // reset

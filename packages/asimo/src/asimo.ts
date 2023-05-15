@@ -82,7 +82,7 @@ function createContext(parent?: AsmContext): AsmContext {
             });
 
             p.then((v: any) => {
-                if (v && (typeof v === "object" || typeof v === "function")) {
+                if (v && (typeof v === "object" || typeof v === "function" )) {
                     services.set(serviceId, v);
                     resolve(v);
                 } else {
