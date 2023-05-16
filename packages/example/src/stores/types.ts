@@ -25,7 +25,6 @@ export interface SearchView {
     name: "search";
     panel: "search" | "results";
     $store: SearchService;
-    testWidget?: any;
 }
 
 // ------------------------------------------------------------------------------------------------------------
@@ -50,9 +49,16 @@ export interface SearchResults {
     query: {
         searchInput: string;
     },
-    // widgets
     results: SearchResponse;
+    components: ComponentMap;
 }
+
+export interface ComponentMap {
+    [bundleName: string]: {
+        [cptName: string]: JsxComponent;
+    }
+}
+export type JsxComponent = (props?: { [key: string]: any }) => JSX.Element;
 
 interface SearchError {
     type: "Error";

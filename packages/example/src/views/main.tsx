@@ -19,8 +19,6 @@ export const MainLayout = component("MainLayout", (props: { nav: NavService }) =
         content = "[ Under construction ]";
     }
 
-    console.log("MainLayout - env:", (import.meta as any).env)
-
     const className = "px-3 py-1 bg-slate-600 rounded-lg text-white";
     return <div data-id={componentId()} className="main-layout" style={{ minWidth: "1024px" }}>
         <NavBar nav={nav} />

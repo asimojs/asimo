@@ -24,7 +24,7 @@ describe('LML Preact JSX', () => {
     function mockGlobalConsole() {
         const logs: string[] = [];
         globalThis.console = Object.create(console1, {
-            log: {
+            error: {
                 writable: true,
                 configurable: true,
                 value: (...args: any[]) => {
@@ -231,7 +231,7 @@ describe('LML Preact JSX', () => {
         it('should be logged on console when no error handler is provided to lm2JSX', async () => {
             lml2JSX(["*x:foo"], h);
             expect(logs).toMatchObject([
-                "[lm2JSX Error]Invalid component: x:foo"
+                "[lm2JSX Error] Invalid component: x:foo"
             ]);
             errors = [];
         });

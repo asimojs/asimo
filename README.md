@@ -79,11 +79,6 @@ export type InterfaceNamespace = string;
 export interface InterfaceId<T> {
     ns: InterfaceNamespace;
 }
-
-/**
- * IID or Namespace: parameter type used to retrieve an object from asimo
- */
-export type IidNs<T> = InterfaceId<T> | string;
 ```
 
 Examples:
@@ -108,9 +103,13 @@ The AsmContext is the object that exposes all asimo APIs (but interfaceId):
 
 Retrieve a service or an object instance. For each interface id, asimo will first look in the current
 context for services or object factories or groups (in this order) - if not found
-it will then perform the same lookup in its parent context (recursively, up to the root context).
-This method allows to retrieve up to 5 dependencies in one call.
-Note: the parameters can be either InterfaceId objects or interface namespaces (strings). When using InterfaceId typescript will automatically infer the right type - otherwise an explicit type cast will be necessary, as shown belo
+it will then perform the same lookup in its parent context, recursively up to the root context).
+This method allows to retrieve up to 5 dependencies in one call with type support (more can be retrieved
+without type inference - cf. call signature).
+
+Note: the parameters can be either InterfaceId objects or interface namespaces (strings). When using InterfaceId
+typescript will automatically infer the right type - otherwise an explicit type cast will be necessary,
+as shown below
 
 ```typescript
 get<T>(iid: IidNs<T>): Promise<T>;
@@ -123,6 +122,12 @@ get<T1, T2, T3, T4>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: Iid
 
 get<T1, T2, T3, T4, T5>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>, iid5: IidNs<T5>): Promise<[T1, T2, T3, T4, T5]>;
 
+get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+
+/**
+ * IID or Namespace: parameter type used to retrieve an object from asimo
+ */
+export type IidNs<T> = InterfaceId<T> | string;
 ```
 Examples:
 ```typescript

@@ -32,7 +32,8 @@ export interface AsmContext {
      * Retrieve a service or an object instance. For each interface id, asimo will first look in the current
      * context for services or object factories or groups registered for the interface (in this order) - if not found
      * it will then perform the same lookup in its parent context (recursively, up to the root context).
-     * This method allows to retrieve up to 5 dependencies in one call.
+     * This method allows to retrieve up to 5 dependencies in one call with type support (more can be retrieved
+     * without type inference).
      * Note: the parameters can be either InterfaceId objects or interface namespaces (strings).
      * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
      * type cast will be necessary
@@ -43,6 +44,7 @@ export interface AsmContext {
     get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
     get<T1, T2, T3, T4>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>): Promise<[T1, T2, T3, T4]>;
     get<T1, T2, T3, T4, T5>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>, iid5: IidNs<T5>): Promise<[T1, T2, T3, T4, T5]>;
+    get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      */

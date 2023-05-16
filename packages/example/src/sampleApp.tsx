@@ -10,10 +10,15 @@ import './stores/search';
 import './app.css';
 import { NavServiceIID } from './stores/types';
 
-
 async function main() {
-    const nav = (await asm.get(NavServiceIID))!;
+    if ((import.meta as any).env?.DEV) {
+        // DEV ONLY
+        // import independnt bundles to avoid separate bulid and benefit from vite auto-reload
+        // these bundles will be built and loaded separately in production mode
+        await import('./bundles/common');
+    }
 
+    const nav = (await asm.get(NavServiceIID))!;
     render(<div className='mainapp'>
         <MainLayout nav={nav} />
     </div>, document.getElementById('main')!);

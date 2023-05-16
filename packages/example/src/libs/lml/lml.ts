@@ -150,7 +150,7 @@ export function scan(v: LML, f: LmlFormatter): LmlFormatOutput {
             }
             f.error(msg);
         } else {
-            console.log("[LML Scan Error] " + msg);
+            console.error("[LML Scan Error] " + msg);
         }
         return "";
     }
@@ -169,7 +169,7 @@ export function lml2JSX(v: LML,
     getComponent?: (name: string, namespace: string) => Function | null,
     error?: (msg: string) => void): JSX.Element | string | (JSX.Element | string)[] {
 
-    error = error || ((m: string) => console.log("[lm2JSX Error]" + m));
+    error = error || ((m: string) => console.error("[lm2JSX Error] " + m));
 
     return scan(v, {
         format: (ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): JSX.Element | string => {

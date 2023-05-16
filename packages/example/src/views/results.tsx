@@ -1,5 +1,7 @@
 import { component, componentId } from "@traxjs/trax-preact";
 import { SearchResults, SearchService, NavService, SearchView } from "../stores/types";
+import { lml2JSX } from "../libs/lml/lml";
+import { h } from "preact";
 
 export const SearchResultsPanel = component("SearchResultsPanel", (props: { searchService: SearchService, nav: NavService }) => {
     const { searchService, nav } = props;
@@ -31,9 +33,11 @@ function searchResultsPanel(ss: SearchService, nav: NavService) {
         return "";
     }
 
+    //  {(nav.data.mainView as SearchView).testWidget!()}
+
     return <div className="searchResults" lang="en">
         <div className="query">
-            Query: {res.query.searchInput} {(nav.data.mainView as SearchView).testWidget!()}
+            Query: {res.query.searchInput}
         </div>
         {res.type === "Error" ? <div className="Error">
             Error: {res.message}
@@ -44,11 +48,18 @@ function searchResultsPanel(ss: SearchService, nav: NavService) {
 
 function searchResultsList(ss: SearchService, res: SearchResults) {
     const r = res.results;
+    const cpts = res.components;
+
+    const content = lml2JSX(res.results.main, h, (name, ns) => {
+        if (cpts && cpts[ns]) {
+            return cpts[ns][name] || null;
+        }
+        return null;
+    });
 
     return <div className="searchResults" lang="en">
         <div> About <b className="font-bold">{r.totalMatchCount}</b>results ({r.processingTime} seconds) </div>
-
-
-        [...]
+        <div> [...]</div>
+        {content}
     </div>
 }
