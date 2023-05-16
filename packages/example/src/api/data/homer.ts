@@ -5,8 +5,11 @@ const response: SearchResponse = {
     totalMatchCount: 31200000,
     processingTime: 0.38,
     bundles: {
-        // c : common widgets
-        "c": "/dist-bundles/bundle-common.js"
+        "c": {
+            // c : common bundle
+            "ns": "asimo.dpademo.bundles.common",
+            "src": "/dist-bundles/bundle-common.js"
+        }
     },
     lang: "en", // default language
     header: [],

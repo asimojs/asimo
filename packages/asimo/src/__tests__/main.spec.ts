@@ -4,7 +4,7 @@ import { Calculator, CalculatorIID, CalculatorService } from './calculator';
 import { AsmContext } from '../types';
 import { SyncIncrementorIID, SyncIncrementorService } from './syncincrementor';
 import { AsyncIncrementorIID, AsyncIncrementorService } from './asyncincrementor';
-import { MultiplierIID, MultiplierImpl } from './multiplier';
+import { Multiplier, MultiplierIID, MultiplierImpl } from './multiplier';
 import { AdderIID, add as _add } from './adder';
 
 
@@ -72,6 +72,17 @@ describe('Asimo', () => {
     it('should delegate creation to parent context', async () => {
         const calc1 = await asm.get(CalculatorIID)!;
         calc1?.add(1, 2);
+
+        const c1 = asm.createChildContext();
+        const calc2 = await c1.get(CalculatorIID)!;
+
+        expect(calc2).toBe(calc1);
+        expect(calc2?.numberOfCalls).toBe(1);
+    });
+
+    it('should support get with string namespaces', async () => {
+        const calc1 = await asm.get(CalculatorIID.ns);
+        (calc1 as Calculator).add(1, 2);
 
         const c1 = asm.createChildContext();
         const calc2 = await c1.get(CalculatorIID)!;
@@ -256,9 +267,18 @@ describe('Asimo', () => {
             expect(c1.add(3, 4)).toBe(7);
             expect(c2.numberOfCalls).toBe(1); // c2 === c1
         });
+
+        it('should return multiple instances through string namespaces', async () => {
+            const ns1 = MultiplierIID.ns;
+            const ns2 = CalculatorIID.ns;
+            const [m, c] = await asm.get(ns1, ns2);
+            expect((m as Multiplier).multiply(2, 5)).toBe(10);
+            expect((c as Calculator).add(3, 4)).toBe(7);
+        });
     });
 
     // TODO
+    // support mechanism for service to expose multiple interfaces
     // factory crash error
     // error management / throwOnError / errLogger
     // 2 different interface id objects with the same namespace should resolve to the same object

@@ -53,11 +53,12 @@ function createContext(parent?: AsmContext): AsmContext {
             }
         },
         /** Get a service or an object instance (services have priority) */
-        get(...iids: InterfaceId<any>[]): Promise<any> {
+        get(...iids: (InterfaceId<any> | string)[]): Promise<any> {
             if (iids.length === 1) {
-                return get(iids[0]);
+                const iidOrNs = iids[0];
+                return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
             }
-            return Promise.all(iids.map((iid) => get(iid)));
+            return Promise.all(iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)));
         },
         createChildContext(): AsmContext {
             return createContext(ctxt);
@@ -65,8 +66,8 @@ function createContext(parent?: AsmContext): AsmContext {
     }
     return ctxt;
 
-    function get<T>(iid: InterfaceId<T>, lookupGroups = true): Promise<T | null> {
-        const serviceId = SERVICE + iid.ns;
+    function get<T>(ns: string, lookupGroups = true): Promise<T | null> {
+        const serviceId = SERVICE + ns;
         const srv = services.get(serviceId);
         if (srv !== undefined) {
             // already created
@@ -82,7 +83,7 @@ function createContext(parent?: AsmContext): AsmContext {
             });
 
             p.then((v: any) => {
-                if (v && (typeof v === "object" || typeof v === "function" )) {
+                if (v && (typeof v === "object" || typeof v === "function")) {
                     services.set(serviceId, v);
                     resolve(v);
                 } else {
@@ -94,23 +95,23 @@ function createContext(parent?: AsmContext): AsmContext {
             services.set(serviceId, pr); // will be changed when pr is resolved
             return pr as Promise<T | null>;
         } else {
-            const f2 = factories.get(OBJECT + iid.ns);
+            const f2 = factories.get(OBJECT + ns);
             if (f2) {
                 // object factory exists: instantiate the object
                 return getPromise(f2);
             } else if (lookupGroups) {
-                const f3 = factories.get(GROUP + iid.ns);
+                const f3 = factories.get(GROUP + ns);
                 if (f3) {
                     // a group loader exists: instantiate the loader and then lookup again
                     const g = getPromise(f3);
                     return g.then(() => {
                         // look for an interface factory once the group has loaded
-                        return get(iid, false);
+                        return get(ns, false);
                     });
                 }
             }
             if (parent) {
-                return parent.get(iid);
+                return parent.get(ns as any);
             }
         }
         return NULL_PROMISE;

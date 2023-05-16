@@ -1,37 +1,7 @@
-import { interfaceId, asm } from "@asimojs/asimo";
+import { asm } from "@asimojs/asimo";
 import { trax, Store } from "@traxjs/trax";
 import { SearchApiIID } from "../api/search";
-import { SearchResponse } from "../api/types";
-import { NavServiceIID } from "./nav";
-
-export interface SearchService {
-    data: {
-        query: SearchQuery;
-        $lastResult: null | SearchResults | SearchError;
-    },
-    /** Perfom a search according to the query data - use the data query if no query provided */
-    search(query?: SearchQuery, navigate?: boolean): Promise<boolean>;
-}
-
-interface SearchQuery {
-    searchInput: string;
-}
-
-export interface SearchResults {
-    type: "SearchResults"
-    query: {
-        searchInput: string;
-    },
-    results: SearchResponse;
-}
-
-interface SearchError {
-    type: "Error";
-    query: {
-        searchInput: string;
-    },
-    message: string;
-}
+import { NavServiceIID, SearchQuery, SearchService, SearchServiceIID } from "./types";
 
 /**
  * The Search store exposes all view search apis and manage the search data
@@ -48,6 +18,12 @@ export function createSearchStore(): SearchService {
 
         const srv = {
             data,
+
+            /**
+             * Make the server request, load the necessary components and update the store data
+             * @param query the search query
+             * @param navigate optinal boolean telling if the result should trigger a view navigation [default:true]
+             */
             async search(query?: SearchQuery, navigate = true) {
                 const q = query || data.query;
 
@@ -64,15 +40,18 @@ export function createSearchStore(): SearchService {
                     };
 
                     try {
-                        console.log("BUNDLES A", results.bundles)
-                        const p = results.bundles!["c"];
-                        console.log("BUNDLES B", p)
-                        const pr = import(p /* @vite-ignore */);
-                        console.log("BUNDLES C", pr)
-                        const mod = await pr;
-                        console.log("NOW", mod.default)
+                        const bundleDesc = results.bundles!["c"];
+                        let bundle = await asm.get(bundleDesc.ns);
+                        if (bundle) {
+                            console.log("BUNDLE FOUND");
+                        } else {
+                            console.log("BUNDLE LOAD");
+                            const pr = import(bundleDesc.src /* @vite-ignore */);
+                            const mod = await pr;
+                            bundle = mod.default;
+                        }
                         if (navigate) {
-                            await showResults(mod.default.counter);
+                            await showResults((bundle as any).counter);
                         }
                     } catch (ex) {
                         console.log("Module load error:", ex);
@@ -97,6 +76,4 @@ export function createSearchStore(): SearchService {
     });
 }
 
-
-export const SearchServiceIID = interfaceId<SearchService>("asimo.doc.stores.SearchService");
 asm.registerService(SearchServiceIID, createSearchStore);

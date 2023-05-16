@@ -28,7 +28,7 @@ service to avoid further async calls if need be).
 
 ```typescript
 // Producer
-import { asm, interfaceId } from "../asimo";
+import { asm, interfaceId } from "@asimojs/asimo";
 
 // Interface declaration
 interface Calculator {
@@ -50,7 +50,7 @@ asm.registerService(CalculatorIID, () => new CalculatorService());
 
 ```typescript
 // Consumer
-import { asm } from '../asimo';
+import { asm } from '@asimojs/asimo';
 import { CalculatorIID } from './calculator';
 
 async function doSomething() {
@@ -79,6 +79,11 @@ export type InterfaceNamespace = string;
 export interface InterfaceId<T> {
     ns: InterfaceNamespace;
 }
+
+/**
+ * IID or Namespace: parameter type used to retrieve an object from asimo
+ */
+export type IidNs<T> = InterfaceId<T> | string;
 ```
 
 Examples:
@@ -105,23 +110,31 @@ Retrieve a service or an object instance. For each interface id, asimo will firs
 context for services or object factories or groups (in this order) - if not found
 it will then perform the same lookup in its parent context (recursively, up to the root context).
 This method allows to retrieve up to 5 dependencies in one call.
+Note: the parameters can be either InterfaceId objects or interface namespaces (strings). When using InterfaceId typescript will automatically infer the right type - otherwise an explicit type cast will be necessary, as shown belo
 
 ```typescript
-get<T>(iid: InterfaceId<T>): Promise<T>;
+get<T>(iid: IidNs<T>): Promise<T>;
 
-get<T1, T2>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>): Promise<[T1, T2]>;
+get<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1, T2]>;
 
-get<T1, T2, T3>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>, iid3: InterfaceId<T3>): Promise<[T1, T2, T3]>;
+get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
 
-get<T1, T2, T3, T4>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>, iid3: InterfaceId<T3>, iid4: InterfaceId<T4>)Promise<[T1, T2, T3, T4]>;
+get<T1, T2, T3, T4>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>): Promise<[T1, T2, T3, T4]>;
 
-get<T1, T2, T3, T4, T5>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>, iid3: InterfaceId<T3>, iid4InterfaceId<T4>, iid5: InterfaceId<T5>): Promise<[T1, T2, T3, T4, T5]>;
+get<T1, T2, T3, T4, T5>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>, iid5: IidNs<T5>): Promise<[T1, T2, T3, T4, T5]>;
+
 ```
 Examples:
 ```typescript
-// Retrive one dependency
+// Retrieve one dependency
 const calc = await asm.get(CalculatorIID);
-// Retrieve multiple depdendencies
+calc.add(1, 2);  // calc2 type is Calculator
+
+// Retrieve one dependency by namesapce
+const calc2 = await asm.get("asimo.src.tests.Calculator");
+(calc2 as Calculator).add(1, 2);  // calc2 type is unknown
+
+// Retrieve multiple depdendencies - also works with namespace strings:
 const [m, c, a] = await asm.get(MultiplierIID, CalculatorIID, AdderIID);
 ```
 
@@ -186,7 +199,7 @@ createChildContext(): AsmContext;
 ```
 Examples:
 ```typescript
-import { asm as rootAsm } from '../asimo';
+import { asm as rootAsm } from '@asimojs/asimo';
 
 function createContext() {
     const c = rootAsm.createChildContext();

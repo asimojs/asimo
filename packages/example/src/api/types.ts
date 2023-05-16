@@ -14,11 +14,18 @@ export interface SearchResponse {
     /** Default language - e.g. "en" */
     lang: string;
     /** Widget bundles used in the response */
-    bundles?: {[id:string]: string}
+    bundles?: { [id: string]: BundleRef }
     /** Header section */
     header: LML[],
     /** Main results set */
     main: LML[],
     /** Sidebar results set */
     sidebar: LML[],
+}
+
+interface BundleRef {
+    /** Bundle interface namespace */
+    ns: string;
+    /** Bundle URL */
+    src: string;
 }

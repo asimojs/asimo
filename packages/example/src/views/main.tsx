@@ -1,8 +1,8 @@
 import { component, componentId } from "@traxjs/trax-preact";
-import { NavService } from "../stores/nav";
 import { SearchPanel } from "./search";
 import { NavBar } from "./navbar";
 import { SearchResultsPanel } from "./results";
+import { NavService } from "../stores/types";
 
 export const MainLayout = component("MainLayout", (props: { nav: NavService }) => {
     const { nav } = props;
@@ -18,6 +18,8 @@ export const MainLayout = component("MainLayout", (props: { nav: NavService }) =
     } else if (mainView.name === "doc") {
         content = "[ Under construction ]";
     }
+
+    console.log("MainLayout - env:", (import.meta as any).env)
 
     const className = "px-3 py-1 bg-slate-600 rounded-lg text-white";
     return <div data-id={componentId()} className="main-layout" style={{ minWidth: "1024px" }}>

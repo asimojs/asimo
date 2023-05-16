@@ -1,7 +1,7 @@
 import { asm } from "@asimojs/asimo";
 import { Store, trax } from "@traxjs/trax";
 import { component, componentId, useStore } from "@traxjs/trax-preact";
-import { NavServiceIID } from "../../stores/nav";
+import { NavServiceIID } from "../../stores/types";
 
 // example adapted from https://www.solidjs.com/examples/counter
 interface CounterData {

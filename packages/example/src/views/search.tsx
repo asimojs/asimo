@@ -1,7 +1,6 @@
 import { component, componentId } from "@traxjs/trax-preact";
-import { NavService } from "../stores/nav";
 import { asm } from "@asimojs/asimo";
-import { SearchServiceIID } from "../stores/search";
+import { NavService, SearchServiceIID } from "../stores/types";
 
 export const SearchPanel = component("SearchPanel", (props: { nav: NavService }) => {
     const { nav } = props;

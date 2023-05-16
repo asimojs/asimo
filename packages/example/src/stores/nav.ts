@@ -1,31 +1,6 @@
-import { interfaceId, asm } from "@asimojs/asimo";
+import { asm } from "@asimojs/asimo";
 import { trax, Store } from "@traxjs/trax";
-import { SearchService, SearchServiceIID } from "./search";
-
-export const NavServiceIID = interfaceId<NavService>("asimo.doc.stores.NavService");
-export interface NavService {
-    data: {
-        mainView: DocView | SearchView | LoadingView
-    },
-    /** Navigate to the home page */
-    home(): void;
-}
-
-export interface LoadingView {
-    name: "loading";
-}
-
-export interface DocView {
-    name: "doc";
-}
-
-export interface SearchView {
-    name: "search";
-    panel: "search" | "results";
-    $store: SearchService;
-    testWidget?: any;
-}
-
+import { NavService, NavServiceIID, SearchService, SearchServiceIID } from "./types";
 
 /**
  * The NavStore service maintains the navigation data
