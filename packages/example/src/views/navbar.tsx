@@ -2,18 +2,25 @@ import { component, componentId } from "@traxjs/trax-preact";
 import { NavService } from "../stores/nav";
 import { asm } from "@asimojs/asimo";
 import { SearchServiceIID } from "../stores/search";
+import { SearchField } from "./search";
 
 export const NavBar = component("NavBar", (props: { nav: NavService }) => {
     const { nav } = props;
 
+    let isSearchResult = false;
+    const mainView = nav.data.mainView;
+    isSearchResult = (mainView.name === "search" && mainView.panel === "results");
+
     return <div data-id={componentId()} className="navbar flex justify-center">
 
-        <div className="input-container flex flex-grow p-3  max-w-screen-2xl">
-            <div className="w-40 ml-2 text-lg cursor-pointer" onClick={nav.home}>
-                <span className="font-semibold">dspa</span> challenge
+        <div className="input-container flex flex-grow p-3  max-w-screen-xl">
+            <div className="w-40 ml-2 text-lg cursor-pointer" onClick={nav.home} title="Dynamic Page Application Demo">
+                <span className="font-semibold">dpa</span> demo
             </div>
             <div className="flex-grow">
-
+                {!isSearchResult? "" :
+                    <SearchField className="h-8 w-1/2 py-1"/>
+                }
             </div>
             <div className="text-neutral-600 mr-2">
                 <GithubLogo />
