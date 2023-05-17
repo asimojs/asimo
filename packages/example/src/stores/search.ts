@@ -2,6 +2,9 @@ import { asm } from "@asimojs/asimo";
 import { trax, Store } from "@traxjs/trax";
 import { SearchApiIID } from "../api/search";
 import { ComponentMap, NavServiceIID, SearchQuery, SearchService, SearchServiceIID } from "./types";
+import { LML } from "../libs/lml/types";
+import { lml2jsx } from "../libs/lml/lml";
+import { h } from "preact";
 
 /**
  * The Search store exposes all view search apis and manage the search data
@@ -31,15 +34,6 @@ export function createSearchStore(): SearchService {
                 const results = await search(q);
                 if (results.type === "SearchResponse") {
                     const components: ComponentMap = {};
-
-                    data.$lastResult = {
-                        type: "SearchResults",
-                        query: {
-                            searchInput: q.searchInput
-                        },
-                        results,
-                        components
-                    };
 
                     try {
                         const bundles = results.bundles;
@@ -93,6 +87,20 @@ export function createSearchStore(): SearchService {
                     } catch (ex) {
                         console.log("Module load error:", ex);
                     }
+
+                    data.$lastResult = {
+                        type: "SearchResults",
+                        query: {
+                            searchInput: q.searchInput
+                        },
+                        results,
+                        lml2jsx: (lml: LML) => lml2jsx(lml, h, (name, ns) => {
+                            if (components && components[ns]) {
+                                return components[ns][name] || null;
+                            }
+                            return null;
+                        })
+                    };
 
                     return true;
                 }

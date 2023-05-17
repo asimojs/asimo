@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/preact';
 import { LML, LmlAttributeMap, LmlNodeInfo } from '../types';
-import { lml2JSX, scan } from '../lml';
+import { lml2jsx, scan } from '../lml';
 import { h } from 'preact';
 
 describe('LML Preact JSX', () => {
@@ -40,7 +40,7 @@ describe('LML Preact JSX', () => {
     }
 
     function getJSX(v: LML) {
-        return lml2JSX(v, h, (name, ns) => {
+        return lml2jsx(v, h, (name, ns) => {
             if (name === "MyCpt" && ns === "") {
                 return MyCpt;
             }
@@ -229,7 +229,7 @@ describe('LML Preact JSX', () => {
         });
 
         it('should be logged on console when no error handler is provided to lm2JSX', async () => {
-            lml2JSX(["*x:foo"], h);
+            lml2jsx(["*x:foo"], h);
             expect(logs).toMatchObject([
                 "[lm2JSX Error] Invalid component: x:foo"
             ]);

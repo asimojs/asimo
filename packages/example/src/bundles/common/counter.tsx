@@ -34,7 +34,7 @@ export const Counter = component("Counter", () => {
 
     return <div data-id={componentId()} className='counter'
         title="Click to reset" onClick={cs.reset}>
-        <h1> Counter 6:  <span className="counter-value">{cs.data.count}</span></h1>
+        <h1> Counter 7:  <span className="counter-value">{cs.data.count}</span></h1>
         <button onClick={cs.home}> Navigate Home </button>
     </div>
 });

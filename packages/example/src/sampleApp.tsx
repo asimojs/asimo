@@ -9,6 +9,7 @@ import './stores/search';
 
 import './app.css';
 import { NavServiceIID } from './stores/types';
+import { createGlobalContext } from './bundles/utils';
 
 async function main() {
     if ((import.meta as any).env?.DEV) {
@@ -19,9 +20,15 @@ async function main() {
     }
 
     const nav = (await asm.get(NavServiceIID))!;
-    render(<div className='mainapp'>
-        <MainLayout nav={nav} />
-    </div>, document.getElementById('main')!);
+
+    const GlobalContext = createGlobalContext();
+    render(
+        <GlobalContext>
+            <div className='mainapp'>
+                <MainLayout nav={nav} />
+            </div>
+        </GlobalContext>
+        , document.getElementById('main')!);
 }
 
 main();

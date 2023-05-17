@@ -17,7 +17,6 @@ export interface SearchAPI {
 async function search(query: { searchInput: string }): Promise<SearchResponse | ErrorResponse> {
     // actual implementation should call fetch()
     if (query.searchInput === "Homer Simpson") {
-        console.log("HERE")
         const m = await import("./data/testdata");
         return m.default;
     }
