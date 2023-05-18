@@ -1,4 +1,4 @@
-import { LML, LmlAttributeMap, LmlJSX, LmlFormatter, LmlNodeInfo, LmlObject } from "./types";
+import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject } from "./types";
 
 const ELT_PREFIX = "#";
 const CPT_PREFIX = "*";
@@ -12,7 +12,7 @@ const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?(\w+)(\-\w+)?((\.\w+)*)$/;
  * @param f the formatter (that will call the jsx runtime behinde the scenes)
  * @returns
  */
-export function scan(v: LML, f: LmlFormatter): LmlJSX {
+export function scan(v: LML, f: LmlFormatter): JsxContent {
     if (v === undefined || v === null) return "";
 
     if (typeof v === "string") {
@@ -167,7 +167,7 @@ export function scan(v: LML, f: LmlFormatter): LmlJSX {
 export function lml2jsx(v: LML,
     createElement: (type: any | Function, props: { [key: string]: any }, ...children: any) => JSX.Element,
     getComponent?: (name: string, namespace: string) => Function | null,
-    error?: (msg: string) => void): LmlJSX {
+    error?: (msg: string) => void): JsxContent {
 
     error = error || ((m: string) => console.error("[lm2JSX Error] " + m));
 

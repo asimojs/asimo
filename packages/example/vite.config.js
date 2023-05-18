@@ -18,7 +18,7 @@ export default defineConfig({
                 '@traxjs/trax-preact',
                 'react/jsx-runtime',
                 'preact',
-                'preact/hook'
+                'preact/hooks'
             ]
         },
     }

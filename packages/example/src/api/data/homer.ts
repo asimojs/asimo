@@ -14,7 +14,6 @@ const response: SearchResponse = {
     lang: "en", // default language
     header: [],
     main: [
-        // LML content
         ["*c:imgList", {
             "height": 144,
             "imgs": [{
@@ -72,11 +71,12 @@ const response: SearchResponse = {
         ["*c:rcard.div", {
             "lang": "fr",
             "header": {
-                "title": "Home Simpson",
+                "title": "Homer Simpson",
                 "href": "https://fr.wikipedia.org/wiki/Homer_Simpson",
                 "src": {
-                    "text": "https://fr.wikipedia.org › wiki › Ho...",
-                    "logo": ["*c:img", { "height": 18, "width": 28, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEUAAAD+/v41NTUBAQEAAABZWVknJycWFhaZmZmIiIjp6ellZWXMzMzX19eurq54eHhHR0dExXFyAAAAAXRSTlMAQObYZgAAAPtJREFUeAG8kAWOBDAMA9d1Sin+/7XXbpZZdBaURlMrhx28ycGCD/n0bvkBwJf8C+AoIvRAWGtMyHGtCWkfxW+DRopuuIjUtTQJDStevNoXWaRjRSllLd1O8FFhgEZx2BmkAmHC8HwpOUyxSA50VqOjXgAl50URvNWPBRcAnmwnhbcduthqQCO9KYTFBG7eDWoK1T47AZX9DuiUYT/TuhX3MGpnD51kPprSA9Dl+BCKl7jWHHEHmHsLWhNZZMxPQCLTEuy+cYF6D9i8Q5e2Lcyz4AGwKdJbX0p7AegC2qnvxAsAxQRAYH8J6Dg1a/lvpKRJinMW4cxLMPsDAJjSCaG8cPmnAAAAAElFTkSuQmCC" }]
+                    "name": "Wikipedia",
+                    "ref": "https://fr.wikipedia.org › wiki › Ho...",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEUAAAD+/v41NTUBAQEAAABZWVknJycWFhaZmZmIiIjp6ellZWXMzMzX19eurq54eHhHR0dExXFyAAAAAXRSTlMAQObYZgAAAPtJREFUeAG8kAWOBDAMA9d1Sin+/7XXbpZZdBaURlMrhx28ycGCD/n0bvkBwJf8C+AoIvRAWGtMyHGtCWkfxW+DRopuuIjUtTQJDStevNoXWaRjRSllLd1O8FFhgEZx2BmkAmHC8HwpOUyxSA50VqOjXgAl50URvNWPBRcAnmwnhbcduthqQCO9KYTFBG7eDWoK1T47AZX9DuiUYT/TuhX3MGpnD51kPprSA9Dl+BCKl7jWHHEHmHsLWhNZZMxPQCLTEuy+cYF6D9i8Q5e2Lcyz4AGwKdJbX0p7AegC2qnvxAsAxQRAYH8J6Dg1a/lvpKRJinMW4cxLMPsDAJjSCaG8cPmnAAAAAElFTkSuQmCC" }]
                 },
                 "misc": [
                     ["#a", { "lang": "en", "href": "https://translate.google.com/translate?hl=en&amp;sl=fr&amp;u=https://fr.wikipedia.org/wiki/Homer_Simpson&amp;prev=search&amp;pto=aue" }, "Translate this page"],
@@ -89,34 +89,33 @@ const response: SearchResponse = {
                 "href": "https://fr.wikipedia.org/wiki/Homer_Simpson",
                 "src": "data:image/jpeg;base64,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"
             }],
+            "footerLinks": [
+                ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Personnage" }, "Personnage"],
+                ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Voix" }, "Voix"],
+                ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Analyse" }, "Analyse"],
+                ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Influence_culturelle" }, "Influence"]
+            ]
         }, ["#div.p",
-                ["#em", "Homer"], "est le mari maladroit de Marge et le père de Bart, Lisa et Maggie ",
+                ["#em", "Homer"], " est le mari maladroit de Marge et le père de Bart, Lisa et Maggie ",
                 ["#em", "Simpson"], ". Il a été élevé par ses parents, Mona et Abraham ",
-                ["#em", "Simpson"], "; dans l'épisode La&nbsp;..."
+                ["#em", "Simpson"], "; dans l'épisode La ..."
             ],
             ["*c:facts.div", {
-                "cols": 2,
                 "entries": [
                     { "name": "Naissance", "value": "12 mai 1956" },
                     {
-                        "name": "Famille", "value": [
-                            "Père: ", ["a", { "href": "https://fr.wikipedia.org/wiki/Abraham_Simpson" }, "Abraham Simpson"],
-                            "Mère: ", ["a", { "href": "https://fr.wikipedia.org/wiki/Mona_Simpson" }, "Mona ..."]
+                        "name": "Famille",
+                        "value": [
+                            "Père: ", ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Abraham_Simpson" }, "Abraham Simpson "],
+                            "Mère: ", ["#a.link", { "href": "https://fr.wikipedia.org/wiki/Mona_Simpson" }, "Mona ... "]
                         ]
                     }
                 ]
-            }],
-            ["#div.line",
-                ["a", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Personnage" }, "Personnage"], " · ",
-                ["a", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Voix" }, "Voix"], " · ",
-                ["a", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Analyse" }, "Analyse"], " · ",
-                ["a", { "href": "https://fr.wikipedia.org/wiki/Homer_Simpson#Influence_culturelle" }, "Influence"]
-            ]
+            }]
         ],
 
-        // expandable group, sections are passed as attributes that can contain LML
         ["*c:expGroup", {
-            "title": ["People also ask", ["*c:about"]],
+            "title": "People also ask",
             "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
             "sections": [
                 { "title": "What is Homer's IQ?", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": ["Under construction..."] },
@@ -127,38 +126,312 @@ const response: SearchResponse = {
         }],
 
         // results card #2
+        ["*c:rcard.div", {
+            "lang": "en",
+            "header": {
+                "title": "Homer Simpson",
+                "href": "https://en.wikipedia.org/wiki/Homer_Simpson",
+                "src": {
+                    "name": "Wikipedia",
+                    "ref": "https://en.wikipedia.org › wiki › Homer_Simpson",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEUAAAD+/v41NTUBAQEAAABZWVknJycWFhaZmZmIiIjp6ellZWXMzMzX19eurq54eHhHR0dExXFyAAAAAXRSTlMAQObYZgAAAPtJREFUeAG8kAWOBDAMA9d1Sin+/7XXbpZZdBaURlMrhx28ycGCD/n0bvkBwJf8C+AoIvRAWGtMyHGtCWkfxW+DRopuuIjUtTQJDStevNoXWaRjRSllLd1O8FFhgEZx2BmkAmHC8HwpOUyxSA50VqOjXgAl50URvNWPBRcAnmwnhbcduthqQCO9KYTFBG7eDWoK1T47AZX9DuiUYT/TuhX3MGpnD51kPprSA9Dl+BCKl7jWHHEHmHsLWhNZZMxPQCLTEuy+cYF6D9i8Q5e2Lcyz4AGwKdJbX0p7AegC2qnvxAsAxQRAYH8J6Dg1a/lvpKRJinMW4cxLMPsDAJjSCaG8cPmnAAAAAElFTkSuQmCC" }]
+                }
+            },
+            "sideContent": ["*c:img", {
+                "height": 92, "width": 92,
+                "alt": "homer simpson from en.wikipedia.org",
+                "href": "https://en.wikipedia.org/wiki/Homer_Simpson",
+                "src": "data:image/jpeg;base64,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"
+            }],
+            "footerLinks": [
+                ["#a.link", { "href": "https://en.wikipedia.org/wiki/Homer_Simpson#Role_in_The_Simpsons" }, "Role in The Simpsons"],
+                ["#a.link", { "href": "https://en.wikipedia.org/wiki/Homer_Simpson#Character" }, "Character"],
+                ["#a.link", { "href": "https://en.wikipedia.org/wiki/Homer_Simpson#Reception" }, "Reception"],
+                ["#a.link", { "href": "https://en.wikipedia.org/wiki/Homer_Simpson#Cultural_influence" }, "Cultural influence"]
+            ]
+        }, ["#div.p",
+                ["#em", "Homer"], " Jay  ",
+                ["#em", "Simpson"], " is a fictional character and the main protagonist of the American animated sitcom The ",
+                ["#em", "Simpsons"], ". He is voiced by Dan Castellaneta and first ..."
+            ],
+            ["*c:facts.div", {
+                "entries": [
+                    { "name": "Voiced by", "value": ["#a.link", { "href": "http://en.wikipedia.org/wiki/Dan_Castellaneta" }, "Dan Castellaneta"] },
+                    {
+                        "name": "First appearance", "value": [
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/Good_Night_(The_Simpsons)" }, "Good Night"], "; ",
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/The_Tracey_Ullman_Show" }, "The Tra"], "..."
+                        ]
+                    },
+                    {
+                        "name": "Home", "value": [
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/The_Simpsons_house" }, "742 Evergreen Terrace"], ", ",
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/Springfield_(The_Simpsons)" }, "Springfield"], "..."
+                        ]
+                    },
+                    {
+                        "name": "Family", "value": [
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/Abraham_Simpson" }, "Abraham Simpson"], " (father); ",
+                            ["#a.link", { "href": "http://en.wikipedia.org/wiki/Mona_Simpson_(The_Simpsons)" }, "Mona"], "..."
+                        ]
+                    }
+                ]
+            }]
+        ],
 
         // results card #3
+        ["*c:rcard.div", {
+            "lang": "en",
+            "header": {
+                "title": "Homer Simpson - Simpsons Wiki - Fandom",
+                "href": "https://simpsons.fandom.com/wiki/Homer_Simpson › wiki › Homer_Simpson",
+                "src": {
+                    "name": "Fandom",
+                    "ref": "https://simpsons.fandom.com ",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASklEQVR4AWOAgv9Qmiz+/3+PwQL/SeVT0wAIhrIJ8zENIAXT34BRA4DyUIzJR0qWuDUjAax8pJSF1wAQG5OPMIC2LiBsABCTHYgAlfwb/kEd2zYAAAAASUVORK5CYII=" }]
+                }
+            },
+            "sideContent": ["*c:img", {
+                "height": 92, "width": 92,
+                "alt": "homer simpson from simpsons.fandom.com",
+                "href": "https://simpsons.fandom.com/wiki/Homer_Simpson",
+                "src": "data:image/jpeg;base64,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"
+            }],
+            "footerLinks": [
+                ["#a.link", { "href": "https://simpsons.fandom.com/wiki/Homer_Simpson#Biography" }, "Biography"],
+                ["#a.link", { "href": "https://simpsons.fandom.com/wiki/Homer_Simpson#Personality" }, "Personality"],
+                ["#a.link", { "href": "https://simpsons.fandom.com/wiki/Homer_Simpson#Relationships" }, "Relationships"],
+                ["#a.link", { "href": "https://simpsons.fandom.com/wiki/Homer_Simpson#Non-Canon_Appearances" }, "Non-Canon Appearances"],
+            ]
+        }, ["#div.p",
+                ["#em", "Homer"], " Jay ", ["#em", "Simpson"],
+                " is a man from Springfield. He is the husband of Marge ", ["#em", "Simpson"],
+                " and father of Bart, Lisa and Maggie ", ["#em", "Simpson"], ". ",
+                ["#em", "Homer"], " is overweight(said to be ..."
+            ],
+            ["*c:facts.div", {
+                "entries": [
+                    { "name": "First episode appearance", "value": "\"Good Night\"" },
+                    { "name": "Character played by", "value": "Dan Castellaneta; ..." },
+                    { "name": "Hair Color", "value": "Bald; Brown (naturally)" },
+                    { "name": "Occupation/Career", "value": "Currently: Safety in..." },
+                ]
+            }]
+        ],
 
-        // results card #4
+        ["*c:rcard.div", {
+            "lang": "fr",
+            "header": {
+                "title": "Homer Simpson | Wiki Les Simpson | Fandom",
+                "href": "https://simpsons.fandom.com/fr/wiki/Homer_Simpson",
+                "src": {
+                    "name": "Fandom",
+                    "ref": "https://simpsons.fandom.com › wiki",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASklEQVR4AWOAgv9Qmiz+/3+PwQL/SeVT0wAIhrIJ8zENIAXT34BRA4DyUIzJR0qWuDUjAax8pJSF1wAQG5OPMIC2LiBsABCTHYgAlfwb/kEd2zYAAAAASUVORK5CYII=" }]
+                }
+            },
+            "sideContent": ["*c:img", {
+                "height": 92, "width": 92,
+                "alt": "homer simpson from simpsons.fandom.com",
+                "href": "https://simpsons.fandom.com/fr/wiki/Homer_Simpson",
+                "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnv-jTrHvJP1vqKksElMApNWtKni3LHYZ_dtRA9bPCBHvMsvGW57Ix&amp;usqp=CAE&amp;s"
+            }],
+        }, ["#div.p",
+                ["#em", "Homer"], " est le quelqu'un de plutôt gentil et d'amical, mais il est stupide, obèse, maladroit, gourmand, peu cultivé, un ivrogne et colérique. ... Il travaille dans ..."
+            ],
+            ["*c:facts.div", {
+                "entries": [
+                    { "name": "Date de naissance", "value": "12 mai 1956" },
+                    { "name": "Date de décès", "value": "2015 (59 ans)(L'Échelle..." },
+                    { "name": "Lieu d'origine", "value": "Maison de fermier" },
+                    { "name": "Âge", "value": "39 ans (Tous les huit ans)" },
+                ]
+            }]
+        ],
 
-        // video section
+        ["*c:rcard.div", {
+            "lang": "fr",
+            "header": {
+                "title": "Personnages - Homer Simpson",
+                "href": "https://www.simpsonspark.com/personnages/homer-simpson",
+                "src": {
+                    "name": "The Simpsons Park",
+                    "ref": "https://www.simpsonspark.com › ho...",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgBBgkIBwgKCgkLDRYPDQwMARsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwBGg8PGjclHyU3NzU3Ny83Nzc1NzU3Nys3NzU3Nzc3LTU1Ky03LSsrLSs1Ky0sNS0rKy0rKys3KystK//AABEIABAAEAMBEQACEQEDEQH/xAAVAAEBAAAAAAAAAAAAAAAAAAAFBP/EACUQAAEDAgUEAwAAAAAAAAAAAAECAxEEEgAGITFRBwgyQRMiYv/EABcBAAMBAAAAAAAAAAAAAAAAAAMEBQL/xAAgEQABBAICAwEAAAAAAAAAAAACAAEDBAYREjIHEzEF/9oADAMBAAIRAxEAPwBjK9Q/m9pVAhx2FKFqU56tgazGsesN/qOY4A5Q9lOqAxZezH8T9IpXTJy1K6r4yhLiLM+yqDPJ2094jVbxReJ+Vt05PV3mbelEMMjuFtbpKRtpwgWoPSlSBMSR4/kjiTgFV5JsPJydNzC0ebi2lQlh/tYCnq5kMoV9jZlY+II325wOauT+K+u1sS5Zzpl//9k=" }]
+                }
+            },
+            "sideContent": ["*c:img", {
+                "height": 92, "width": 92,
+                "alt": "homer simpson from www.simpsonspark.com",
+                "href": "https://www.simpsonspark.com/personnages/homer-simpson",
+                "src": "data:image/png;base64,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"
+            }],
+        }, ["#div.p",
+                ["#em", "Homer"], " ", ["#em", "Simpson"], " est un père de famille de 39 ans qui travaille au poste d'inspecteur de la sécurité dans une centrale nucléaire. Fainéant et gras, ",
+                ["#em", "Homer"], " passe ...",
+            ],
+        ],
 
-        // results card #5
+        ["*c:rcard.div", {
+            "lang": "en",
+            "header": {
+                "title": "Homer Simpson",
+                "href": "https://simpsonswiki.com/wiki/Homer_Simpson",
+                "src": {
+                    "name": "Wikisimpsons",
+                    "ref": "https://simpsonswiki.com › wiki › Homer_Simpson",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWUlEQVR4AZ2NA3AdQQCGN7aN2rZt2xjbGdevwwxr27Zt312erdh85v3NthM7393yx5LuAlkkQUHdQT20a2HdVAIJ+V8A7eS6tk5DvfUFfN629Crh1NEoaMOYs6n5rU/ur2WZ5UwfnfJlr94k7/vsIl4T7qn43XND8/AdwI83HBwEwKfu/s4d+Lmk/VmUBMGjmrKBlPyeYkWRD2qYXqcbh0+fZkOrJEtvenJmWmu4/itIHYCPQ5j4FXkhcMsnriZFzKL9KAhB1c/Ya40Lsj8OvYzcMCCfwC6Kf0iDVNNoBJFe1QAjtP4wvE9YSNRP56bx8nDYmND7dQXGb1PnQBkDGHxqB4FdmFQq/CiIpppN1renSxhmhyoIJcy4aUQg+Ohv+RNX5pH2/kJfpsPGJT/jpeFFNi5uu40Lf8Mro/n834um0AK3dt5sryKE98rCebN8xTBCsWWlPLWL0nNpWPpqwCiow+AQhV+gWu77QVuRG4TSX8My6bn6z7DNyA2FVxolxcdZ/oRS+nPEHujC4ZSkHXcIw1joQ1AjSl3+T+PWzoQyABW/+pbmKI+musVRmSiOrPXGHyd1GL6vnemVRgLGYCDPF1YuTciybADVir4vSLSxYVXQBKNKseWkW5yigzYUdsXUhaQO2R1BYA2TIoWRANo4FIm2bqrTAPiamcTvMBC4pCmAJgwuYayhTLkygjSm9NeQXagIQfGPsQwRwL+xZvw8cSdyQgA9AYyBcEhHZZDmlHAr+pf+Gfvwz4ttE1poso/hNVmj7lkkkYaaP2kZpDtAO51A2Ys05y+gJ3hl6ACK/AAAAABJRU5ErkJggg==" }]
+                }
+            },
+            "sideContent": ["*c:img", {
+                "height": 92, "width": 92,
+                "alt": "homer simpson from simpsonswiki.com",
+                "href": "https://simpsonswiki.com/wiki/Homer_Simpson",
+                "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRseqE-ZQ_AxH6UHaR-loGrJdF_xH337ar4dmCkpOulzL5OwmhScR0N&amp;usqp=CAE&amp;s"
+            }],
+        }, ["#div.p",
+                ["#em", "Homer"], " is the husband of Marge ", ["#em", "Simpson"], ". They met when they were younger without learning who each other was before meeting again properly in high ...",
+            ],
+            ["*c:facts.div", {
+                "entries": [
+                    { "name": "Age", "value": "36; 38; 39" },
+                    { "name": "First appearance", "value": "\"Good Night\"" },
+                    { "name": "Alias(es)", "value": "Homer Thompson; Pierman; ..." },
+                    { "name": "Hair", "value": "None (formerly brown)" },
+                ]
+            }]
+        ],
 
-        // results card #6
+        ["*c:rcard.div", {
+            "lang": "fr",
+            "header": {
+                "title": "425 photos et images de Homer Simpson",
+                "href": "https://www.gettyimages.fr/photos/homer-simpson",
+                "src": {
+                    "name": "Getty Images",
+                    "ref": "https://www.gettyimages.fr › photos",
+                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAAAAABWESUoAAABE0lEQVR4AWIwJgAArZOtjoQwFIUfalUVCl9TwyoErqYOOaqSF0BNgkIhQY5EV/UBKkdVVd3tbZZ0t7czao4gJ7dfcn9O+CzA79aDPzX7kqcHCszwK7filwAbZNWAEYvhmB+AmuV3CdhYfopohhDdnQzZQpROFidwBOgRELkZKwGBVZnsVAWYj9UTXeNwGnqoBZBQXFk0GwUaC1mBV07dmvw+1rLQ/nreeS0sTMLO+jb21wKVNZs3cd8QeCjRvgI6uOTduSpWnyHLDXQL9fxLhK489YHVY1l2EwC1ZyBn3CbbTIi4AsAr6ZwLBSBqudoZXLkAbOo79oJ3OvmhABT810TWlA6ynKqkydRq8BTebPKjP+8P/Fi0zJneIpUAAAAASUVORK5CYII=" }]
+                }
+            }
+        }, ["*c:imgList", {
+            "height": 114,
+            "href": "https://www.gettyimages.fr/photos/homer-simpson",
+            "imgs": [
+                {
+                    "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMt9L8xqVCOuY5Tnm-y2yBD4AlTK7OODHFNOaQgiSoye8vqEkL3PKvMiswhkDqlcOa0xw&amp;s",
+                    "width": 92
+                },
+                {
+                    "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZ_R3_mwYLK_01X4ZrQT3XDem29i5VjWmONRXIKKG6mCRhacGmj2vngJfAPcXXXS7LIklL&amp;s",
+                    "width": 138
+                },
+                {
+                    "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYEHoNMkTubu20O_OHjJ3wEjuKqIuqwFa5B3kKP1ML4-qq60v4Wl3qmM9k548UlJeAhhAz&amp;s",
+                    "width": 138
+                },
+                {
+                    "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQY29Lmq_FQkgQIxqVbK2cOn6mOVxufJLPUyG0GXS9L5QLsp6FZXu4lCzy-Qe6GsSwOWsZA&amp;s",
+                    "width": 138
+                },
+                {
+                    "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdyDPLw4EGyyEzuFhX0Q8qj7ub_6QDA11eEYeWFp-vb1jJLsMREOHK-2Pqx87UOm-xJoja&amp;s",
+                    "width": 138
+                }
+            ]
+        }],
+            ["#div", "Trouvez des images et des photos d'actualités de ", ["#em", "Homer"], " ", ["#em", "Simpson"], " sur Getty Images. Choisissez parmi 425 des contenus premium de ", ["#em", "Homer"], " ", ["#em", "Simpson"], " de qualité."]
+        ],
 
-        // results card #7 - with images
 
-        // results card #8 - with images
+        // ["*c:rcard.div", {
+        //     "lang": "en",
+        //     "header": {
+        //         "title": "xx",
+        //         "href": "",
+        //         "src": {
+        //             "name": "ABC",
+        //             "ref": "abc",
+        //             "logo": ["*c:img", { "height": 18, "width": 18, "src": "" }]
+        //         }
+        //     },
+        //     "sideContent": ["*c:img", {
+        //         "height": 92, "width": 92,
+        //         "alt": "",
+        //         "href": "",
+        //         "src": ""
+        //     }],
+        //     "footerLinks": [
+        //         ["#a.link", { "href": "" }, "x"],
+        //         ["#a.link", { "href": "" }, "x"],
+        //         ["#a.link", { "href": "" }, "x"],
+        //     ]
+        // }, ["#div.p",
+        //         ["#em", "Homer"], "  ",
+        //         ["#em", "Simpson"], "  ",
+        //         ["#em", "Simpsons"], "..."
+        //     ],
+        //     ["*c:facts.div", {
+        //         "entries": [
+        //             { "name": "xx", "value": ["#a.link", { "href": "" }, ".."] },
+        //             { "name": "xx", "value": ["#a.link", { "href": "" }, ".."] },
+        //         ]
+        //     }]
+        // ],
 
-
-        // expandable group: Related searches
-
-        // button list
 
         // legal notice
-        ["#div.legal",
+        ["*c:section", { "className": "italic" },
             "Some results may have been removed under data protection law in Europe.",
-            ["#a", { "href": "https://www.google.com/policies/faq" }, "Learn more"]
+            ["#a.link", { "href": "https://www.google.com/policies/faq" }, "Learn more"]
         ],
 
         // pagination
-        ["*c:pages", { "current": 1 }] // TODO: action
+        // ["*c:pages", { "current": 1 }] // TODO: action
     ],
-    sidebar: [],
+    sidebar: [
+        ["*c:section", { "title": "About" },
+            ["#p", "Homer Jay Simpson is a fictional character and the main protagonist of the American animated sitcom The Simpsons. He is voiced by Dan Castellaneta and first appeared, along with the rest of his family, in The Tracey Ullman Show short \"Good Night\" on April 19, 1987. "],
+            ["#p", ["#a.link", { "href": "https://en.wikipedia.org/wiki/Homer_Simpson" }, "Wikipedia"]]
+        ],
+        ["*c:facts.div", {
+            "cols": 1,
+            "entryClassName": "text-sm pt-1",
+            "entries": [
+                { "name": "Status", "value": "Alive" },
+                { "name": "Age", "value": "39" },
+                {
+                    "name": "Occupation", "value": [
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Nuclear+Safety+Inspector&si=AMnBZoG3cRyxvViEiVWeqgrn-CuWcnxp6_6_G7EH225wAKYHQp_w0GOm6Lo5uctH41jXKv4puOmb2PIgtNe7ErjKwFd7QcoED6lbpNdh0c7zJCM2uwaG0GKEC1T9SCDEg30_CgDXJUyMcPd8WeyQ-SG4WQw4LSI8F1PJmCP5BbrGqK4r7gZEndZx1Vvv29V4Q5EammXwixTrNCu6WGHz4-l-7G9FSYAOPPz9CUf2sh2KDWAwWNH91r5eEesPTp_3MAE_OkXY7TGSyK2iV6B_h0J-lW1VNXSGUg%3D%3D&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAHoECGsQAg" }, "Nuclear Safety Inspector"], ", ",
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Former+Technical+Supervisor&si=AMnBZoEZ8aFftZu792frFYrnK9KQYGXRL3UTeDeHB9-uc0sfFfrjlpFtIOkIat1VMCutduV0xx45JTtKGxL5PBnYPvDeZBZFhi64wZ40stYBVxuAHprY_IRE6KOoJjqcjMVGLgVienIxpq8FUDBXxaXAsqLgvQ_3ujPhwyQTjBa2RqD9g8LAJKQ4G4kV2WFFEEKhCfdJlfO443ZdkeD7YjEJlXuVpZKcJxVK_wLiwogp53nAg9NqTAj2Nikxe1Ydchct-0-_o_iqAH28fn7SdTDiPkY-xjcRd1vHETuipLWz-y74fl8B6oI%3D&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAXoECGsQAw" }, "Former Technical Supervisor"]
+                    ]
+                },
+                { "name": "Location", "value": "742 Evergreen Terrace, Springfield" },
+                {
+                    "name": "Parents", "value": [
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Grampa+Simpson&si=AMnBZoFk_ppfOKgdccwTD_PVhdkg37dbl-p8zEtOPijkCaIHMgBm2SUw-JTn3P1gl0WZgJFbdrQdeEKh2SeuXHyge5KUVc-plYMCdA5sH-AFjXstUaQolxSmlcXDbpMQK8RYr5EGO-XtTIaSpYK0R5iq1USIPLPwFkHPA7nKSI818qlVWitIRaz9d1OeTOVqnoB5uWFIZH884BeuAh2ecmkY72bVe3tZTy4MkNMlCpueyPXxsUyHeeCfr5Dsaa0zFbm2qtJNtx-I&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAHoECG0QAg" }, "Grampa Simpson"], ", ",
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Mona+Simpson+(The+Simpsons)&si=AMnBZoFk_ppfOKgdccwTD_PVhdkg37dbl-p8zEtOPijkCaIHMnU7xGKBqQIsXQmG57xEhOyLwrKowe2zEA_nRTa99aZVflcdvh-KQyxlfSetUu3LV674M51Et7m4wxr-elFV2M_1I40_LyYMpR5_YAg9h-IO6KDpn9Qs7X2cnCLPSC-iVgQyJri--uI5w19vr7pyK0pjAgRz-URWwVtb7ZJlzDWBXywdVdigDeUeaKl-lG7dR9AGokJtcvxkKlmXEUVxypsdKT8gKCWj1afZZwHRPkDAdjGRWw%3D%3D&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAXoECG0QAw" }, "Mona Simpson"]
+                    ]
+                },
+                { "name": "Spouse", "value": [["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Marge+Simpson&si=AMnBZoFk_ppfOKgdccwTD_PVhdkg37dbl-p8zEtOPijkCaIHMoIDQPPiJdu8Z21CY-5JAGP-UWxzH7N9Yfk8kSLsV3aR2-3IkXeIrDysNvILBUALqBjSo7AE8xVl0yBm6Q_sQZzkJpZGSaCwIctvo-LJtHMs1_yPXimatDdY_0LS4Y4jrW6veryc1kfHYMmO6kRP_JInQXjw&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAHoECGIQAg" }, "Marge Simpson"]] },
+                {
+                    "name": "Siblings", "value": [
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Abbie&si=AMnBZoEZ8aFftZu792frFYrnK9KQYGXRL3UTeDeHB9-uc0sfFbmg8F6pK9ti0QOooT_1dQgHaHsQyvugHNJOf_VfDflLZxXaKGRoKipxumzzUWTFgPGQZh8tSrabVeaRMl5pCo-B3EunRlNPGwnPkcQskIYU6GasZ6Sv8tdN-ZxmOI7Ns082JcHtw9NQQ6dk14Cl-jUpizfVX3Ix9Vo_rMt2ciC82RZfmmuQr8ut2orQRT0oJns0O_PsAiMSiwv7vwIvIFHTqayx&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAHoECGAQAg" }, "Abbie"], ", ",
+                        ["#a.link", { "href": "https://www.google.com/search?rlz=1C5CHFA_enFR857FR857&sxsrf=APwXEdcYnZJlKJpHOrmzCBwe330HRQ8fMA:1683559185890&q=Herbert+Powell&si=AMnBZoEZ8aFftZu792frFYrnK9KQYGXRL3UTeDeHB9-uc0sfFVtCKaY4c9PK6Lr5qZ3sZWsqVYqIxUSlU3Aq6uaiLRN40fCGKfw-QWXY6Lwr76YfWOimjW_jcIip1EqPVvY-AeEI_EvlgItSXlm393txmUuvxapFuSnXwqIUAqAY0z2yJMmJJV8-v5CCKNYOIjRBRVlRJPxgveKjHQ1Ksm2nwJTzbM6vdBCblHYvXikFE2Ra2Tzgqmevw1t52ro8ORFeSu_SggdmhVO4dIp0iAjnxG0WZreGKg%3D%3D&sa=X&ved=2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0QmxMoAXoECGAQAw" }, "Herbert Powell"]
+                    ]
+                },
+            ]
+        }],
+        ["*c:expGroup", {
+            "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
+            "sectionClassName": "text-sm py-2",
+            "sections": [
+                { "title": "Birth year", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qh_0CegQIGxAA", "content": ["Under construction..."] },
+                { "title": "Catch phrases", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qw5oDKAF6BAgdEAI", "content": ["Under construction..."] },
+                { "title": "Personality", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q_JoDKAB6BAhGEAE", "content": ["Under construction..."] },
+            ]
+        }],
+    ],
     // popoverbar: []
-}
+};
 
 export default response;
-

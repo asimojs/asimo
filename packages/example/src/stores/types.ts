@@ -1,6 +1,6 @@
 import { interfaceId } from "@asimojs/asimo";
 import { SearchResponse } from "../api/types";
-import { LML, LmlJSX } from "../libs/lml/types";
+import { LML, JsxContent } from "../libs/lml/types";
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ export interface SearchResults {
         searchInput: string;
     },
     results: SearchResponse;
-    lml2jsx: (lml:LML) => LmlJSX;
+    lml2jsx: (lml:LML) => JsxContent;
 }
 
 export interface ComponentMap {

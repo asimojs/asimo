@@ -1,5 +1,5 @@
 import { useContext as _useContext } from "preact/hooks";
-import { LmlJSX } from "../libs/lml/types";
+import { JsxContent } from "../libs/lml/types";
 import { createContext as _createContext } from "preact";
 import { InterfaceId } from "@asimojs/asimo/lib/types";
 
@@ -34,7 +34,7 @@ let globalCreationCount = 0;
 export function createGlobalContext() {
     globalCreationCount++;
 
-    if (globalCreationCount>1) {
+    if (globalCreationCount > 1) {
         console.error("[utils.createGlobalContext] Global Context cannot be re-render and must be used at the application root")
     }
 
@@ -81,10 +81,10 @@ export function createContext<T>(iid: InterfaceId<T>, defaultValue: T) {
     }
 }
 
-export function useContext<T>(iid: InterfaceId<T>): T | null {
+export function useContext<T>(iid: InterfaceId<T>, defaultValue: T | null = null): T | null {
     const globalCtxt = getGlobalCtxt();
     if (globalCtxt) {
-        return globalCtxt.subCtxts[iid.ns] || null;
+        return globalCtxt.subCtxts[iid.ns] || defaultValue;
     }
     return null;
 }

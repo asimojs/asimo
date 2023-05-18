@@ -13,7 +13,7 @@ export default {
         '@traxjs/trax-preact',
         'react/jsx-runtime',
         'preact',
-        'preact/hook'
+        'preact/hooks'
     ],
     plugins: [typescript()],
     // plugins: [

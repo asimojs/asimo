@@ -52,9 +52,9 @@ export interface LmlNodeInfoOther {
 }
 
 /** JSX-compatible output produced by lml2jsx */
-export type LmlJSX = JSX.Element | string | (JSX.Element | string)[];
+export type JsxContent = JSX.Element | string | (JSX.Element | string)[];
 
 export interface LmlFormatter {
-    format(ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): LmlJSX;
+    format(ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): JsxContent;
     error?(m: string): void;
 }
