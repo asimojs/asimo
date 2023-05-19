@@ -23,7 +23,7 @@
     "dependencies": {
         "@asimojs/asimo": "^0.0.1",
         "@traxjs/trax": "^0.0.3",
-        "@traxjs/trax-preact": "^0.0.4",
+        "@traxjs/trax-preact": "^0.0.5",
         "preact": "^10.11.3",
         "preact-jsx-runtime": "^1.2.0"
     },

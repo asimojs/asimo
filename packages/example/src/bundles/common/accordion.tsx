@@ -42,7 +42,7 @@ export const Accordion = component("Accordion", (props: AccordionProps) => {
                     <div data-section-key={section.key} className={`${sectionClassName} flex border-t cursor-pointer`}>
                         <div className="flex-1">{section.title}</div>
                         <div className="w-8">
-                            <ArrowIcon up={!!sectionStates[section.key]} />
+                            <ArrowIcon idx={idx} up={!!sectionStates[section.key]} />
                         </div>
                     </div>
                     {!sectionStates[section.key] ? "" :
@@ -70,8 +70,7 @@ export const Accordion = component("Accordion", (props: AccordionProps) => {
     }
 });
 
-
-const ArrowIcon = (props: { up?: boolean }) => {
+const ArrowIcon = component("ArrowIcon", (props: { up?: boolean, idx: number }) => {
     let dim = 15;
     const dir = props.up ? "rotate-180" : "";
 
@@ -88,4 +87,4 @@ const ArrowIcon = (props: { up?: boolean }) => {
             </g>
         </g>
     </svg>
-};
+});
