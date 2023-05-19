@@ -5,7 +5,7 @@ import { ImgList } from "./imgList";
 import { ResultCard } from "./resultCard";
 import { Img } from "./img";
 import { Facts } from "./facts";
-import { ExpGroup } from "./expandableGroup";
+import { Accordion } from "./accordion";
 import { Section } from "./section";
 
 // Interface ID that will be used by the consumer
@@ -17,7 +17,7 @@ const bundle = {
     rcard: ResultCard,
     img: Img,
     facts: Facts,
-    expGroup: ExpGroup,
+    accordion: Accordion,
     section: Section
 }
 

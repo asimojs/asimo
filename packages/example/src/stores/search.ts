@@ -16,7 +16,7 @@ export function createSearchStore(): SearchService {
             query: {
                 searchInput: ""
             },
-            $lastResult: null
+            lastResult: null
         });
 
         const srv = {
@@ -88,7 +88,7 @@ export function createSearchStore(): SearchService {
                         console.log("Module load error:", ex);
                     }
 
-                    data.$lastResult = {
+                    data.lastResult = {
                         type: "SearchResults",
                         query: {
                             searchInput: q.searchInput

@@ -1,9 +1,9 @@
-import { component, componentId } from "@traxjs/trax-preact";
+import { component, componentId, useTraxState } from "@traxjs/trax-preact";
 import { LML } from "../../libs/lml/types";
 import { useContext } from "../utils";
 import { Lml2JsxIID } from "../../views/types";
 
-export interface ExpGroupProps {
+export interface AccordionProps {
     title?: LML;
     ved?: string;
     sectionClassName?: string;
@@ -12,17 +12,25 @@ export interface ExpGroupProps {
 
 export interface GroupSection {
     title: string;
-    ved: string;
+    key: string;
     content: LML;
 }
 
-export const ExpGroup = component("ExpGroup", (props: ExpGroupProps) => {
+interface AccordionState {
+    sections: {
+        [key: string]: boolean; // true if expanded
+    }
+}
+
+export const Accordion = component("Accordion", (props: AccordionProps) => {
     let { title, ved, sections, sectionClassName } = props;
     sectionClassName = sectionClassName || "py-2";
 
     const lml2jsx = useContext(Lml2JsxIID, () => "[...]")!;
+    const state = useTraxState<AccordionState>({ sections: {} });
+    const sectionStates = state.sections;
 
-    return <div data-id={componentId()} className='expgroup mt-7'>
+    return <div data-id={componentId()} className='accordion mt-7'>
         {!title ? "" :
             <div className="title text-xl pb-2">
                 {lml2jsx(title)}
@@ -30,32 +38,44 @@ export const ExpGroup = component("ExpGroup", (props: ExpGroupProps) => {
         }
         <div className="sections text-base" onClick={handleClick}>
             {sections.map((section, idx) =>
-                <div data-section-idx={idx} className={`section ${sectionClassName} flex border-t cursor-pointer`}>
-                    <div className="flex-1">{section.title}</div>
-                    <div className="w-8">
-                        <ArrowDownIcon />
+                <div className="section">
+                    <div data-section-key={section.key} className={`${sectionClassName} flex border-t cursor-pointer`}>
+                        <div className="flex-1">{section.title}</div>
+                        <div className="w-8">
+                            <ArrowIcon up={!!sectionStates[section.key]} />
+                        </div>
                     </div>
+                    {!sectionStates[section.key] ? "" :
+                        <div className="content pt-1 pb-4">
+                            {lml2jsx(section.content)}
+                        </div>
+                    }
                 </div>
             )}
         </div>
     </div>
 
     function handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-        let sectionIdx = -1, elt: any = e.target;
+        let sectionKey = "", elt: any = e.target;
         while (elt) {
-            if (elt.dataset?.sectionIdx !== undefined) {
-                sectionIdx = elt.dataset?.sectionIdx;
+            if (elt.dataset?.sectionKey !== undefined) {
+                sectionKey = elt.dataset?.sectionKey;
                 break
             }
             elt = elt.parentElement || null;
         }
-        console.log("Section click", sectionIdx)
+        if (sectionKey) {
+            sectionStates[sectionKey] = !(sectionStates[sectionKey]);
+        }
     }
 });
 
-const ArrowDownIcon = component("ArrowDownIcon", () => {
+
+const ArrowIcon = (props: { up?: boolean }) => {
     let dim = 15;
-    return <svg width={dim} height={dim} viewBox="0 -4.5 20 20" version="1.1" aria-hidden="true" >
+    const dir = props.up ? "rotate-180" : "";
+
+    return <svg className={`arrow-icon ${dir}`} width={dim} height={dim} viewBox="0 -4.5 20 20" version="1.1" aria-hidden="true" >
         <desc lang="en">Arrow Down</desc>
         {/* Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools */}
 
@@ -68,4 +88,4 @@ const ArrowDownIcon = component("ArrowDownIcon", () => {
             </g>
         </g>
     </svg>
-});
+};

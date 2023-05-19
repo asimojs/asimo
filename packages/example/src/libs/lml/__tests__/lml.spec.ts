@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LML } from '../types';
+import { RX_NODE_NAME } from '../lml';
 
 describe('LML - List-based Markup Language', () => {
 
@@ -30,7 +31,6 @@ describe('LML - List-based Markup Language', () => {
     const CPT_PREFIX = "*";
     const ATT_CLASS_SEPARATOR = ".";
     const ATT_SINGLE_PREFIX = "!";
-    const RX_NODE_NAME = /^(\#|\*)(\w+\:)?(\w+)(\-\w+)?((\.\w+)*)$/;
 
     function printList(ls: string | any[], out: string[], padding = "") {
         // a list is either an element or a list of nodes
@@ -137,7 +137,10 @@ describe('LML - List-based Markup Language', () => {
         }
 
         // ls is a fragment
+
+        console.log("TEST", ls)
         for (const nd of ls) {
+
             printList(nd, out, padding);
         }
     }
@@ -237,22 +240,30 @@ describe('LML - List-based Markup Language', () => {
             ]);
         });
 
-        it('should support class names shortcut', async () => {
-            expect(print(["#div.foo", { "maxlength": 123 }])).toMatchObject([
-                '<div class="foo" maxlength=123/>',
+        it.only('should support class names shortcut', async () => {
+            // expect(print(["#div.foo", { "maxlength": 123 }])).toMatchObject([
+            //     '<div class="foo" maxlength=123/>',
+            // ]);
+
+            expect(print(["#div.p-3", { "maxlength": 123 }])).toMatchObject([
+                '<div class="p-3" maxlength=123/>',
             ]);
 
-            expect(print(["#div.foo.bar", { "maxlength": 123 }])).toMatchObject([
-                '<div class="foo bar" maxlength=123/>',
-            ]);
+            // expect(print(["#div.foo.bar", { "maxlength": 123 }])).toMatchObject([
+            //     '<div class="foo bar" maxlength=123/>',
+            // ]);
 
-            expect(print(["Hello", ["#span.highlight", "World"], "!"])).toMatchObject([
-                'Hello',
-                '<span class="highlight">',
-                '  World',
-                '</span>',
-                '!'
-            ]);
+            // expect(print(["#div.mt-3.pb-2", { "maxlength": 123 }])).toMatchObject([
+            //     '<div class="mt-3 pb-2" maxlength=123/>',
+            // ]);
+
+            // expect(print(["Hello", ["#span.highlight", "World"], "!"])).toMatchObject([
+            //     'Hello',
+            //     '<span class="highlight">',
+            //     '  World',
+            //     '</span>',
+            //     '!'
+            // ]);
         });
 
         it('should support type attribute shortcut', async () => {

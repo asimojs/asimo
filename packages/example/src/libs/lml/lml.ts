@@ -4,7 +4,7 @@ const ELT_PREFIX = "#";
 const CPT_PREFIX = "*";
 const DECO_PREFIX = "@";
 const ATT_CLASS_SEPARATOR = ".";
-const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?(\w+)(\-\w+)?((\.\w+)*)$/;
+export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?(\w+)(\-\w+)?((\.[\w\-]+)*)$/;
 
 /**
  * Scan LML data transform them to JSX thanks to the formatter passed as arguement

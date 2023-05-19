@@ -114,14 +114,98 @@ const response: SearchResponse = {
             }]
         ],
 
-        ["*c:expGroup", {
+        // ", ["#em", "Simpson"], "
+
+        ["*c:accordion", {
             "title": "People also ask",
             "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
             "sections": [
-                { "title": "What is Homer's IQ?", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": ["Under construction..."] },
-                { "title": "What was Homer Simpson originally called", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhfEAA", "content": ["Under construction..."] },
-                { "title": "What does Homer Simpson always say?", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhkEAA", "content": ["Under construction..."] },
-                { "title": "Has Homer Simpson got ADHD? ", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAheEAA", "content": ["Under construction..."] },
+                {
+                    "title": "What is Homer's IQ?", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": [
+                        ["*c:rcard.div", {
+                            "lang": "en",
+                            "header": {
+                                "title": "Homer Simpson - Wikipedia",
+                                "pos": "last",
+                                "href": "https://en.wikipedia.org/wiki/Homer_Simpson#:~:text=Homer%20has%20a%20low%20IQ,to%20radioactive%20waste%2C%20repetitive%20cranial",
+                                "src": {
+                                    "name": "Wikipedia",
+                                    "ref": "https://en.wikipedia.org › wiki › Homer_Simpson",
+                                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEUAAAD+/v41NTUBAQEAAABZWVknJycWFhaZmZmIiIjp6ellZWXMzMzX19eurq54eHhHR0dExXFyAAAAAXRSTlMAQObYZgAAAPtJREFUeAG8kAWOBDAMA9d1Sin+/7XXbpZZdBaURlMrhx28ycGCD/n0bvkBwJf8C+AoIvRAWGtMyHGtCWkfxW+DRopuuIjUtTQJDStevNoXWaRjRSllLd1O8FFhgEZx2BmkAmHC8HwpOUyxSA50VqOjXgAl50URvNWPBRcAnmwnhbcduthqQCO9KYTFBG7eDWoK1T47AZX9DuiUYT/TuhX3MGpnD51kPprSA9Dl+BCKl7jWHHEHmHsLWhNZZMxPQCLTEuy+cYF6D9i8Q5e2Lcyz4AGwKdJbX0p7AegC2qnvxAsAxQRAYH8J6Dg1a/lvpKRJinMW4cxLMPsDAJjSCaG8cPmnAAAAAElFTkSuQmCC" }]
+                                }
+                            }
+                        },
+                            ["#p.text-lg", "55"],
+                            ["#p.pt-3", "Homer has a low IQ of ", ["#em", "55"], ", which would actually make him unable to speak or perform basic tasks, and has variously been attributed to the hereditary \"Simpson Gene\" (which eventually causes every male member of the family to become incredibly stupid), his alcohol problem, exposure to radioactive waste, repetitive cranial ..."]
+                        ]
+                    ]
+                },
+                {
+                    "title": "What was Homer Simpson originally called", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhfEAA", "content": [
+                        ["*c:rcard.div", {
+                            "lang": "en",
+                            "header": {
+                                "title": "Homer Simpson - Wikisimpsons",
+                                "pos": "last",
+                                "href": "https://simpsonswiki.com/wiki/Homer_Simpson#:~:text=Homer%20Jay%20Simpson%2C%20formerly%20known,to%20his%20wife%20and%20children",
+                                "src": {
+                                    "name": "Wikisimpsons",
+                                    "ref": "https://simpsonswiki.com › wiki › Homer_Simpson",
+                                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWUlEQVR4AZ2NA3AdQQCGN7aN2rZt2xjbGdevwwxr27Zt312erdh85v3NthM7393yx5LuAlkkQUHdQT20a2HdVAIJ+V8A7eS6tk5DvfUFfN629Crh1NEoaMOYs6n5rU/ur2WZ5UwfnfJlr94k7/vsIl4T7qn43XND8/AdwI83HBwEwKfu/s4d+Lmk/VmUBMGjmrKBlPyeYkWRD2qYXqcbh0+fZkOrJEtvenJmWmu4/itIHYCPQ5j4FXkhcMsnriZFzKL9KAhB1c/Ya40Lsj8OvYzcMCCfwC6Kf0iDVNNoBJFe1QAjtP4wvE9YSNRP56bx8nDYmND7dQXGb1PnQBkDGHxqB4FdmFQq/CiIpppN1renSxhmhyoIJcy4aUQg+Ohv+RNX5pH2/kJfpsPGJT/jpeFFNi5uu40Lf8Mro/n834um0AK3dt5sryKE98rCebN8xTBCsWWlPLWL0nNpWPpqwCiow+AQhV+gWu77QVuRG4TSX8My6bn6z7DNyA2FVxolxcdZ/oRS+nPEHujC4ZSkHXcIw1joQ1AjSl3+T+PWzoQyABW/+pbmKI+musVRmSiOrPXGHyd1GL6vnemVRgLGYCDPF1YuTciybADVir4vSLSxYVXQBKNKseWkW5yigzYUdsXUhaQO2R1BYA2TIoWRANo4FIm2bqrTAPiamcTvMBC4pCmAJgwuYayhTLkygjSm9NeQXagIQfGPsQwRwL+xZvw8cSdyQgA9AYyBcEhHZZDmlHAr+pf+Gfvwz4ttE1poso/hNVmj7lkkkYaaP2kZpDtAO51A2Ys05y+gJ3hl6ACK/AAAAABJRU5ErkJggg==" }]
+                                }
+                            }
+                        },
+                            ["#p", "Homer Jay Simpson, formerly known as ", ["#em", "Max Power"], ", is the father of the Simpson family. He is overweight, lazy, and ignorant, but also strongly devoted to his wife and children."]
+                        ]
+                    ]
+                },
+                {
+                    "title": "What does Homer Simpson always say?", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhkEAA", "content": [
+                        ["*c:rcard.div", {
+                            "lang": "en",
+                            "header": {
+                                "title": "\"D'oh!\" ( - d - Wikipedia",
+                                "pos": "last",
+                                "href": "https://en.wikipedia.org/wiki/D%27oh!#:~:text=%22D'oh!%22%20(,about%20to%20happen%20to%20him.",
+                                "src": {
+                                    "name": "Wikipedia",
+                                    "ref": "https://en.wikipedia.org › wiki",
+                                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEUAAAD+/v41NTUBAQEAAABZWVknJycWFhaZmZmIiIjp6ellZWXMzMzX19eurq54eHhHR0dExXFyAAAAAXRSTlMAQObYZgAAAPtJREFUeAG8kAWOBDAMA9d1Sin+/7XXbpZZdBaURlMrhx28ycGCD/n0bvkBwJf8C+AoIvRAWGtMyHGtCWkfxW+DRopuuIjUtTQJDStevNoXWaRjRSllLd1O8FFhgEZx2BmkAmHC8HwpOUyxSA50VqOjXgAl50URvNWPBRcAnmwnhbcduthqQCO9KYTFBG7eDWoK1T47AZX9DuiUYT/TuhX3MGpnD51kPprSA9Dl+BCKl7jWHHEHmHsLWhNZZMxPQCLTEuy+cYF6D9i8Q5e2Lcyz4AGwKdJbX0p7AegC2qnvxAsAxQRAYH8J6Dg1a/lvpKRJinMW4cxLMPsDAJjSCaG8cPmnAAAAAElFTkSuQmCC" }]
+                                }
+                            },
+                            "sideContent": ["*c:img", {
+                                // "height": 157, "width": 218,
+                                "height": 79, "width": 109,
+                                "alt": "homer simpson from en.wikipedia.org",
+                                "href": "https://en.wikipedia.org/wiki/Homer_Simpson",
+                                "src": "data:image/jpeg;base64,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"
+                            }],
+                        },
+                            ["#p", ["#em", "\"D'oh!\" (/doʊʔ/)"], " is the most famous catchphrase used by the fictional character Homer Simpson, from The Simpsons, an animated sitcom. It is an exclamation typically used after Homer injures himself, realizes that he has done something foolish, or when something bad has happened or is about to happen to him."]
+                        ]
+                    ]
+                },
+
+                {
+                    "title": "Has Homer Simpson got ADHD? ", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAheEAA", "content": [
+                        ["*c:rcard.div", {
+                            "lang": "en",
+                            "header": {
+                                "title": "10 Book Characters Who Make Us Smile - Reviews – ADDitude",
+                                "pos": "last",
+                                "href": "https://www.additudemag.com/reviews/slideshow/fictional-characters-with-adhd-books-we-love#:~:text=There%20are%20so%20many%20examples,families%2C%20it's%20actually%20genetic).",
+                                "date": "June 11, 2021",
+                                "src": {
+                                    "name": "ADDitude Magazine",
+                                    "ref": "https://www.additudemag.com › reviews › slideshow › fi...",
+                                    "logo": ["*c:img", { "height": 18, "width": 18, "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAYFBMVEXCNifMWEzSa2DOXlL24uD////78fDEPi/Vc2njpJ7qubT35uTQZlrWeG7lq6X56+r9+PjotK7swr3YfXTahXzISjzGQzTy1dLgmJHtxcDGRTf++/vvy8fcjITJTkHek4toeNAvAAAAyElEQVR4AaXRBZKEMABE0UYad3fuf8q1SKWGwNrD9SP4BcfVPNj41IIQVx4NEa5iGhJcpeRjIyNNOV4V5HOj5BdfLqvXhkshLm4aNYUssjfCgF9KhJW1oa4rgIZCC1NCwQU6Cg0M6r4BgJ6yMUBDTqEGgNHSaMx/NF0bg3ryfviQXRstbYzGTKsZ0rLSalWNjjc6CBv52Oh5Z13waaeU1NJmNIwv50MZVgobAByUYmiz2TgpZdA6s6EKJWBtHKkUw5DInf6Af3sHQ00QpBT47HIAAAAASUVORK5CYII=" }]
+                                }
+                            }
+                        },
+                            ["#p", "There are so many examples , especially in the first 9 seasons of The Simpsons where ", ["#em", "Homer exemplifies the ADHD spectrum"], ". His son Bart has the garden variety version of ADD , but his symptoms will probably get worse as an adult. (Daniel Amen says the disorder runs in families, it's actually genetic)."]
+                        ]
+                    ]
+                },
             ]
         }],
 
@@ -421,13 +505,13 @@ const response: SearchResponse = {
                 },
             ]
         }],
-        ["*c:expGroup", {
+        ["*c:accordion", {
             "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
             "sectionClassName": "text-sm py-2",
             "sections": [
-                { "title": "Birth year", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qh_0CegQIGxAA", "content": ["Under construction..."] },
-                { "title": "Catch phrases", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qw5oDKAF6BAgdEAI", "content": ["Under construction..."] },
-                { "title": "Personality", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q_JoDKAB6BAhGEAE", "content": ["Under construction..."] },
+                { "title": "Birth year", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qh_0CegQIGxAA", "content": ["Under construction..."] },
+                { "title": "Catch phrases", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qw5oDKAF6BAgdEAI", "content": ["Under construction..."] },
+                { "title": "Personality", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q_JoDKAB6BAhGEAE", "content": ["Under construction..."] },
             ]
         }],
     ],

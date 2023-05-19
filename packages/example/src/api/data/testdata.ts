@@ -114,14 +114,14 @@ const response: SearchResponse = {
             }]
         ],
 
-        ["*c:expGroup", {
+        ["*c:accordion", {
             "title": "People also ask",
             "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
             "sections": [
-                { "title": "What is Homer's IQ?", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": ["Under construction..."] },
-                { "title": "What was Homer Simpson originally called", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhfEAA", "content": ["Under construction..."] },
-                { "title": "What does Homer Simpson always say?", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhkEAA", "content": ["Under construction..."] },
-                { "title": "Has Homer Simpson got ADHD? ", "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAheEAA", "content": ["Under construction..."] },
+                { "title": "What is Homer's IQ?", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": ["Under construction..."] },
+                { "title": "What was Homer Simpson originally called", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhfEAA", "content": ["Under construction..."] },
+                { "title": "What does Homer Simpson always say?", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhkEAA", "content": ["Under construction..."] },
+                { "title": "Has Homer Simpson got ADHD? ", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAheEAA", "content": ["Under construction..."] },
             ]
         }],
 

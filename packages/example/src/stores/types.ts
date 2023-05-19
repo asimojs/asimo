@@ -35,7 +35,7 @@ export const SearchServiceIID = interfaceId<SearchService>("asimo.doc.stores.Sea
 export interface SearchService {
     data: {
         query: SearchQuery;
-        $lastResult: null | SearchResults | SearchError;
+        lastResult: null | SearchResults | SearchError;
     },
     /** Perfom a search according to the query data - use the data query if no query provided */
     search(query?: SearchQuery, navigate?: boolean): Promise<boolean>;

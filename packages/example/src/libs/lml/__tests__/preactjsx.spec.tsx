@@ -161,6 +161,7 @@ describe('LML Preact JSX', () => {
         expect(print(["#input-text"])).toBe('<div><input type="text"></div>');
         expect(print(["#input-text.abc"])).toBe('<div><input type="text" class="abc"></div>');
         expect(print(["#input-text", { "placeholder": "xxx" }])).toBe('<div><input placeholder="xxx" type="text"></div>');
+        expect(print(["#span.foo.p-12", "Hi"])).toBe('<div><span class="foo p-12">Hi</span></div>');
 
         expect(print(ex2)).toBe('<div><span class="hello">Hello<em>World!</em></span></div>');
         expect(print(ex3)).toBe('<div><span title="Greetings" class="hello">Hello<em>World!</em></span></div>');

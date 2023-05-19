@@ -6,7 +6,7 @@ import { trax } from "@traxjs/trax";
 
 export const SearchResultsPanel = component("SearchResultsPanel", (props: { searchService: SearchService, nav: NavService }) => {
     const { searchService, nav } = props;
-    const res = searchService.data.$lastResult;
+    const res = searchService.data.lastResult;
 
     if (res === null || res.type === "Error") {
         return <div>[Under construction]</div>;
@@ -38,13 +38,17 @@ export const SearchResultsPanel = component("SearchResultsPanel", (props: { sear
     </L2JContext.Provider>
 
     function test() {
-        // console.log(trax.isTraxObject(r), r);
+        const rCardHeader = (r.main[1][1] as any).header;
+        console.log("x", trax.isTraxObject(r), rCardHeader.title);
+
+        rCardHeader.title += "x";
+
     }
 });
 
 function searchResultsPanel(ss: SearchService, nav: NavService) {
     const data = ss.data;
-    const res = data.$lastResult;
+    const res = data.lastResult;
     if (res === null) {
         return "";
     }
