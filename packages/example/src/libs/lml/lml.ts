@@ -4,7 +4,8 @@ const ELT_PREFIX = "#";
 const CPT_PREFIX = "*";
 const DECO_PREFIX = "@";
 const ATT_CLASS_SEPARATOR = ".";
-export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?(\w+)(\-\w+)?((\.[\w\-]+)*)$/;
+// [nodetype:#|*|!|@][namespace:?][nodename][+typeattribute?][.classattributes*][!keyattribute?]
+export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?([\w\-]+)(\+[\w\-]+)?(\.[\.\w\-]+)*(\!.+)?$/;
 
 /**
  * Scan LML data transform them to JSX thanks to the formatter passed as arguement
@@ -48,14 +49,19 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
             const name = m[3];
             const typeGroup = m[4];
             const classGroup = m[5];
+            const key = m[6];
             const ns = nsGroup ? nsGroup.slice(0, -1) : "";
             const ntype = typeGroup ? typeGroup.slice(1) : "";
-
             let clsValues: string[] | undefined;
 
             if (classGroup) {
                 const parts = classGroup.split(ATT_CLASS_SEPARATOR)
-                clsValues = parts.slice(1);
+                clsValues = [];
+                for (const s of parts) {
+                    if (s != "") {
+                        clsValues.push(s);
+                    }
+                }
             }
 
             // lookup attributes
@@ -86,6 +92,12 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
                 if (clsValues) {
                     atts["class"] = clsValues.join(" ");
                 }
+            }
+            if (key) {
+                if (!atts) {
+                    atts = {};
+                }
+                atts["key"] = key.slice(1);
             }
 
             // lookup children

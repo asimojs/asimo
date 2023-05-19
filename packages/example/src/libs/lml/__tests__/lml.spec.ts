@@ -137,10 +137,7 @@ describe('LML - List-based Markup Language', () => {
         }
 
         // ls is a fragment
-
-        console.log("TEST", ls)
         for (const nd of ls) {
-
             printList(nd, out, padding);
         }
     }
@@ -165,6 +162,12 @@ describe('LML - List-based Markup Language', () => {
         it('should support empty elements', async () => {
             expect(print(["#div"])).toMatchObject([
                 "<div/>"
+            ]);
+        });
+
+        it('should support empty elements', async () => {
+            expect(print(["#foo-bar"])).toMatchObject([
+                "<foo-bar/>"
             ]);
         });
 
@@ -240,34 +243,34 @@ describe('LML - List-based Markup Language', () => {
             ]);
         });
 
-        it.only('should support class names shortcut', async () => {
-            // expect(print(["#div.foo", { "maxlength": 123 }])).toMatchObject([
-            //     '<div class="foo" maxlength=123/>',
-            // ]);
+        it('should support class names shortcut', async () => {
+            expect(print(["#div.foo", { "maxlength": 123 }])).toMatchObject([
+                '<div class="foo" maxlength=123/>',
+            ]);
 
             expect(print(["#div.p-3", { "maxlength": 123 }])).toMatchObject([
                 '<div class="p-3" maxlength=123/>',
             ]);
 
-            // expect(print(["#div.foo.bar", { "maxlength": 123 }])).toMatchObject([
-            //     '<div class="foo bar" maxlength=123/>',
-            // ]);
+            expect(print(["#div.foo.bar", { "maxlength": 123 }])).toMatchObject([
+                '<div class="foo bar" maxlength=123/>',
+            ]);
 
-            // expect(print(["#div.mt-3.pb-2", { "maxlength": 123 }])).toMatchObject([
-            //     '<div class="mt-3 pb-2" maxlength=123/>',
-            // ]);
+            expect(print(["#div.mt-3.pb-2", { "maxlength": 123 }])).toMatchObject([
+                '<div class="mt-3 pb-2" maxlength=123/>',
+            ]);
 
-            // expect(print(["Hello", ["#span.highlight", "World"], "!"])).toMatchObject([
-            //     'Hello',
-            //     '<span class="highlight">',
-            //     '  World',
-            //     '</span>',
-            //     '!'
-            // ]);
+            expect(print(["Hello", ["#span.highlight", "World"], "!"])).toMatchObject([
+                'Hello',
+                '<span class="highlight">',
+                '  World',
+                '</span>',
+                '!'
+            ]);
         });
 
         it('should support type attribute shortcut', async () => {
-            expect(print(["#input-checkbox.abc", { "id": "subscribeNews", "name": "subscribe", "value": "newsletter", "!checked": 1 }])).toMatchObject([
+            expect(print(["#input+checkbox.abc", { "id": "subscribeNews", "name": "subscribe", "value": "newsletter", "!checked": 1 }])).toMatchObject([
                 '<input type="checkbox" class="abc" id="subscribeNews" name="subscribe" value="newsletter" checked/>'
             ]);
         });

@@ -94,7 +94,7 @@ describe('LML Preact JSX', () => {
     // Node with type, id and empty attribute (here: checked - value will be ignored)
     const ex6: LML =
         // <input type="checkbox" class="abc" id="subscribeNews" name="subscribe" value="newsletter" disabled />
-        ["#input-checkbox.abc", { "id": "subscribeNews", "name": "subscribe", "value": "newsletter", "disabled": true }]
+        ["#input+checkbox.abc", { "id": "subscribeNews", "name": "subscribe", "value": "newsletter", "disabled": true }]
 
     // Advanced component with bundle id + JSON and LML attributes
     const ex7: LML =
@@ -154,18 +154,44 @@ describe('LML Preact JSX', () => {
         expect(print(["#span.foo", { "title": "abc" }, "Hi"])).toBe('<div><span title="abc" class="foo">Hi</span></div>');
         expect(print(["#span.foo.bar", { "title": "abc" }, "Hi"])).toBe('<div><span title="abc" class="foo bar">Hi</span></div>');
         expect(print(["#span.foo.bar", "Hi"])).toBe('<div><span class="foo bar">Hi</span></div>');
+        expect(print(["#my-widget.foo.bar", "Hi"])).toBe('<div><my-widget class="foo bar">Hi</my-widget></div>');
         expect(print(["#span.foo", { "class": "abc" }, "Hi"])).toBe('<div><span class="foo abc">Hi</span></div>');
         expect(print(["#span.foo.bar", { "class": "abc" }, "Hi"])).toBe('<div><span class="foo bar abc">Hi</span></div>');
         expect(print(["#span", { "misc": true, "baz": 123 }, "Hi"])).toBe('<div><span misc="true" baz="123">Hi</span></div>');
         expect(print(["#span", { "misc": { a: "abc" } }, "Hi"])).toBe('<div><span misc="[object Object]">Hi</span></div>');
-        expect(print(["#input-text"])).toBe('<div><input type="text"></div>');
-        expect(print(["#input-text.abc"])).toBe('<div><input type="text" class="abc"></div>');
-        expect(print(["#input-text", { "placeholder": "xxx" }])).toBe('<div><input placeholder="xxx" type="text"></div>');
+        expect(print(["#input+text"])).toBe('<div><input type="text"></div>');
+        expect(print(["#input+text.abc"])).toBe('<div><input type="text" class="abc"></div>');
+        expect(print(["#input+text", { "placeholder": "xxx" }])).toBe('<div><input placeholder="xxx" type="text"></div>');
         expect(print(["#span.foo.p-12", "Hi"])).toBe('<div><span class="foo p-12">Hi</span></div>');
 
         expect(print(ex2)).toBe('<div><span class="hello">Hello<em>World!</em></span></div>');
         expect(print(ex3)).toBe('<div><span title="Greetings" class="hello">Hello<em>World!</em></span></div>');
         expect(print(ex6)).toBe('<div><input id="subscribeNews" name="subscribe" disabled="" type="checkbox" class="abc" value="newsletter"></div>');
+    });
+
+    it('should support element with key attribute', async () => {
+        // the key attribute is interpreted by JSX and won't show through the print function
+        expect(print(["#span", { "title": "abc", "key": "123" }, "Hi"])).toBe('<div><span title="abc">Hi</span></div>');
+        expect(getJSX(["#span", { "title": "abc", "key": "123" }, "Hi"])).toMatchObject({
+            type: 'span',
+            props: { title: 'abc', children: 'Hi' },
+            key: '123',
+        });
+        expect(getJSX(["#span!123", { "title": "abc" }, "Hi"])).toMatchObject({
+            type: 'span',
+            props: { title: 'abc', children: 'Hi' },
+            key: '123',
+        });
+        expect(getJSX(["#span!123", "Hi"])).toMatchObject({
+            type: 'span',
+            props: { children: 'Hi' },
+            key: '123',
+        });
+        expect(getJSX(["#input+text.name.pt-4!123!#@$rweT$🕺#%", "Hi"])).toMatchObject({
+            type: 'input',
+            props: { "class":"name pt-4", className:"name pt-4", type:"text", children: 'Hi' },
+            key: '123!#@$rweT$🕺#%',
+        });
     });
 
     it('should support fragments', async () => {
