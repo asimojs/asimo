@@ -1,7 +1,7 @@
 import { interfaceId } from "@asimojs/asimo";
 import { SearchResponse } from "../api/types";
 import { LML, JsxContent } from "../libs/lml/types";
-
+import { SearchMoreQuery } from "../api/searchMore";
 
 // ------------------------------------------------------------------------------------------------------------
 
@@ -39,6 +39,8 @@ export interface SearchService {
     },
     /** Perfom a search according to the query data - use the data query if no query provided */
     search(query?: SearchQuery, navigate?: boolean): Promise<boolean>;
+    /** Get more results on top of a previous search */
+    getMoreResults(query: SearchMoreQuery, navigate?: boolean): Promise<boolean>;
 }
 
 export interface SearchQuery {
@@ -51,7 +53,7 @@ export interface SearchResults {
         searchInput: string;
     },
     results: SearchResponse;
-    lml2jsx: (lml:LML) => JsxContent;
+    lml2jsx: (lml: LML) => JsxContent;
 }
 
 export interface ComponentMap {

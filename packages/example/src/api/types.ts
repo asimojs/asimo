@@ -1,4 +1,4 @@
-import { LML } from "../libs/lml/types";
+import { LML, LmlUpdate } from "../libs/lml/types";
 
 export interface ErrorResponse {
     type: "Error";
@@ -8,22 +8,26 @@ export interface ErrorResponse {
 export interface SearchResponse {
     type: "SearchResponse",
     /** Approximate total number of results */
-    totalMatchCount: number;
+    totalMatchCount?: number;
     /** Server processing time in s */
-    processingTime: number;
+    processingTime?: number;
     /** Default language - e.g. "en" */
-    lang: string;
+    lang?: string;
     /** Widget bundles used in the response */
     bundles?: { [id: string]: BundleRef }
     /** Header section */
-    header: LML[],
+    header?: LML[],
     /** Main results set */
-    main: LML[],
+    main?: LML[],
+    /** Optional updates for the main section - interpreted if main is not provided */
+    mainUpdates?: LmlUpdate[];
     /** Sidebar results set */
-    sidebar: LML[],
+    sidebar?: LML[],
+    /** Optional updates for the sidebar section - interpreted if main is not provided */
+    sidebarUpdates?: LmlUpdate[];
 }
 
-interface BundleRef {
+export interface BundleRef {
     /** Bundle interface namespace */
     ns: string;
     /** Bundle URL */

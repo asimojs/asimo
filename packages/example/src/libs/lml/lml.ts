@@ -1,4 +1,4 @@
-import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject, LmlUpdateInstruction, LmlNode, LmlNodeListUpdate, LmlTextNode, LmlNodeType, LmlFragment } from "./types";
+import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject, LmlUpdate, LmlNode, LmlNodeListUpdate, LmlTextNode, LmlNodeType, LmlFragment } from "./types";
 
 /**
  * Return the type of an LML node
@@ -215,6 +215,10 @@ export function lml2jsx(v: LML,
                     attributes["className"] = attributes["class"];
                     // delete attributes["class"]; // seems to be ignored by react or preact when className is set
                 }
+                if (attributes && attributes["key"]) {
+                    // key will be interpreted by the JSX engine and will not be accessible to the node
+                    attributes["keyValue"] = attributes["key"];
+                }
                 let nameOrRef = (ndi as any).tagName;
                 if (tp === "component") {
                     const cpt = (getComponent && getComponent(nameOrRef, ndi.ns || "")) || null;
@@ -236,8 +240,14 @@ export function lml2jsx(v: LML,
     });
 }
 
-
-export function update(data: LML, instructions: LmlUpdateInstruction[]): LML {
+/**
+ * In-place update of an LML data structure with instructions provided as arguments
+ * Return the new data structure (may be different if the original data is not a fragment)
+ * @param data
+ * @param instructions
+ * @returns
+ */
+export function update(data: LML, instructions: LmlUpdate[]): LML {
     // instructions mapped by node key
     const targetKeys: Set<string> = new Set();
     for (const instruction of instructions) {

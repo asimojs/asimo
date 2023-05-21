@@ -18,7 +18,7 @@ async function search(query: { searchInput: string }): Promise<SearchResponse | 
     // actual implementation should call fetch()
     if (query.searchInput === "Homer Simpson") {
         const m = await import("./data/homer");
-        return m.default;
+        return clone(m.default);
     }
 
     return {
@@ -27,9 +27,10 @@ async function search(query: { searchInput: string }): Promise<SearchResponse | 
     };
 }
 
+function clone(o: any) {
+    return JSON.parse(JSON.stringify(o));
+}
 
 export const SearchApiIID = interfaceId<SearchAPI>("asimo.doc.api.SearchAPI");
 asm.registerService(SearchApiIID, () => search);
-
-
 

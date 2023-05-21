@@ -62,7 +62,7 @@ export interface LmlFormatter {
     error?(m: string): void;
 }
 
-export type LmlUpdateInstruction = LmlNodeUpdate | LmlNodeListUpdate | LmlNodeDelete;
+export type LmlUpdate = LmlNodeUpdate | LmlNodeListUpdate | LmlNodeDelete;
 
 /** Key attribute of a node - e.g. XXX in ["#span.msg!XXX", "Hello"] */
 export type LmlNodeKey = string;

@@ -171,25 +171,25 @@ describe('LML Preact JSX', () => {
 
     it('should support element with key attribute', async () => {
         // the key attribute is interpreted by JSX and won't show through the print function
-        expect(print(["#span", { "title": "abc", "key": "123" }, "Hi"])).toBe('<div><span title="abc">Hi</span></div>');
+        expect(print(["#span", { "title": "abc", "key": "123" }, "Hi"])).toBe('<div><span title="abc" keyvalue="123">Hi</span></div>');
         expect(getJSX(["#span", { "title": "abc", "key": "123" }, "Hi"])).toMatchObject({
             type: 'span',
-            props: { title: 'abc', children: 'Hi' },
+            props: { title: 'abc', children: 'Hi', keyValue: '123' },
             key: '123',
         });
         expect(getJSX(["#span!123", { "title": "abc" }, "Hi"])).toMatchObject({
             type: 'span',
-            props: { title: 'abc', children: 'Hi' },
+            props: { title: 'abc', children: 'Hi', keyValue: '123' },
             key: '123',
         });
         expect(getJSX(["#span!123", "Hi"])).toMatchObject({
             type: 'span',
-            props: { children: 'Hi' },
+            props: { children: 'Hi', keyValue: '123' },
             key: '123',
         });
         expect(getJSX(["#input+text.name.pt-4!123!#@$rweT$🕺#%", "Hi"])).toMatchObject({
             type: 'input',
-            props: { "class":"name pt-4", className:"name pt-4", type:"text", children: 'Hi' },
+            props: { "class":"name pt-4", className:"name pt-4", type:"text", children: 'Hi', keyValue: '123!#@$rweT$🕺#%' },
             key: '123!#@$rweT$🕺#%',
         });
     });

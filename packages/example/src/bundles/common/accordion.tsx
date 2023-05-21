@@ -2,10 +2,12 @@ import { component, componentId, useTraxState } from "@traxjs/trax-preact";
 import { LML } from "../../libs/lml/types";
 import { useContext } from "../utils";
 import { Lml2JsxIID } from "../../views/types";
+import { SearchServiceIID } from "../../stores/types";
+import { asm } from "@asimojs/asimo";
 
 export interface AccordionProps {
     title?: LML;
-    ved?: string;
+    keyValue: string;
     sectionClassName?: string;
     sections: GroupSection[];
 }
@@ -23,7 +25,7 @@ interface AccordionState {
 }
 
 export const Accordion = component("Accordion", (props: AccordionProps) => {
-    let { title, ved, sections, sectionClassName } = props;
+    let { title, keyValue, sections, sectionClassName } = props;
     sectionClassName = sectionClassName || "py-2";
 
     const lml2jsx = useContext(Lml2JsxIID, () => "[...]")!;
@@ -45,17 +47,16 @@ export const Accordion = component("Accordion", (props: AccordionProps) => {
                             <ArrowIcon idx={idx} up={!!sectionStates[section.key]} />
                         </div>
                     </div>
-                    {!sectionStates[section.key] ? "" :
-                        <div className="content pt-1 pb-4">
-                            {lml2jsx(section.content)}
-                        </div>
-                    }
+                    <div className={"content pt-1 pb-4 " + (sectionStates[section.key] ? "" : "hidden")}>
+                        {/* note: use display none (hidden) to prefetch potential images */}
+                        {lml2jsx(section.content)}
+                    </div>
                 </div>
             )}
         </div>
     </div>
 
-    function handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    async function handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
         let sectionKey = "", elt: any = e.target;
         while (elt) {
             if (elt.dataset?.sectionKey !== undefined) {
@@ -65,7 +66,25 @@ export const Accordion = component("Accordion", (props: AccordionProps) => {
             elt = elt.parentElement || null;
         }
         if (sectionKey) {
-            sectionStates[sectionKey] = !(sectionStates[sectionKey]);
+            const open = !(sectionStates[sectionKey]);
+            sectionStates[sectionKey] = open;
+
+            if (open) {
+                // submit request to get more data
+                const ss = await asm.get(SearchServiceIID);
+                if (ss) {
+                    const q = ss.data.lastResult!.query;
+                    ss.getMoreResults({
+                        searchInput: q.searchInput,
+                        src: {
+                            key: keyValue,
+                            componentType: "Accordion",
+                            firstContentKey: sections[0].key,
+                            lastContentKey: sections[sections.length - 1].key
+                        }
+                    });
+                }
+            }
         }
     }
 });

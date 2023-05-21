@@ -8,7 +8,7 @@ const response: SearchResponse = {
         "c": {
             // c : common bundle
             "ns": "asimo.dpademo.bundles.common",
-            "src": "/dist-bundles/bundle-common.js"
+            "src": "/dist-bundles/bundle-common.js" // should be a verstioned URL
         }
     },
     lang: "en", // default language
@@ -116,9 +116,8 @@ const response: SearchResponse = {
 
         // ", ["#em", "Simpson"], "
 
-        ["*c:accordion", {
+        ["*c:accordion!2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC", {
             "title": "People also ask",
-            "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
             "sections": [
                 {
                     "title": "What is Homer's IQ?", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAhhEAA", "content": [
@@ -185,7 +184,6 @@ const response: SearchResponse = {
                         ]
                     ]
                 },
-
                 {
                     "title": "Has Homer Simpson got ADHD? ", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qq7kBKAB6BAheEAA", "content": [
                         ["*c:rcard.div", {
@@ -505,8 +503,7 @@ const response: SearchResponse = {
                 },
             ]
         }],
-        ["*c:accordion", {
-            "ved": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRAC",
+        ["*c:accordion!2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q2esEegQIdRBX", {
             "sectionClassName": "text-sm py-2",
             "sections": [
                 { "title": "Birth year", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Qh_0CegQIGxAA", "content": ["Under construction..."] },
