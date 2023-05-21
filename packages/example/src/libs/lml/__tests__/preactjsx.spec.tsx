@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/preact';
 import { LML, LmlAttributeMap, LmlNodeInfo } from '../types';
-import { lml2jsx, scan } from '../lml';
+import { lml2jsx, processJSx } from '../lml';
 import { h } from 'preact';
 
 describe('LML Preact JSX', () => {
@@ -219,8 +219,8 @@ describe('LML Preact JSX', () => {
         it('should be raised in case of reserved node types', async () => {
             getJSX(["#span", ["@somedecorator", { "foo": "bar" }], ["!somedecorator", { "foo": "bar" }]]);
             expect(errors).toMatchObject([
-                "Unsupported node type: decorator",
-                "Unsupported node prefix: !"
+                'Invalid LML node: ["@somedecorator",{"foo":"bar"}]',
+                'Invalid LML node: ["!somedecorator",{"foo":"bar"}]',
             ]);
             errors = [];
         });
@@ -263,10 +263,10 @@ describe('LML Preact JSX', () => {
             errors = [];
         });
 
-        it('should be logged on console when no error handler is provided to scan', async () => {
-            scan(["!x:foo"], { format: () => "x" });
+        it('should be logged on console when no error handler is provided to processJSx', async () => {
+            processJSx(["!x:foo"], { format: () => "x" });
             expect(logs).toMatchObject([
-                "[LML Scan Error] Unsupported node prefix: !"
+                '[LML Scan Error] Invalid LML node: ["!x:foo"]'
             ]);
             errors = [];
         });

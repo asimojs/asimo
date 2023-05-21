@@ -1,10 +1,13 @@
 export type LML = LmlTextNode | LmlNode | LmlFragment;
 
-type LmlTextNode = string;
-type LmlFragment = LML[];
-type LmlNode = (LmlNodeName | LmlAttributeMap | LML)[]; // string = no
-type LmlNodeName = string;
+export type LmlTextNode = string;
+export type LmlFragment = LML[];
+export type LmlNodeList = LML[]; // same as LmlFragment
+export type LmlNode = (LmlNodeName | LmlAttributeMap | LML)[]; // string = no
+export type LmlNodeName = string;
 export type LmlAttributeMap = LmlObject;
+
+export type LmlNodeType = "text" | "element" | "component" | "fragment" | "invalid";
 
 export interface LmlObject {
     [key: string]: LmlValue | LmlValue[];
@@ -21,7 +24,7 @@ export type LmlNodeInfo =
 
 export interface LmlNodeInfoString {
     // e.g. "Hello World"
-    type: "string";
+    type: "text";
     value: string;
 }
 
@@ -57,4 +60,30 @@ export type JsxContent = JSX.Element | string | (JSX.Element | string)[];
 export interface LmlFormatter {
     format(ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): JsxContent;
     error?(m: string): void;
+}
+
+export type LmlUpdateInstruction = LmlNodeUpdate | LmlNodeListUpdate | LmlNodeDelete;
+
+/** Key attribute of a node - e.g. XXX in ["#span.msg!XXX", "Hello"] */
+export type LmlNodeKey = string;
+
+/** Path from a node to a child node through an attribute path - e.g. "children" or "footer/sections" */
+export type LmlNodePath = string;
+export interface LmlNodeUpdate {
+    action: "insertBefore" | "insertAfter" | "replace";
+    node: LmlNodeKey;
+    path?: LmlNodePath;
+    content: LML;
+}
+export interface LmlNodeListUpdate {
+    action: "append" | "prepend" | "replace";
+    node: LmlNodeKey;
+    path: LmlNodePath;
+    content: LML;
+}
+
+export interface LmlNodeDelete {
+    action: "delete";
+    node: LmlNodeKey;
+    path?: LmlNodePath;
 }

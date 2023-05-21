@@ -1,8 +1,36 @@
-import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject } from "./types";
+import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject, LmlUpdateInstruction, LmlNode, LmlNodeListUpdate, LmlTextNode, LmlNodeType, LmlFragment } from "./types";
+
+/**
+ * Return the type of an LML node
+ * @param node
+ * @returns
+ */
+export function nodeType(node: LML): LmlNodeType {
+    if (Array.isArray(node)) {
+        if (node.length === 0) return "fragment";
+        const v0 = node[0];
+        if (typeof v0 === "string" && v0.length > 1) {
+            const ch0 = v0[0];
+            if (ch0 === ELT_PREFIX) {
+                return "element";
+            } else if (ch0 === CPT_PREFIX) {
+                return "component";
+            } else if (ch0 === DECO_PREFIX || ch0 === RESERVED_PREFIX) {
+                return "invalid"; // not yet supported
+            }
+        }
+        return "fragment";
+    } else if (typeof node === "string") {
+        return "text";
+    }
+    return "invalid";
+}
 
 const ELT_PREFIX = "#";
 const CPT_PREFIX = "*";
 const DECO_PREFIX = "@";
+const RESERVED_PREFIX = "!";
+const ATT_KEY_SEPARATOR = "!";
 const ATT_CLASS_SEPARATOR = ".";
 // [nodetype:#|*|!|@][namespace:?][nodename][+typeattribute?][.classattributes*][!keyattribute?]
 export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?([\w\-]+)(\+[\w\-]+)?(\.[\.\w\-]+)*(\!.+)?$/;
@@ -13,33 +41,26 @@ export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?([\w\-]+)(\+[\w\-]+)?(\.[\.\w
  * @param f the formatter (that will call the jsx runtime behinde the scenes)
  * @returns
  */
-export function scan(v: LML, f: LmlFormatter): JsxContent {
+export function processJSx(v: LML, f: LmlFormatter): JsxContent {
     if (v === undefined || v === null) return "";
+    const ndType = nodeType(v);
 
-    if (typeof v === "string") {
+    if (ndType === "text") {
         // text node
-        return textNode(v);
+        return textNode(v as string);
     }
-    if (!Array.isArray(v)) {
+    if (ndType === "invalid") {
         return error(`Invalid LML node: ${JSON.stringify(v)}`);
     }
+
+    const isFragment = ndType === "fragment";
 
     const ls = v;
     const len = ls.length;
     if (len === 0) return "";
-    const val0 = ls[0];
-
-    let isFragment = false;
-    if (typeof val0 !== "string") {
-        // this list is a fragment
-        isFragment = true;
-    } else {
-        const v0 = val0 as string;
-        if (v0.length < 1) isFragment = true;
-    }
 
     if (!isFragment) {
-        const v0 = val0 as string;
+        const v0 = ls[0] as string;
         // check if first value matches a node name
         const m = v0.match(RX_NODE_NAME);
 
@@ -106,7 +127,7 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
                 // next entries are children
                 children = [];
                 for (let i = nextIdx; i < len; i++) {
-                    children.push(scan(ls[i] as any, f));
+                    children.push(processJSx(ls[i] as any, f));
                 }
             }
 
@@ -134,7 +155,7 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
     const r: (JSX.Element | string)[] = [];
     for (const nd of ls) {
         if (typeof nd === "string" || Array.isArray(nd)) {
-            const val = scan(nd, f);
+            const val = processJSx(nd, f);
             if (val) {
                 if (Array.isArray(val)) {
                     for (let item of val) {
@@ -151,7 +172,7 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
     return r.length > 0 ? r : "";
 
     function textNode(v: string) {
-        return f.format({ type: "string", value: v });
+        return f.format({ type: "text", value: v });
     }
 
     function error(msg: string): string {
@@ -172,7 +193,7 @@ export function scan(v: LML, f: LmlFormatter): JsxContent {
  * Convert an LML structure to a JSX tree
  * @param v the lml data to convert
  * @param createElement the React.createElement function (or h function for preact)
- * @param getComponent a function that will be called when a component is found [optional]
+ * @param getComponent a function called when a component is found to retrieve an actual component reference [optional]
  * @param error error handler that will be called in case of error [optional]
  * @returns
  */
@@ -183,10 +204,10 @@ export function lml2jsx(v: LML,
 
     error = error || ((m: string) => console.error("[lm2JSX Error] " + m));
 
-    return scan(v, {
+    return processJSx(v, {
         format: (ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): JSX.Element | string => {
             const tp = ndi.type;
-            if (tp === "string") {
+            if (tp === "text") {
                 return ndi.value;
             } else if (tp === "element" || tp === "component") {
                 // change class into className
@@ -213,4 +234,227 @@ export function lml2jsx(v: LML,
         },
         error
     });
+}
+
+
+export function update(data: LML, instructions: LmlUpdateInstruction[]): LML {
+    // instructions mapped by node key
+    const targetKeys: Set<string> = new Set();
+    for (const instruction of instructions) {
+        targetKeys.add(instruction.node);
+    }
+
+    const nodes: Map<string, { node: LmlNode, parent: any, parentRef: string | number }> = new Map();
+    const max = targetKeys.size;
+    let count = 0;
+
+    const root = [data];
+
+    scanNode(data, (k, node, parent, parentRef) => {
+        if (targetKeys.has(k)) {
+            count++;
+            nodes.set(k, {
+                node,
+                parent,
+                parentRef
+            });
+        }
+        return count < max; // stop when all nodes have been found
+    }, root, 0);
+
+    // apply the insructions in order
+    for (const ins of instructions) {
+        const action = ins.action;
+        const k = ins.node;
+        let nd = nodes.get(k);
+        if (!nd) continue;
+
+
+        let parent = nd.parent, prop = nd.parentRef, node = nd.node;
+        const path = ins.path;
+
+        if (path === "children") {
+            if (node.length > 1) {
+                let child1 = 1;
+                if (typeof node[child1] !== "string" && !Array.isArray(node[child1])) {
+                    child1++;
+                }
+
+                if (action === "delete") {
+                    node.splice(child1, node.length - child1);
+                } else {
+                    const content = ins.content;
+                    const contentType = nodeType(content);
+
+                    if (contentType !== "invalid") {
+                        const isFragment = contentType === "fragment";
+
+                        // special case as children are not stored as attributes
+                        if (action === "insertBefore" || action === "prepend") {
+                            if (isFragment) {
+                                node.splice.apply(node, [child1, 0, ...content]);
+                            } else {
+                                node.splice(child1, 0, content);
+                            }
+                        } else if (action === "insertAfter" || action === "append") {
+                            if (isFragment) {
+                                node.push.apply(node, content as LmlFragment);
+                            } else {
+                                node.push(content);
+                            }
+                        } else if (action === "replace") {
+                            if (isFragment) {
+                                node.splice.apply(node, [child1, node.length - child1, ...content]);
+                            } else {
+                                node.splice(child1, node.length - child1, content);
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            continue;
+        } else if (path) {
+            const pathElts = path.split("/");
+            if (Array.isArray(node) && node.length > 1) {
+                node = node[1] as any; // attribute object
+            } else {
+                // invalid path
+                continue;
+            }
+            for (const pe of pathElts) {
+                parent = node; // argument object
+                prop = pe;
+                node = parent[prop];
+            }
+        }
+        if (!nd) continue;
+
+        if (action === "delete") {
+            if (Array.isArray(parent)) {
+                if (typeof prop === "number") {
+                    parent.splice(prop, 1);
+                }
+            } else if (parent) {
+                // node is root
+                parent[prop] = [];
+            }
+        } else {
+            const content = ins.content!;
+            const contentType = nodeType(content);
+
+            if (contentType !== "invalid") {
+                const isContentFragment = contentType === "fragment";
+                if (action === "insertBefore" || action === "insertAfter" || action === "replace") {
+                    if (Array.isArray(parent)) {
+                        if (typeof prop === "number") {
+                            let idx = prop, nbrOfDel = 0; // insertBefore defaults
+                            if (action === "insertAfter") {
+                                idx++;
+                            } else if (action === "replace") {
+                                nbrOfDel++;
+                            }
+                            if (isContentFragment) {
+                                parent.splice.apply(parent, [idx, nbrOfDel, ...content]);
+                            } else {
+                                parent.splice(idx, nbrOfDel, content);
+                            }
+                        } // else: should be unreachable
+                    } else if (parent) {
+                        // node is root
+                        if (action === "insertBefore") {
+                            if (isContentFragment) {
+                                parent[prop] = [...content, node];
+                            } else {
+                                parent[prop] = [content, node];
+                            }
+                        } else if (action === "insertAfter") {
+                            if (isContentFragment) {
+                                parent[prop] = [node, ...content];
+                            } else {
+                                parent[prop] = [node, content];
+                            }
+                        } else if (action === "replace") {
+                            parent[prop] = content;
+                        }
+                    }
+                } else if ((action === "prepend" || action === "append") && nodeType(node) === "fragment") {
+                    if (action === "append") {
+                        if (isContentFragment) {
+                            node.push.apply(node, content as LmlFragment);
+                        } else {
+                            node.push(content);
+                        }
+                    } else if (action === "prepend") {
+                        if (isContentFragment) {
+                            node.splice.apply(node, [0, 0, ...content]);
+                        } else {
+                            node.splice(0, 0, content);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (root.length === 1) return root[0];
+    return root;
+}
+
+
+
+
+export function scan(data: any, process: (nodeKey: string, node: LmlNode, parent: any, parentRef: string | number) => boolean) {
+    scanNode(data, process, null, 0);
+}
+
+/**
+ * Recursively scan an LML structure and call the process callback when a node with a key is found
+ * If the process callback return false, the scanning process stops
+ * @param data
+ * @param process
+ * @returns
+ */
+function scanNode(
+    data: any,
+    process: (nodeKey: string, node: LmlNode, parent: any, parentRef: string | number) => boolean,
+    parent: any,
+    parentRef: string | number): boolean {
+    if (!data) return true;
+
+    const ndType = nodeType(data);
+
+    if (Array.isArray(data) && data.length) {
+        // data can be either a fragment or a node
+        const isNode = ndType === "component" || ndType === "element";
+
+        if (isNode) {
+            let key = "";
+            const v0 = data[0];
+            const idx = v0.indexOf(ATT_KEY_SEPARATOR);
+            if (idx > -1) {
+                key = data[0].slice(idx + 1);
+            }
+            if (key) {
+                const r = process(key, data as LmlNode, parent, parentRef);
+                if (r === false) return false; // stop scanning
+            }
+            // scan attributes and children
+            for (let i = 1; data.length > i; i++) {
+                if (!scanNode(data[i], process, data, i)) return false; // stop scanning
+            }
+        } else {
+            // process all fragment nodes one by one
+            for (let i = 0; data.length > i; i++) {
+                if (!scanNode(data[i], process, data, i)) return false; // stop scanning
+            }
+        }
+    } else if (typeof data === "object") {
+        // scan each object property
+        for (const k of Object.getOwnPropertyNames(data)) {
+            if (!scanNode((data as any)[k], process, data, k)) return false; // stop scanning
+        }
+    }
+    return true;
 }
