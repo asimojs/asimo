@@ -41,6 +41,8 @@ export interface SearchService {
     search(query?: SearchQuery, navigate?: boolean): Promise<boolean>;
     /** Get more results on top of a previous search */
     getMoreResults(query: SearchMoreQuery, navigate?: boolean): Promise<boolean>;
+    /** Load a search response that has already been fetched (e.g. in the start page) */
+    loadSearchResponse(r: SearchResponse, q: SearchQuery, navigate?:boolean): Promise<void>;
 }
 
 export interface SearchQuery {

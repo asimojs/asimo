@@ -13,10 +13,12 @@ export function createNavStore(): NavService {
             init: function* (d, cc) {
                 cc.maxComputeCount = 1; // run only once
                 searchService = yield asm.get(SearchServiceIID);
-                d.mainView = {
-                    name: "search",
-                    panel: "search",
-                    $store: searchService!
+                if (d.mainView.name === "loading") {
+                    d.mainView = {
+                        name: "search",
+                        panel: "search",
+                        $store: searchService!
+                    }
                 }
             }
         });

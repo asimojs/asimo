@@ -511,8 +511,7 @@ const response: SearchResponse = {
                 { "title": "Personality", "key": "2ahUKEwjczO7Zgub-AhUZVKQEHZ62Du0Q_JoDKAB6BAhGEAE", "content": ["Under construction..."] },
             ]
         }],
-    ],
-    // popoverbar: []
+    ]
 };
 
 export default response;

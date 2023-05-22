@@ -6,7 +6,7 @@ import { LML } from "../libs/lml/types";
 import { lml2jsx, update } from "../libs/lml/lml";
 import { h } from "preact";
 import { SearchMoreApiIID, SearchMoreQuery } from "../api/searchMore";
-import { BundleRef } from "../api/types";
+import { BundleRef, SearchResponse } from "../api/types";
 
 /**
  * The Search store exposes all view search apis and manage the search data
@@ -35,35 +35,38 @@ export function createSearchStore(): SearchService {
                 const search = (await asm.get(SearchApiIID))
                 const results = await search(q);
                 if (results.type === "SearchResponse") {
-                    const components: ComponentMap = {};
-
-                    try {
-                        await loadBundles(results.bundles, components);
-                        if (navigate) {
-                            await notifyNavManager();
-                        }
-                    } catch (ex) {
-                        console.log("Module load error:", ex);
-                    }
-
-                    console.log('UPDATE', results.main![2][1]);
-                    // replace last Result
-                    data.lastResult = {
-                        type: "SearchResults",
-                        query: {
-                            searchInput: q.searchInput
-                        },
-                        results,
-                        lml2jsx: (lml: LML) => lml2jsx(lml, h, (name, ns) => {
-                            if (components && components[ns]) {
-                                return components[ns][name] || null;
-                            }
-                            return null;
-                        })
-                    };
+                    await srv.loadSearchResponse(results, q, navigate);
                     return true;
                 }
                 return false;
+            },
+
+            async loadSearchResponse(r: SearchResponse, q: SearchQuery, navigate = true) {
+                const components: ComponentMap = {};
+
+                try {
+                    await loadBundles(r.bundles, components);
+                    if (navigate) {
+                        await notifyNavManager();
+                    }
+                } catch (ex) {
+                    console.log("Module load error:", ex);
+                }
+
+                // replace last Result
+                data.lastResult = {
+                    type: "SearchResults",
+                    query: {
+                        searchInput: q.searchInput
+                    },
+                    results: r,
+                    lml2jsx: (lml: LML) => lml2jsx(lml, h, (name, ns) => {
+                        if (components && components[ns]) {
+                            return components[ns][name] || null;
+                        }
+                        return null;
+                    })
+                };
             },
 
             async getMoreResults(query: SearchMoreQuery, navigate = true) {

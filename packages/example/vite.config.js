@@ -9,8 +9,13 @@ export default defineConfig({
     },
     build: {
         rollupOptions: {
+            input: {
+                "index": "index.html",
+                "homer_simpson": "public/homer_simpson.html"
+            },
             output: {
-                strict: true
+                strict: true,
+                dir: "dist",
             },
             external: [
                 '@asimojs/asimo',

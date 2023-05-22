@@ -24,3 +24,6 @@ cp ../../node_modules/@traxjs/trax-preact/dist/trax-preact.mjs ./dist/ext/
 # copy dist-bundles to dist
 mkdir -p ./dist/dist-bundles
 cp ./dist-bundles/*.js ./dist/dist-bundles/
+
+# copy secondary html pages to root - e.g. homer_simpson.html
+cp ./dist/public/*.html ./dist

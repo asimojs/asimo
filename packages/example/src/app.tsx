@@ -8,7 +8,7 @@ import './stores/nav';
 import './stores/search';
 
 import './app.css';
-import { NavServiceIID } from './stores/types';
+import { NavServiceIID, SearchServiceIID } from './stores/types';
 import { createGlobalContext } from './bundles/utils';
 
 async function main() {
@@ -20,6 +20,14 @@ async function main() {
     }
 
     const nav = (await asm.get(NavServiceIID))!;
+    const initState = (globalThis as any)["init-state"];
+    if (initState && initState.dataType === "SearchResponse") {
+        const ss = await asm.get(SearchServiceIID);
+
+        await ss.loadSearchResponse(initState.data.response, initState.data.query);
+
+
+    }
 
     const GlobalContext = createGlobalContext();
     render(
