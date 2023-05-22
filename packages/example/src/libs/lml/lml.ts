@@ -1,4 +1,4 @@
-import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject, LmlUpdate, LmlNode, LmlNodeListUpdate, LmlTextNode, LmlNodeType, LmlFragment } from "./types";
+import { LML, LmlAttributeMap, JsxContent, LmlFormatter, LmlNodeInfo, LmlObject, LmlUpdate, LmlNode, LmlNodeListUpdate, LmlTextNode, LmlNodeType, LmlFragment, LmlSanitizationRules } from "./types";
 
 /**
  * Return the type of an LML node
@@ -36,12 +36,12 @@ const ATT_CLASS_SEPARATOR = ".";
 export const RX_NODE_NAME = /^(\#|\*|\!|\@)(\w+\:)?([\w\-]+)(\+[\w\-]+)?(\.[\.\w\-]+)*(\!.+)?$/;
 
 /**
- * Scan LML data transform them to JSX thanks to the formatter passed as arguement
+ * Scan LML data and transform them to JSX thanks to the formatter passed as arguement
  * @param v an LML value
  * @param f the formatter (that will call the jsx runtime behinde the scenes)
  * @returns
  */
-export function processJSx(v: LML, f: LmlFormatter): JsxContent {
+export function processJSX(v: LML, f: LmlFormatter): JsxContent {
     if (v === undefined || v === null) return "";
     const ndType = nodeType(v);
 
@@ -127,7 +127,7 @@ export function processJSx(v: LML, f: LmlFormatter): JsxContent {
                 // next entries are children
                 children = [];
                 for (let i = nextIdx; i < len; i++) {
-                    children.push(processJSx(ls[i] as any, f));
+                    children.push(processJSX(ls[i] as any, f));
                 }
             }
 
@@ -155,7 +155,7 @@ export function processJSx(v: LML, f: LmlFormatter): JsxContent {
     const r: (JSX.Element | string)[] = [];
     for (const nd of ls) {
         if (typeof nd === "string" || Array.isArray(nd)) {
-            const val = processJSx(nd, f);
+            const val = processJSX(nd, f);
             if (val) {
                 if (Array.isArray(val)) {
                     for (let item of val) {
@@ -190,7 +190,44 @@ export function processJSx(v: LML, f: LmlFormatter): JsxContent {
 }
 
 /**
- * Convert an LML structure to a JSX tree
+ * Default sanitization rules - rather aggressive to avoid unecessary complexity
+ * (can be overridden and tuned on the application side)
+ */
+export const defaultSanitizationRules: LmlSanitizationRules = {
+    /**
+     * Allowed tags - img + tags from https://github.com/apostrophecms/sanitize-html
+     * Note: form and input are not in the list
+     */
+    allowedElements: new Set([
+        "address", "article", "aside", "footer", "header", "h1", "h2", "h3", "h4",
+        "h5", "h6", "hgroup", "main", "nav", "section", "blockquote", "dd", "div",
+        "dl", "dt", "figcaption", "figure", "hr", "li", "main", "ol", "p", "pre",
+        "ul", "a", "abbr", "b", "bdi", "bdo", "br", "cite", "code", "data", "dfn",
+        "em", "i", "kbd", "mark", "q", "rb", "rp", "rt", "rtc", "ruby", "s", "samp",
+        "small", "span", "strong", "sub", "sup", "time", "u", "var", "wbr", "caption",
+        "col", "colgroup", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "img"
+    ]),
+
+    /** Forbid style, srcset and event handler attributes */
+    forbiddenElementAttributes: new Set(["style", "srcset"]),
+
+
+    forbidEventHandlers: true,
+
+    /**
+     * URL attributes used in allowedElements, will be checked against allowedUrlPrefixes
+     * as per https://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
+     */
+    urlAttributes: new Set(["href", "src", "cite", "action", "profile", "longdesc", "usemap", "formaction", "icon",
+        "poster", "background", "codebase", "data", "classid", "manifest"]),
+
+    /** Allowed URLs - DO NOT PUT "data:text" -> data:text/html can contain malicious scripts */
+    allowedUrlPrefixes: ["/", "./", "http://", "https://", "mailto://", "tel://", "data:image/"]
+}
+
+/**
+ * Convert an LML structure to a JSX tree through a createElement like function (argument).
+ * The JSX tree is also sanitized
  * @param v the lml data to convert
  * @param createElement the React.createElement function (or h function for preact)
  * @param getComponent a function called when a component is found to retrieve an actual component reference [optional]
@@ -199,17 +236,51 @@ export function processJSx(v: LML, f: LmlFormatter): JsxContent {
  */
 export function lml2jsx(v: LML,
     createElement: (type: any | Function, props: { [key: string]: any }, ...children: any) => JSX.Element,
-    getComponent?: (name: string, namespace: string) => Function | null,
-    error?: (msg: string) => void): JsxContent {
+    getComponent?: ((name: string, namespace: string) => Function | null) | null,
+    error?: (msg: string) => void,
+    sanitizationRules?: LmlSanitizationRules)
+    : JsxContent {
 
     error = error || ((m: string) => console.error("[lm2JSX Error] " + m));
 
-    return processJSx(v, {
+    const rules = sanitizationRules || defaultSanitizationRules;
+
+    let allowedUrlPrefixes: RegExp | null = null;
+    if (rules.allowedUrlPrefixes.length) {
+        const rx = `^(${rules.allowedUrlPrefixes.join('|')})`;
+        allowedUrlPrefixes = new RegExp(rx, "i");
+    }
+
+
+    return processJSX(v, {
         format: (ndi: LmlNodeInfo, attributes?: LmlAttributeMap, children?: (JSX.Element | string)[]): JSX.Element | string => {
             const tp = ndi.type;
             if (tp === "text") {
                 return ndi.value;
             } else if (tp === "element" || tp === "component") {
+                if (tp === "element") {
+                    if (!rules.allowedElements.has(ndi.tagName)) {
+                        error!(`Unauthorized element: ${ndi.tagName}`);
+                        return "";
+                    }
+                    if (attributes) {
+                        for (const name of Object.getOwnPropertyNames(attributes)) {
+                            if (rules.forbiddenElementAttributes.has(name)) {
+                                error!(`Unauthorized element attribute: ${name}`);
+                                delete attributes[name];
+                            } else if (rules.forbidEventHandlers && name.match(/^on/i)) {
+                                error!(`Unauthorized event handler: ${name}`);
+                                delete attributes[name];
+                            } else if (allowedUrlPrefixes && rules.urlAttributes.has(name)) {
+                                const v = attributes[name];
+                                if (typeof (v) !== "string" || !v.match(allowedUrlPrefixes)) {
+                                    error!(`Unauthorized URL: ${name}="${v}"`);
+                                    delete attributes[name];
+                                }
+                            }
+                        }
+                    }
+                }
                 // change class into className
                 if (attributes && attributes["class"]) {
                     attributes["className"] = attributes["class"];
@@ -247,7 +318,7 @@ export function lml2jsx(v: LML,
  * @param instructions
  * @returns
  */
-export function update(data: LML, instructions: LmlUpdate[]): LML {
+export function updateLML(data: LML, instructions: LmlUpdate[]): LML {
     // instructions mapped by node key
     const targetKeys: Set<string> = new Set();
     for (const instruction of instructions) {
@@ -411,8 +482,6 @@ export function update(data: LML, instructions: LmlUpdate[]): LML {
     if (root.length === 1) return root[0];
     return root;
 }
-
-
 
 
 export function scan(data: any, process: (nodeKey: string, node: LmlNode, parent: any, parentRef: string | number) => boolean) {

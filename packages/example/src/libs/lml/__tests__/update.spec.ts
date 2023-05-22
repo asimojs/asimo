@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LML } from '../types';
-import { scan, update } from '../lml';
+import { scan, updateLML } from '../lml';
 import { print } from './utils';
 
 describe('LML update', () => {
@@ -53,7 +53,7 @@ describe('LML update', () => {
 
         describe('node content', () => {
             it('should support insertBefore - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "insertBefore",
                     node: "FN",
                     content: ["#span.title!TITLE", "Mr"]
@@ -75,7 +75,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "insertAfter",
                     node: "FN",
                     content: " / "
@@ -95,7 +95,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "replace",
                     node: "FN",
                     content: "Lisa"
@@ -113,7 +113,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "insertBefore",
                     node: "ROOT",
                     content: ["#span", "AAA"]
@@ -129,7 +129,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "insertAfter",
                     node: "ROOT",
                     content: ["#span", "ZZZ"]
@@ -145,7 +145,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "replace",
                     node: "ROOT",
                     content: ["#span", "HELLO"]
@@ -158,7 +158,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertBefore",
                     node: "NAME",
                     content: ["#span.title!TITLE", "Mr"]
@@ -169,7 +169,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertAfter",
                     node: "NAME",
                     content: "!!!"
@@ -180,7 +180,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "replace",
                     node: "NAME",
                     content: "Marge"
@@ -191,7 +191,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertBefore",
                     node: "CPT",
                     path: "title",
@@ -203,7 +203,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertAfter",
                     node: "CPT",
                     path: "title",
@@ -215,7 +215,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "replace",
                     node: "CPT",
                     path: "title",
@@ -229,7 +229,7 @@ describe('LML update', () => {
 
         describe('fragment content', () => {
             it('should support insertBefore - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "insertBefore",
                     node: "FN",
                     content: ["AAA", ["#span.title!TITLE", "Mr"]]
@@ -252,7 +252,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "insertAfter",
                     node: "FN",
                     content: ["XXX", "YYY", "ZZZ"]
@@ -274,7 +274,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node in array', async () => {
-                const r = update(ex1, [{
+                const r = updateLML(ex1, [{
                     action: "replace",
                     node: "FN",
                     content: ["Lisa,", "Bart"]
@@ -293,7 +293,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "insertBefore",
                     node: "ROOT",
                     content: ["000", ["#span", "AAA"]]
@@ -310,7 +310,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "insertAfter",
                     node: "ROOT",
                     content: ["AAA", ["#span", "ZZZ"]]
@@ -327,7 +327,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - root', async () => {
-                const r = update(ex2, [{
+                const r = updateLML(ex2, [{
                     action: "replace",
                     node: "ROOT",
                     content: ["AAA", ["#span", "HELLO"]]
@@ -341,7 +341,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertBefore",
                     node: "NAME",
                     content: ["AAA", ["#span.title!TITLE", "Mr"]]
@@ -352,7 +352,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertAfter",
                     node: "NAME",
                     content: ["AAA", "BBB"]
@@ -363,7 +363,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node as root argument', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "replace",
                     node: "NAME",
                     content: ["Marge", "Simpson"]
@@ -374,7 +374,7 @@ describe('LML update', () => {
             });
 
             it('should support insertBefore - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertBefore",
                     node: "CPT",
                     path: "title",
@@ -386,7 +386,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "insertAfter",
                     node: "CPT",
                     path: "title",
@@ -398,7 +398,7 @@ describe('LML update', () => {
             });
 
             it('should support replace - node as root argument w/ path', async () => {
-                const r = update(ex3, [{
+                const r = updateLML(ex3, [{
                     action: "replace",
                     node: "CPT",
                     path: "title",
@@ -414,7 +414,7 @@ describe('LML update', () => {
     describe('update with node list', () => {
         describe('node content', () => {
             it('should append content', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "append",
                     node: "CPT",
                     path: "footer/sections",
@@ -428,7 +428,7 @@ describe('LML update', () => {
             });
 
             it('should prepend content', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "prepend",
                     node: "CPT",
                     path: "footer/sections",
@@ -442,7 +442,7 @@ describe('LML update', () => {
             });
 
             it('should prepend replace', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "replace",
                     node: "CPT",
                     path: "footer/sections",
@@ -458,7 +458,7 @@ describe('LML update', () => {
 
         describe('fragment content', () => {
             it('should append content', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "append",
                     node: "CPT",
                     path: "footer/sections",
@@ -472,7 +472,7 @@ describe('LML update', () => {
             });
 
             it('should prepend content', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "prepend",
                     node: "CPT",
                     path: "footer/sections",
@@ -486,7 +486,7 @@ describe('LML update', () => {
             });
 
             it('should prepend replace', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "replace",
                     node: "CPT",
                     path: "footer/sections",
@@ -503,7 +503,7 @@ describe('LML update', () => {
 
     describe('delete', () => {
         it('should support delete - node in array', async () => {
-            const r = update(ex1, [{
+            const r = updateLML(ex1, [{
                 action: "delete",
                 node: "FN"
             }]);
@@ -519,7 +519,7 @@ describe('LML update', () => {
         });
 
         it('should append content', async () => {
-            const r = update(ex4, [{
+            const r = updateLML(ex4, [{
                 action: "delete",
                 node: "CPT",
                 path: "footer/sections"
@@ -535,7 +535,7 @@ describe('LML update', () => {
     describe('children path', () => {
         describe('node content', () => {
             it('should support insertBefore', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "insertBefore",
                     node: "CPT",
                     path: "children",
@@ -552,7 +552,7 @@ describe('LML update', () => {
             });
 
             it('should support prepend', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "prepend",
                     node: "CPT",
                     path: "children",
@@ -567,7 +567,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "insertAfter",
                     node: "CPT",
                     path: "children",
@@ -584,7 +584,7 @@ describe('LML update', () => {
             });
 
             it('should support append', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "append",
                     node: "CPT",
                     path: "children",
@@ -599,7 +599,7 @@ describe('LML update', () => {
             });
 
             it('should support replace', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "replace",
                     node: "CPT",
                     path: "children",
@@ -615,7 +615,7 @@ describe('LML update', () => {
             });
 
             it('should support delete', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "delete",
                     node: "CPT",
                     path: "children"
@@ -628,7 +628,7 @@ describe('LML update', () => {
 
         describe('fragment content', () => {
             it('should support insertBefore', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "insertBefore",
                     node: "CPT",
                     path: "children",
@@ -646,7 +646,7 @@ describe('LML update', () => {
             });
 
             it('should support prepend', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "prepend",
                     node: "CPT",
                     path: "children",
@@ -662,7 +662,7 @@ describe('LML update', () => {
             });
 
             it('should support insertAfter', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "insertAfter",
                     node: "CPT",
                     path: "children",
@@ -680,7 +680,7 @@ describe('LML update', () => {
             });
 
             it('should support append', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "append",
                     node: "CPT",
                     path: "children",
@@ -696,7 +696,7 @@ describe('LML update', () => {
             });
 
             it('should support replace', async () => {
-                const r = update(ex4, [{
+                const r = updateLML(ex4, [{
                     action: "replace",
                     node: "CPT",
                     path: "children",

@@ -3,7 +3,7 @@ import { trax, Store } from "@traxjs/trax";
 import { SearchApiIID } from "../api/search";
 import { ComponentMap, NavServiceIID, SearchQuery, SearchService, SearchServiceIID } from "./types";
 import { LML } from "../libs/lml/types";
-import { lml2jsx, update } from "../libs/lml/lml";
+import { lml2jsx, updateLML } from "../libs/lml/lml";
 import { h } from "preact";
 import { SearchMoreApiIID, SearchMoreQuery } from "../api/searchMore";
 import { BundleRef, SearchResponse } from "../api/types";
@@ -93,7 +93,7 @@ export function createSearchStore(): SearchService {
                         if (results.main) {
                             res.main = results.main;
                         } else if (results.mainUpdates) {
-                            update(res.main!, results.mainUpdates);
+                            updateLML(res.main!, results.mainUpdates);
                         }
                     }
                 }
@@ -114,6 +114,8 @@ export function createSearchStore(): SearchService {
     });
 }
 
+const RX_RELATIVE_PATH = /^(\/)|(.\/)/i;
+
 async function loadBundles(bundles?: { [name: string]: BundleRef }, components?: ComponentMap) {
     if (bundles) {
         const bndRefs: { name: string, ns: string, src: string, module?: any }[] = [];
@@ -121,12 +123,17 @@ async function loadBundles(bundles?: { [name: string]: BundleRef }, components?:
 
         for (const name of Object.getOwnPropertyNames(bundles)) {
             const ns = bundles[name].ns;
-            bndRefs.push({
-                name,
-                ns,
-                src: bundles[name].src
-            });
-            namespaces.push(ns);
+
+            const src = bundles[name].src;
+            if (src.match(RX_RELATIVE_PATH)) {
+                // Security: only authorize bundles served from the same origin (relative path)
+                bndRefs.push({
+                    name,
+                    ns,
+                    src: bundles[name].src
+                });
+                namespaces.push(ns);
+            }
         }
 
         // retrieve modules from asimo cache

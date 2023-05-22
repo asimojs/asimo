@@ -1,8 +1,8 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/preact';
-import { LML, LmlAttributeMap, LmlNodeInfo } from '../types';
-import { lml2jsx, processJSx } from '../lml';
+import { LML, LmlSanitizationRules } from '../types';
+import { defaultSanitizationRules, lml2jsx, processJSX } from '../lml';
 import { h } from 'preact';
 
 describe('LML Preact JSX', () => {
@@ -20,6 +20,14 @@ describe('LML Preact JSX', () => {
     })
 
     const console1 = globalThis.console;
+
+    const sanitizationRules: LmlSanitizationRules = {
+        allowedElements: new Set(["input", "my-widget", ...defaultSanitizationRules.allowedElements]),
+        forbiddenElementAttributes: defaultSanitizationRules.forbiddenElementAttributes,
+        forbidEventHandlers: true,
+        allowedUrlPrefixes: defaultSanitizationRules.allowedUrlPrefixes,
+        urlAttributes: defaultSanitizationRules.urlAttributes
+    }
 
     function mockGlobalConsole() {
         const logs: string[] = [];
@@ -53,7 +61,7 @@ describe('LML Preact JSX', () => {
             return null;
         }, (msg) => {
             errors.push(msg);
-        });
+        }, sanitizationRules);
     }
 
     function printJSX(jsxContent: JSX.Element | string | null | (JSX.Element | string)[]) {
@@ -189,7 +197,7 @@ describe('LML Preact JSX', () => {
         });
         expect(getJSX(["#input+text.name.pt-4!123!#@$rweT$🕺#%", "Hi"])).toMatchObject({
             type: 'input',
-            props: { "class":"name pt-4", className:"name pt-4", type:"text", children: 'Hi', keyValue: '123!#@$rweT$🕺#%' },
+            props: { "class": "name pt-4", className: "name pt-4", type: "text", children: 'Hi', keyValue: '123!#@$rweT$🕺#%' },
             key: '123!#@$rweT$🕺#%',
         });
     });
@@ -263,8 +271,8 @@ describe('LML Preact JSX', () => {
             errors = [];
         });
 
-        it('should be logged on console when no error handler is provided to processJSx', async () => {
-            processJSx(["!x:foo"], { format: () => "x" });
+        it('should be logged on console when no error handler is provided to processJSX', async () => {
+            processJSX(["!x:foo"], { format: () => "x" });
             expect(logs).toMatchObject([
                 '[LML Scan Error] Invalid LML node: ["!x:foo"]'
             ]);

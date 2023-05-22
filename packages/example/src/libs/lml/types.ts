@@ -87,3 +87,20 @@ export interface LmlNodeDelete {
     node: LmlNodeKey;
     path?: LmlNodePath;
 }
+
+export interface LmlSanitizationRules {
+    /** Allowed element names */
+    allowedElements: Set<string>;
+
+    /** Forbidden eleement attributes - e.g. forbid style, srcset */
+    forbiddenElementAttributes: Set<string>;
+
+    /** Forbid onXXXX attributes on elements */
+    forbidEventHandlers: boolean;
+
+    /** URL attributes used in allowedElements, will be checked against allowedUrlPrefixes */
+    urlAttributes: Set<string>;
+
+    /** Allowed URLs - DO NOT PUT "data:text" -> data:text/html can contain malicious scripts */
+    allowedUrlPrefixes: string[];
+}
