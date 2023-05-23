@@ -2,13 +2,13 @@
     "name": "@asimojs/asimo",
     "version": "0.0.1",
     "description": "Asynchronous dependency injection for Typescript projects",
-    "main": "lib/asimo.js",
+    "main": "dist/asimo.mjs",
+    "types": "dist/asimo.d.ts",
+    "typings": "dist/asimo.d.ts",
     "files": [
         "src",
         "dist"
     ],
-    "types": "lib/asimo.d.ts",
-    "typings": "lib/asimo.d.ts",
     "author": "Bertrand Laporte",
     "license": "MIT",
     "bugs": "https://github.com/asimojs/asimo/issues",
@@ -19,14 +19,17 @@
         "moduule loader"
     ],
     "scripts": {
-        "build": "tsc && vite build",
+        "clean": "rimraf dist lib",
+        "build": "yarn clean && tsc && vite build && cp -R lib/*.d.ts dist",
         "test": "vitest",
-        "coverage": "vitest run --coverage"
+        "coverage": "vitest run --coverage",
+        "prepublish": "yarn build && vitest run"
     },
     "devDependencies": {
         "@vitest/coverage-c8": "^0.27.1",
         "typescript": "^4.9.4",
         "vite": "^4.0.3",
-        "vitest": "^0.26.3"
+        "vitest": "^0.26.3",
+        "rimraf": "5.0.0"
     }
 }
