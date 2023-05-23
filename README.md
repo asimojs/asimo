@@ -4,9 +4,8 @@ Asimo is a micro library that allows to transparently manage asynchronous depend
 
 Key features:
 - **design by interface**: depend on abstraction, not implementation - cf. [SOLID] design principles
-- simplify **Progressivle Web Application** development: application code doesn't need to know which modules are loaded
-after the page load.
-- **load what you need** at startup: the UI will pull and load its dependencies on-demand (no need to preload all modules in the *right* order)
+- simplify **Progressivle Web Application** development: application code doesn't need to know how modules are bundled (i.e. in the application core or as asynchronous package).
+- **load what you need** at startup: asimo will pull and load packages on-demand depending on the initial view (no need to preload all possible modules in the *right* order)
 - full **type support**: typescript interfaces exposed by service producers are immediately visible to the consumers
 (no type cast required)
 - easy module bundling: modules can be bundled without impacting the application code (i.e. no need to refactor code to insert dynamic imports)
@@ -19,12 +18,13 @@ garphs containing many cross-references as these data will be generated through 
 
 [SOLID]: https://en.wikipedia.org/wiki/SOLID
 
+
+
 ## Usage
 
 In most use cases asimo will involve at least 2 modules:
-- a **producer** that contains services or object factories to expose to consumers
-- a **consumer** that retrieves the service dynamically and uses it (the consumer can then keep a reference to the
-service to avoid further async calls if need be).
+- a **producer** that contains services or object factories that will be exposed to consumers
+- a **consumer** that retrieves the producers dynamically, when needed (the consumer can then keep a reference to its dependencies to avoid further async calls if need be).
 
 ```typescript
 // Producer
@@ -43,7 +43,8 @@ class CalculatorService implements Calculator {
         return a + b;
     }
 }
-// Service registration - should be defined in separate files when using packagers that don't support tree-shaking
+// Service registration - should be defined in separate files when using packagers
+// that don't support tree-shaking (otherwise implementation will be packaged with the interface!)
 asm.registerService(CalculatorIID, () => new CalculatorService());
 
 ```
@@ -57,6 +58,12 @@ async function doSomething() {
     const calc = await asm.get(CalculatorIID); // Typescript types found -> calc is of type Calculator
     const result = calc.add(1, 2);             // 3
 }
+```
+
+## Install
+
+```bash
+npm i @asimojs/asimo
 ```
 
 ## APIs
@@ -94,12 +101,12 @@ interface Adder {
 export const AdderIID = interfaceId<Adder>("asimo.src.tests.Adder");
 ```
 
-## AsmContext
+## ```AsmContext```
 
-The AsmContext is the object that exposes all asimo APIs (but interfaceId):
+The AsmContext is the object that exposes all asimo APIs (but ```interfaceId()```):
 
 
-### get
+### ```get```
 
 Retrieve a service or an object instance. For each interface id, asimo will first look in the current
 context for services or object factories or groups (in this order) - if not found
@@ -107,9 +114,9 @@ it will then perform the same lookup in its parent context, recursively up to th
 This method allows to retrieve up to 5 dependencies in one call with type support (more can be retrieved
 without type inference - cf. call signature).
 
-Note: the parameters can be either InterfaceId objects or interface namespaces (strings). When using InterfaceId
-typescript will automatically infer the right type - otherwise an explicit type cast will be necessary,
-as shown below
+Note: the parameters can be either ```InterfaceId``` objects or interface namespaces (strings).
+When using ```InterfaceId``` typescript will automatically infer the right type - otherwise an explicit
+type cast will be necessary, as shown below
 
 ```typescript
 get<T>(iid: IidNs<T>): Promise<T>;
@@ -143,7 +150,7 @@ const calc2 = await asm.get("asimo.src.tests.Calculator");
 const [m, c, a] = await asm.get(MultiplierIID, CalculatorIID, AdderIID);
 ```
 
-### registerService
+### ```registerService```
 
 Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function (synchronous or asynchronous). Note: **service factories are only called once**
 
@@ -161,7 +168,7 @@ asm.registerService(AdderIID, () => add);
 ```
 
 
-### registerFactory
+### ```registerFactory```
 
 Register an object factory. The factory will be called any time the get method is called
 for the object's interface id. On the contrary to services, there is no restriction on the number
@@ -170,14 +177,14 @@ of objects that can be creatd. Besides asimo doesn't keep any reference to the o
 ```typescript
 registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
 ```
-Examples:
+Example:
 ```typescript
 // Register an object factory
 asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
 ```
 
 
-### registerGroup
+### ```registerGroup```
 
 Register a group loader that will be used to asynchronously load multiple
 services and object factories on-demand (i.e. the group code will only be loaded when
@@ -188,21 +195,21 @@ an explicit ```get()``` is done on one of its service or object interfaces). Par
 ```typescript
 registerGroup(iids:InterfaceId<any>[], loader: () => Promise<unknown>): void;
 ```
-Examples:
+Example:
 ```typescript
 // Register several interface implementation that will be loaded on-demand through
 // a dynamic module import (this assumes that the implementaion are defined in the module)
 asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupA"));
 ```
 
-### createChildContext
+### ```createChildContext```
 
 Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
 
 ```typescript
 createChildContext(): AsmContext;
 ```
-Examples:
+Example:
 ```typescript
 import { asm as rootAsm } from '@asimojs/asimo';
 
