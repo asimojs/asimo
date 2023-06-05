@@ -2,6 +2,16 @@
 
 Asimo is a micro library that allows to transparently manage asynchronous dependency injection in Typescript projects.
 
+[Live Demo][results] 🚀
+
+Main benefits:
+- **keep application startup fast**: as asimo decouples implementation from interfaces, application bundling can be changed
+without impacting the application code. This allows to split the application in small bundles that will be loaded on-demand.
+As such, new features that don't show on the very first display won't impact the intial load time.
+- **easily build a test environment** by mocking and overriding the application services that interact with the browser data APIs (e.g.
+server APIs, local storage, indexedDB, websockets...). This mocked services can also be loaded on-demand based on special URL parameters,
+which comes in handy for developers or UI integration tests with e2e tools such as [Playwright].
+
 Key features:
 - **design by interface**: depend on abstraction, not implementation - cf. [SOLID] design principles
 - simplify **Progressivle Web Application** development: application code doesn't need to know how modules are bundled (i.e. in the application core or as asynchronous package).
@@ -17,7 +27,8 @@ garphs containing many cross-references as these data will be generated through 
 
 
 [SOLID]: https://en.wikipedia.org/wiki/SOLID
-
+[Playwright]: https://playwright.dev/
+[results]: https://asimojs.github.io/dpademo/homer_simpson.html
 
 
 ## Usage
