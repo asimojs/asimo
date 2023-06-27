@@ -114,6 +114,7 @@ function createContext(parent?: AsmContext): AsmContext {
                 return parent.get(ns as any);
             }
         }
+        // TODO not found -> error
         return NULL_PROMISE;
     }
 

@@ -2,7 +2,7 @@
 
 Asimo is a micro library that allows to transparently manage asynchronous dependency injection in Typescript projects.
 
-[Live Demo][results] 🚀
+Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
 Main benefits:
 - **keep application startup fast**: as asimo decouples implementation from interfaces, application bundling can be changed
@@ -15,7 +15,7 @@ which comes in handy for developers or UI integration tests with e2e tools such 
 Key features:
 - **design by interface**: depend on abstraction, not implementation - cf. [SOLID] design principles
 - simplify **Progressivle Web Application** development: application code doesn't need to know how modules are bundled (i.e. in the application core or as asynchronous package).
-- **load what you need** at startup: asimo will pull and load packages on-demand depending on the initial view (no need to preload all possible modules in the *right* order)
+- **load what you need** at startup: asimo will pull and load packages on-demand depending on the initial view (no need to preload all possible modules in the *right* order) - cf. [asidemo] example
 - full **type support**: typescript interfaces exposed by service producers are immediately visible to the consumers
 (no type cast required)
 - easy module bundling: modules can be bundled without impacting the application code (i.e. no need to refactor code to insert dynamic imports)
@@ -23,13 +23,14 @@ Key features:
 - foster best practices: wrap browser APIs (e.g. fetch or local storeage access) into independent services that will be injected through asimo - and that can then be easily mocked
 - allows to **embed mock engines** that can be loaded dynamically at application startup (no impact on application size)
 and that will mock browser APIs responses (e.g. fetch) through simulators. This comes in handy to manage data
-garphs containing many cross-references as these data will be generated through code (the mock simulator engine) and are thus easier to maintain.
+garphs containing many cross-references as these data will be generated through code (the mock simulator engine) and are thus easier to maintain - cf. [asidemo] example
+
 
 
 [SOLID]: https://en.wikipedia.org/wiki/SOLID
 [Playwright]: https://playwright.dev/
 [results]: https://asimojs.github.io/dpademo/homer_simpson.html
-
+[asidemo]: https://asimojs.github.io/asidemo/
 
 ## Usage
 
