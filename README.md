@@ -4,6 +4,10 @@ Asimo is a micro library that allows to transparently manage asynchronous depend
 
 Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
+
+Presentation [slides]
+
+
 Main benefits:
 - **keep application startup fast**: as asimo decouples implementation from interfaces, application bundling can be changed
 without impacting the application code. This allows to split the application in small bundles that will be loaded on-demand.
@@ -31,6 +35,7 @@ garphs containing many cross-references as these data will be generated through 
 [Playwright]: https://playwright.dev/
 [results]: https://asimojs.github.io/dpademo/homer_simpson.html
 [asidemo]: https://asimojs.github.io/asidemo/
+[slides]: https://docs.google.com/presentation/d/1NfAnUP9j1HitSrCWxmEuJs3ATZnbHdN8N_q1GLW29hU
 
 ## Usage
 
