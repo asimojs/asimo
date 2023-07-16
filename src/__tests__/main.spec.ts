@@ -27,6 +27,12 @@ describe('Asimo', () => {
         asm = createContext();
     })
 
+    it('should be available from globalThis', async () => {
+        const _asm = (globalThis as any)["asm"];
+        expect(_asm).not.toBe(undefined);
+        expect(_asm).toBe(rootAsm);
+    });
+
     it('should support independent sub-contexts', async function () {
         const c1 = createContext();
         const c2 = createContext();

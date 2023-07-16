@@ -132,8 +132,19 @@ function createContext(parent?: AsmContext): AsmContext {
     }
 }
 
+let _asm: AsmContext;
+
+// Expose asm on global object to ease debugging from the browser console
+if ((globalThis as any)["asm"]) {
+    // asm must be unique
+    _asm = (globalThis as any)["asm"];
+} else {
+    _asm = createContext();
+}
+(globalThis as any)["asm"] = _asm;
+
+
 /**
  * Root context
  */
-export const asm = createContext();
-
+export const asm = _asm;
