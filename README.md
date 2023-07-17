@@ -44,32 +44,42 @@ In most use cases asimo will involve at least 2 modules:
 - a **consumer** that retrieves the producers dynamically, when needed (the consumer can then keep a reference to its dependencies to avoid further async calls if need be).
 
 ```typescript
-// Producer
-import { asm, interfaceId } from "@asimojs/asimo";
+// Producer (type file)
+import { interfaceId } from "../asimo";
 
-// Interface declaration
-interface Calculator {
+// typescript interface
+export interface Calculator {
+    numberOfCalls: number;
     add(a: number, b: number): number;
 }
-// Interface ID that will be used by the consumer
-export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
 
-// Service implementing the interface
-class CalculatorService implements Calculator {
+// interface id token associated to the typescript interface
+export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
+```
+
+```typescript
+// Producer (implementation file)
+import { asm } from "../asimo";
+import { Calculator, CalculatorIID } from "./types";
+
+// Calculator implementation
+export class _CalculatorService implements Calculator {
+    numberOfCalls = 0;
+
     add(a: number, b: number) {
+        this.numberOfCalls++;
         return a + b;
     }
 }
-// Service registration - should be defined in separate files when using packagers
-// that don't support tree-shaking (otherwise implementation will be packaged with the interface!)
-asm.registerService(CalculatorIID, () => new CalculatorService());
 
+// Service registration
+asm.registerService(CalculatorIID, () => new _CalculatorService());
 ```
 
 ```typescript
 // Consumer
 import { asm } from '@asimojs/asimo';
-import { CalculatorIID } from './calculator';
+import { CalculatorIID } from './types';
 
 async function doSomething() {
     const calc = await asm.get(CalculatorIID); // Typescript types found -> calc is of type Calculator
@@ -240,3 +250,16 @@ function createContext() {
  }
 ```
 
+### ```consoleOutput```
+
+Tell asimo how console logs should be handled - 2 possible values: ```""``` or ```"Errors"```
+- ```""```: no logs
+- ```"Errors"```: log errors (e.g. invalid arguments or invalid resolution) [**default**]
+
+Note: this setting is global, even if set on a child context.
+Example:
+```typescript
+asm.consoleOutput = ""; // deactivate error logs
+// [...]
+asm.consoleOutput = "Errors"; // reactivate error logs
+```

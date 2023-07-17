@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { asm } from '../asimo';
-import { CalculatorIID, CalculatorService } from './calculator';
+import { CalculatorIID } from './types';
 import { AsmContext } from '../types';
-import { SyncIncrementorIID, SyncIncrementorService } from './syncincrementor';
-import { AsyncIncrementorIID, AsyncIncrementorService } from './asyncincrementor';
+import { SyncIncrementorIID, _SyncIncrementorService } from './syncincrementor';
+import { AsyncIncrementorIID, _AsyncIncrementorService } from './asyncincrementor';
 import { Object2IID, Service1IID } from './groups/interfaces';
 import "./groups/groupADef"; // register groupA on asm root context
+import { _CalculatorService } from './calculator';
 
 const rootAsm = asm;
 
@@ -17,9 +18,9 @@ describe('Groups', () => {
         const c = rootAsm.createChildContext();
 
         // override calculator service
-        c.registerService(CalculatorIID, () => new CalculatorService());
-        c.registerService(SyncIncrementorIID, () => new SyncIncrementorService());
-        c.registerService(AsyncIncrementorIID, () => new AsyncIncrementorService());
+        c.registerService(CalculatorIID, () => new _CalculatorService());
+        c.registerService(SyncIncrementorIID, () => new _SyncIncrementorService());
+        c.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());
 
         return c;
     }

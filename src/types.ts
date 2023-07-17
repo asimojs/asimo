@@ -49,7 +49,18 @@ export interface AsmContext {
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      */
     createChildContext(): AsmContext;
+    /**
+     * Tell asimo how console logs should be handled
+     */
+    consoleOutput: ConsoleOutput;
 }
+
+/**
+ * Tell asimo how console logs should be handled:
+ * - "" = no logs
+ * - "Errors" = errors only
+ */
+export type ConsoleOutput = "" | "Errors";
 
 /**
  * String representing an interface namespace - e.g. "myapplication.services.Settings"

@@ -5,7 +5,7 @@ export interface Multiplier {
     multiply(a: number, b?: number): number;
 }
 
-export class MultiplierImpl implements Multiplier {
+export class _MultiplierImpl implements Multiplier {
     defaultArg = 2;
     numberOfCalls = 0;
 
@@ -18,4 +18,4 @@ export class MultiplierImpl implements Multiplier {
 
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
 export const MultiplierIID = interfaceId<Multiplier>("asimo.src.tests.Multiplier");
-asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
+asm.registerFactory(MultiplierIID, () => new _MultiplierImpl());

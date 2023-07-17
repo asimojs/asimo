@@ -1,6 +1,6 @@
 import { asm, interfaceId } from "../asimo";
 import { AsmContext } from "../types";
-import { Calculator, CalculatorIID } from "./calculator";
+import { Calculator, CalculatorIID } from "./types";
 
 /**
  * Incrementor with a sync increment() method
@@ -12,7 +12,7 @@ export interface AsyncIncrementor {
     increment(n: number): Promise<number>;
 }
 
-export class AsyncIncrementorService implements AsyncIncrementor {
+export class _AsyncIncrementorService implements AsyncIncrementor {
     offset = 1;
     di = asm; // DI context
 
@@ -23,5 +23,5 @@ export class AsyncIncrementorService implements AsyncIncrementor {
 }
 
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
-export const AsyncIncrementorIID = interfaceId<AsyncIncrementorService>("asimo.src.tests.AsyncIncrementor");
-asm.registerService(AsyncIncrementorIID, () => new AsyncIncrementorService());
+export const AsyncIncrementorIID = interfaceId<AsyncIncrementor>("asimo.src.tests.AsyncIncrementor");
+asm.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());

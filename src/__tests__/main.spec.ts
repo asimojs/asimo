@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { asm as rootAsm, interfaceId } from '../asimo';
-import { Calculator, CalculatorIID, CalculatorService } from './calculator';
+import { _CalculatorService } from './calculator';
 import { AsmContext } from '../types';
-import { SyncIncrementorIID, SyncIncrementorService } from './syncincrementor';
-import { AsyncIncrementorIID, AsyncIncrementorService } from './asyncincrementor';
-import { Multiplier, MultiplierIID, MultiplierImpl } from './multiplier';
-import { AdderIID, add as _add } from './adder';
-
+import { SyncIncrementorIID, _SyncIncrementorService } from './syncincrementor';
+import { AsyncIncrementorIID, _AsyncIncrementorService } from './asyncincrementor';
+import { Multiplier, MultiplierIID, _MultiplierImpl } from './multiplier';
+import { AdderIID, _add } from './adder';
+import { Calculator, CalculatorIID } from './types';
+import '.'
 
 describe('Asimo', () => {
     let asm: AsmContext;
@@ -15,9 +16,9 @@ describe('Asimo', () => {
         const c = rootAsm.createChildContext();
 
         // override calculator service
-        c.registerService(CalculatorIID, async () => new CalculatorService());
-        c.registerService(SyncIncrementorIID, () => new SyncIncrementorService());
-        c.registerService(AsyncIncrementorIID, () => new AsyncIncrementorService());
+        c.registerService(CalculatorIID, async () => new _CalculatorService());
+        c.registerService(SyncIncrementorIID, () => new _SyncIncrementorService());
+        c.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());
         c.registerService(AdderIID, () => _add);
         return c;
     }
@@ -66,7 +67,7 @@ describe('Asimo', () => {
     it('should support async factories', async () => {
         // create a 2nd interface id for the calculator
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-        asm.registerService(CalcIID, async () => new CalculatorService());
+        asm.registerService(CalcIID, async () => new _CalculatorService());
 
         const calc = await asm.get(CalcIID)!;
 
@@ -98,9 +99,12 @@ describe('Asimo', () => {
     });
 
     it('should return null for unknown interfaces', async () => {
+        const aco = asm.consoleOutput;
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
 
+        asm.consoleOutput = "";
         const calc = await asm.get(CalcIID)!;
+        asm.consoleOutput = aco;
         expect(calc).toBe(null);
     });
 
@@ -235,7 +239,7 @@ describe('Asimo', () => {
 
         it('should create multiple instances of a given object (sub context)', async () => {
             asm.registerFactory(MultiplierIID, () => {
-                const m = new MultiplierImpl();
+                const m = new _MultiplierImpl();
                 m.defaultArg = 3;
                 return m;
             });
