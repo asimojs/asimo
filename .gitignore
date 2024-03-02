@@ -7,3 +7,5 @@ lib
 misc
 node_modules
 *.log
+.yarn
+.yarnrc.yml
