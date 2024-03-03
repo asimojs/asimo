@@ -83,11 +83,17 @@ export function createContext(
         },
         /** Register a service factory */
         registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
-            validate(iid, factory, "registerService") && factories.set(SERVICE + iid.ns, factory);
+            if (validate(iid, factory, "registerService")) {
+                factories.set(SERVICE + iid.ns, factory);
+                removeGroupEntry(iid.ns);
+            }
         },
         /** Register an object factory */
         registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
-            validate(iid, factory, "registerFactory") && factories.set(OBJECT + iid.ns, factory);
+            if (validate(iid, factory, "registerFactory")) {
+                factories.set(OBJECT + iid.ns, factory);
+                removeGroupEntry(iid.ns);
+            }
         },
         /** Register a factory group */
         registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
@@ -111,15 +117,29 @@ export function createContext(
                 validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
             }
         },
-        /** Get a service or an object instance (services have priority) */
-        get(...iids: (InterfaceId<any> | string)[]): Promise<any> {
+        /** Get a service or an object instance (services have priority) - throw if target not found */
+        async get(...iids: (InterfaceId<any> | string)[]): Promise<any> {
             if (iids.length === 1) {
                 const iidOrNs = iids[0];
-                if (!iidOrNs) return Promise.resolve(null);
+                if (!iidOrNs)
+                    throw new Error(`[asimo:${path}] get(): Interface id cannot be empty`);
                 return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
             }
             return Promise.all(
                 iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)),
+            );
+        },
+        /** Get a service or an object instance (services have priority) - return null if target not found */
+        async retrieve(...iids: (InterfaceId<any> | string)[]): Promise<any | null> {
+            if (iids.length === 1) {
+                const iidOrNs = iids[0];
+                if (!iidOrNs) return null;
+                return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns, true, false);
+            }
+            return Promise.all(
+                iids.map((iidOrNs) =>
+                    get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns, true, false),
+                ),
             );
         },
         createChildContext(name?: string): AsmContext {
@@ -139,7 +159,11 @@ export function createContext(
     };
     return ctxt;
 
-    function get<T>(ns: string, lookupGroups = true): Promise<T | null> {
+    async function get<T>(
+        ns: string,
+        lookupGroups = true,
+        throwIfNotFound = true,
+    ): Promise<T | null> {
         const serviceId = SERVICE + ns;
         const srv = services.get(serviceId);
         if (srv !== undefined) {
@@ -179,16 +203,23 @@ export function createContext(
                     const g = getPromise(f3);
                     return g.then(() => {
                         // look for an interface factory once the group has loaded
-                        return get(ns, false);
+                        return get(ns, false, throwIfNotFound) as any;
                     });
                 }
             }
             if (parent) {
-                return parent.get(ns as any);
+                if (throwIfNotFound) {
+                    return parent.get(ns as any);
+                } else {
+                    return parent.retrieve(ns as any);
+                }
             }
         }
-        // Not found -> error
-        logError("Interface not found:", ns);
+
+        if (throwIfNotFound) {
+            logError("Interface not found:", ns);
+            throw new Error(`[asimo:${path}] Interface not found: ${ns}`);
+        }
         return NULL_PROMISE;
     }
 
@@ -198,19 +229,23 @@ export function createContext(
         context: "registerService" | "registerFactory" | "registerGroup",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
-            logError(`[${context}] Invalid interface id:`, JSON.stringify(iid));
+            logError(`${context}: Invalid interface id:`, JSON.stringify(iid));
             return false;
         }
         if (factory && typeof factory !== "function") {
-            logError(`[${context}] Invalid factory:`, "" + factory);
+            logError(`${context}: Invalid factory:`, "" + factory);
             return false;
         }
         return true;
     }
 
+    function removeGroupEntry(iidNs: string) {
+        factories.delete(GROUP + iidNs);
+    }
+
     function logError(msg: string, data: any) {
         if (consoleOutput === "Errors") {
-            console.log(`%cASM %c${msg} %c${data}`, STL_ASM, "color: ", STL_DATA);
+            console.log(`%cASM [${path}] %c${msg} %c${data}`, STL_ASM, "color: ", STL_DATA);
         }
     }
 

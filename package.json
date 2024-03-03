@@ -23,7 +23,7 @@
         "clean": "rimraf dist lib",
         "build": "yarn clean && tsc && vite build && cp -R lib/*.d.ts dist",
         "test": "vitest",
-        "coverage": "vitest run --coverage",
+        "coverage": "vitest run --coverage --coverage.extension=.ts",
         "prepublish": "yarn build && vitest run"
     },
     "devDependencies": {

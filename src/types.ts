@@ -54,6 +54,8 @@ export interface AsmContext {
      * Note: the parameters can be either InterfaceId objects or interface namespaces (strings).
      * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
      * type cast will be necessary
+     * Note: this method will throw an error if the targeted service or object cannot be found/loaded
+     * @see retrieve
      * @param iid the service interface id
      */
     get<T>(iid: IidNs<T>): Promise<T>;
@@ -73,6 +75,32 @@ export interface AsmContext {
         iid5: IidNs<T5>,
     ): Promise<[T1, T2, T3, T4, T5]>;
     get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+    /**
+     * Same as get() but will not throw any error and will return null if the service or object cannot be found/loaded
+     * @see get
+     * @param iid
+     */
+    retrieve<T>(iid: IidNs<T>): Promise<T | null>;
+    retrieve<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1 | null, T2 | null]>;
+    retrieve<T1, T2, T3>(
+        iid1: IidNs<T1>,
+        iid2: IidNs<T2>,
+        iid3: IidNs<T3>,
+    ): Promise<[T1 | null, T2 | null, T3 | null]>;
+    retrieve<T1, T2, T3, T4>(
+        iid1: IidNs<T1>,
+        iid2: IidNs<T2>,
+        iid3: IidNs<T3>,
+        iid4: IidNs<T4>,
+    ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null]>;
+    retrieve<T1, T2, T3, T4, T5>(
+        iid1: IidNs<T1>,
+        iid2: IidNs<T2>,
+        iid3: IidNs<T3>,
+        iid4: IidNs<T4>,
+        iid5: IidNs<T5>,
+    ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null, T5 | null]>;
+    retrieve(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      * @param name a name to identifiy and differentiate this context from other contexts

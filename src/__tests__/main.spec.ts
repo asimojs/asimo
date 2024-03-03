@@ -7,7 +7,6 @@ import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincremento
 import { Multiplier, MultiplierIID, _MultiplierImpl } from "./multiplier";
 import { AdderIID, _add } from "./adder";
 import { Calculator, CalculatorIID } from "./types";
-import ".";
 
 describe("Asimo", () => {
     let asm: AsmContext;
@@ -158,9 +157,14 @@ describe("Asimo", () => {
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
 
         asm.consoleOutput = "";
-        const calc = await asm.get(CalcIID)!;
+        let err = "";
+        try {
+            const calc = await asm.get(CalcIID)!;
+        } catch (ex) {
+            err = ex.message;
+        }
         asm.consoleOutput = aco;
-        expect(calc).toBe(null);
+        expect(err).toBe("[asimo:/asm] Interface not found: asimo.src.tests.Calc");
     });
 
     describe("Invalid factories", () => {
@@ -276,9 +280,9 @@ describe("Asimo", () => {
     });
 
     describe("Object factories", () => {
-        it("should create multiple instances of a given object (root context)", async () => {
-            const m1 = (await asm.get(MultiplierIID))!;
-            const m2 = (await asm.get(MultiplierIID))!;
+        it("should create multiple instances of a given object (root context / get", async () => {
+            const m1 = await asm.get(MultiplierIID);
+            const m2 = await asm.get(MultiplierIID);
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -292,15 +296,58 @@ describe("Asimo", () => {
             expect(m2.numberOfCalls).toBe(1);
         });
 
-        it("should create multiple instances of a given object (sub context)", async () => {
+        it("should create multiple instances of a given object (root context) / retrieve", async () => {
+            const m1 = (await asm.retrieve(MultiplierIID))!;
+            const m2 = (await asm.retrieve(MultiplierIID))!;
+
+            expect(m1).not.toBe(m2);
+            expect(m1.numberOfCalls).toBe(0);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m1.multiply(2, 4)).toBe(8);
+            expect(m1.multiply(4)).toBe(8);
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m2.multiply(5, 4)).toBe(20);
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(1);
+        });
+
+        it("should return null if object is not found (retrieve)", async () => {
+            const calc = await asm.retrieve("asimo.src.tests.Calc123");
+            expect(calc).toBe(null);
+        });
+
+        it("should create multiple instances of a given object (sub context) / get", async () => {
             asm.registerFactory(MultiplierIID, () => {
                 const m = new _MultiplierImpl();
                 m.defaultArg = 3;
                 return m;
             });
 
-            const m1 = (await asm.get(MultiplierIID))!;
-            const m2 = (await asm.get(MultiplierIID))!;
+            const m1 = await asm.get(MultiplierIID);
+            const m2 = await asm.get(MultiplierIID);
+
+            expect(m1).not.toBe(m2);
+            expect(m1.numberOfCalls).toBe(0);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m1.multiply(2, 4)).toBe(8);
+            expect(m1.multiply(4)).toBe(12); // defaultArg is 3
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(0);
+            expect(m2.multiply(5)).toBe(15); // defaultArg is 3
+            expect(m1.numberOfCalls).toBe(2);
+            expect(m2.numberOfCalls).toBe(1);
+        });
+
+        it("should create multiple instances of a given object (sub context) / retrieve", async () => {
+            asm.registerFactory(MultiplierIID, () => {
+                const m = new _MultiplierImpl();
+                m.defaultArg = 3;
+                return m;
+            });
+
+            const m1 = (await asm.retrieve(MultiplierIID))!;
+            const m2 = (await asm.retrieve(MultiplierIID))!;
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -331,6 +378,15 @@ describe("Asimo", () => {
             expect(m.numberOfCalls).toBe(1);
             expect(c1.add(3, 4)).toBe(7);
             expect(c2.numberOfCalls).toBe(1); // c2 === c1
+        });
+
+        it("should return object and service instances / retrieve", async () => {
+            const [m, c1, c2] = await asm.retrieve(MultiplierIID, CalculatorIID, CalculatorIID);
+            expect(m?.multiply(2, 5)).toBe(10);
+            expect(c1).toBe(c2);
+            expect(m?.numberOfCalls).toBe(1);
+            expect(c1?.add(3, 4)).toBe(7);
+            expect(c2?.numberOfCalls).toBe(1); // c2 === c1
         });
 
         it("should return multiple instances through string namespaces", async () => {
