@@ -1,4 +1,12 @@
-import { AsmContext, ConsoleOutput, InterfaceId, InterfaceNamespace } from "./types";
+import {
+    AsmContext,
+    AsmInterfaceDefinition,
+    ConsoleOutput,
+    InterfaceId,
+    InterfaceNamespace,
+} from "./types";
+
+export { AsmContext };
 
 /**
  * Create an interface id object that will be used to associate an interface namepsace with a typescript type
@@ -9,17 +17,32 @@ export function interfaceId<T>(ns: InterfaceNamespace): InterfaceId<T> {
     return { ns } as InterfaceId<T>;
 }
 
-const SERVICE = "service:"
-const OBJECT = "object:"
-const GROUP = "group:"
+const SERVICE = "service:";
+const OBJECT = "object:";
+const GROUP = "group:";
 const NULL_PROMISE = Promise.resolve(null);
 const STL_ASM = "color: #669df6";
 const STL_DATA = "color: #e39f00;font-weight:bold";
 
 // global console output mode - same value for all contexts
 let consoleOutput: ConsoleOutput = "Errors";
+// counter used to name unnamed contexts
+let count = 0;
 
-function createContext(parent?: AsmContext): AsmContext {
+export function createContext(
+    nameOrOptions?: string | { name?: string; parent?: AsmContext },
+): AsmContext {
+    let name = "";
+    let parent: AsmContext | null = null;
+    if (typeof nameOrOptions === "string") {
+        name = nameOrOptions || `AsmContext${++count}`;
+    } else {
+        name = nameOrOptions?.name || `AsmContext${++count}`;
+        parent = nameOrOptions?.parent || null;
+    }
+    name = name.replace(/\//g, "\\/");
+    const path = `${parent?.path || ""}/${name}`;
+
     // group counter used to create unique group ids
     let groupCount = 0;
     // registered factories - keys have the following format:
@@ -29,6 +52,35 @@ function createContext(parent?: AsmContext): AsmContext {
     const services = new Map<string, Promise<any>>();
 
     const ctxt = {
+        /** The context name */
+        get name() {
+            return name;
+        },
+        /** The parent context, if any */
+        get parent() {
+            return parent;
+        },
+        /** The interface path, built from the context parent path */
+        get path() {
+            return path;
+        },
+        /** The interface definitions that are currently loaded in the context */
+        get definitions() {
+            const defs: AsmInterfaceDefinition[] = [];
+            for (const k of factories.keys()) {
+                // ex: "service:asimo.src.tests.Calculator"
+                const parts = k.split(":");
+                const def: AsmInterfaceDefinition = {
+                    iid: parts[1] ?? "",
+                    type: parts[0] as AsmInterfaceDefinition["type"],
+                };
+                if (def.type === "service") {
+                    def.loaded = services.has(k);
+                }
+                defs.push(def);
+            }
+            return defs;
+        },
         /** Register a service factory */
         registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
             validate(iid, factory, "registerService") && factories.set(SERVICE + iid.ns, factory);
@@ -39,7 +91,7 @@ function createContext(parent?: AsmContext): AsmContext {
         },
         /** Register a factory group */
         registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
-            const groupId = GROUP + (++groupCount);
+            const groupId = GROUP + ++groupCount;
             if (typeof loader !== "function") {
                 logError(`[registerGroup] Invalid group loader:`, "" + loader);
                 return;
@@ -66,10 +118,12 @@ function createContext(parent?: AsmContext): AsmContext {
                 if (!iidOrNs) return Promise.resolve(null);
                 return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
             }
-            return Promise.all(iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)));
+            return Promise.all(
+                iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)),
+            );
         },
-        createChildContext(): AsmContext {
-            return createContext(ctxt);
+        createChildContext(name?: string): AsmContext {
+            return createContext({ name, parent: ctxt });
         },
         get consoleOutput() {
             return consoleOutput;
@@ -81,8 +135,8 @@ function createContext(parent?: AsmContext): AsmContext {
             } else {
                 consoleOutput = "";
             }
-        }
-    }
+        },
+    };
     return ctxt;
 
     function get<T>(ns: string, lookupGroups = true): Promise<T | null> {
@@ -138,7 +192,11 @@ function createContext(parent?: AsmContext): AsmContext {
         return NULL_PROMISE;
     }
 
-    function validate(iid: InterfaceId<any>, factory: (() => any) | null, context: "registerService" | "registerFactory" | "registerGroup") {
+    function validate(
+        iid: InterfaceId<any>,
+        factory: (() => any) | null,
+        context: "registerService" | "registerFactory" | "registerGroup",
+    ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
             logError(`[${context}] Invalid interface id:`, JSON.stringify(iid));
             return false;
@@ -152,7 +210,7 @@ function createContext(parent?: AsmContext): AsmContext {
 
     function logError(msg: string, data: any) {
         if (consoleOutput === "Errors") {
-            console.log(`%cASM %c${msg} %c${data}`, STL_ASM, 'color: ', STL_DATA);
+            console.log(`%cASM %c${msg} %c${data}`, STL_ASM, "color: ", STL_DATA);
         }
     }
 
@@ -168,7 +226,6 @@ function createContext(parent?: AsmContext): AsmContext {
         }
         return p;
     }
-
 }
 
 let _asm: AsmContext;
@@ -178,10 +235,9 @@ if ((globalThis as any)["asm"]) {
     // asm must be unique
     _asm = (globalThis as any)["asm"];
 } else {
-    _asm = createContext();
+    _asm = createContext("asm");
 }
 (globalThis as any)["asm"] = _asm;
-
 
 /**
  * Root context

@@ -5,6 +5,23 @@
  */
 export interface AsmContext {
     /**
+     * The context name - helps differentiating multiple contexts
+     */
+    readonly name: string;
+    /**
+     * The parent context where dependencies will be retrieved if not found in the current context
+     */
+    readonly parent: AsmContext | null;
+    /**
+     * A unique path identifier listing all context names from the top parent context
+     * e.g. "/asm/subContext1/subContext2"
+     */
+    readonly path: string;
+    /**
+     * The interface definitions that are currently loaded in the context
+     */
+    readonly definitions: AsmInterfaceDefinition[];
+    /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the AsmContext. Services will be created on-demand, when retrieved for the first time
      * @param iid the interface id
@@ -42,17 +59,38 @@ export interface AsmContext {
     get<T>(iid: IidNs<T>): Promise<T>;
     get<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1, T2]>;
     get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
-    get<T1, T2, T3, T4>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>): Promise<[T1, T2, T3, T4]>;
-    get<T1, T2, T3, T4, T5>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>, iid4: IidNs<T4>, iid5: IidNs<T5>): Promise<[T1, T2, T3, T4, T5]>;
+    get<T1, T2, T3, T4>(
+        iid1: IidNs<T1>,
+        iid2: IidNs<T2>,
+        iid3: IidNs<T3>,
+        iid4: IidNs<T4>,
+    ): Promise<[T1, T2, T3, T4]>;
+    get<T1, T2, T3, T4, T5>(
+        iid1: IidNs<T1>,
+        iid2: IidNs<T2>,
+        iid3: IidNs<T3>,
+        iid4: IidNs<T4>,
+        iid5: IidNs<T5>,
+    ): Promise<[T1, T2, T3, T4, T5]>;
     get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
+     * @param name a name to identifiy and differentiate this context from other contexts
      */
-    createChildContext(): AsmContext;
+    createChildContext(name?: string): AsmContext;
     /**
      * Tell asimo how console logs should be handled
      */
     consoleOutput: ConsoleOutput;
+}
+
+export interface AsmInterfaceDefinition {
+    /** The interface id */
+    iid: string;
+    /** The type of of object the interface is going to produce */
+    type: "service" | "object" | "group";
+    /** Tell if the service or group associated to the interface have been loaded (not used for object) */
+    loaded?: boolean;
 }
 
 /**
