@@ -29,6 +29,13 @@ let consoleOutput: ConsoleOutput = "Errors";
 // counter used to name unnamed contexts
 let count = 0;
 
+/**
+ * Create an asimo context
+ * @param nameOrOptions the context name or an options object with the following properties:
+ * - name: the context name (default: a unique name will be created)
+ * - parent: the parent context (default: null = root context)
+ * @returns an asimo context
+ */
 export function createContext(
     nameOrOptions?: string | { name?: string; parent?: AsmContext },
 ): AsmContext {

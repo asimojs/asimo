@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, interfaceId, createContext } from "../asimo";
+import { asm as rsm, interfaceId, createContext, AsmContext } from "../asimo";
 import { _CalculatorService } from "./calculator";
-import { AsmContext } from "../types";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
 import { Multiplier, MultiplierIID, _MultiplierImpl } from "./multiplier";
@@ -395,6 +394,14 @@ describe("Asimo", () => {
             const [m, c] = await asm.get(ns1, ns2);
             expect((m as Multiplier).multiply(2, 5)).toBe(10);
             expect((c as Calculator).add(3, 4)).toBe(7);
+        });
+
+        it("should return multiple object instances", async () => {
+            const [m1, m2] = await asm.retrieve(MultiplierIID, MultiplierIID);
+            expect(m1?.multiply(2, 5)).toBe(10);
+            expect(m1?.numberOfCalls).toBe(1);
+            expect(m2?.numberOfCalls).toBe(0);
+            expect(m2?.multiply(2, 21)).toBe(42);
         });
     });
 

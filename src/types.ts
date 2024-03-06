@@ -117,7 +117,7 @@ export interface AsmInterfaceDefinition {
     iid: string;
     /** The type of of object the interface is going to produce */
     type: "service" | "object" | "group";
-    /** Tell if the service or group associated to the interface have been loaded (not used for object) */
+    /** Tell if the service associated to the interface has been loaded (not used for object or groups) */
     loaded?: boolean;
 }
 
