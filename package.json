@@ -1,8 +1,8 @@
 {
     "name": "@asimojs/asimo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Asynchronous dependency injection for Typescript projects",
-    "main": "dist/asimo.mjs",
+    "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
     "typings": "dist/asimo.d.ts",
     "type": "module",
