@@ -1,7 +1,7 @@
 {
     "name": "@asimojs/asimo",
     "version": "1.1.0",
-    "description": "Asynchronous dependency injection for Typescript projects",
+    "description": "Asynchronous dependency manager for Typescript projects",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
     "typings": "dist/asimo.d.ts",
@@ -12,12 +12,20 @@
     ],
     "author": "Bertrand Laporte",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/asimojs/asimo.git"
+      },
     "bugs": "https://github.com/asimojs/asimo/issues",
+    "homepage": "https://github.com/asimojs/asimo",
     "keywords": [
         "dependency injection",
         "DI",
+        "test",
+        "progressive load",
+        "application packaging",
         "module",
-        "moduule loader"
+        "module loader"
     ],
     "scripts": {
         "clean": "rimraf dist lib",
