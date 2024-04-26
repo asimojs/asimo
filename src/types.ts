@@ -110,6 +110,25 @@ export interface AsmContext {
      * Tell asimo how console logs should be handled
      */
     consoleOutput: ConsoleOutput;
+    /**
+     * Create a weak reference to a given object and return a string identifier
+     * typed with the object passed as argument (cf. getObject)
+     * Asimo only keeps a weak reference to the object, so it is the responsibility of
+     * the object creator to manage its life cycle (i.e. asimo will not prevent the object
+     * from being garbage collected if the object is not reference elsewhere)
+     * @param o
+     */
+    createObjectRef<T extends object>(o: T): AsmRefId<T>;
+    /**
+     * Remove a weak ref to an object associated to a given reference id
+     */
+    removeObjectRef<T extends object>(id: AsmRefId<T>): boolean;
+    /**
+     * Retrieve an object from a given reference id
+     * Return null if the object has been garbage-collected or if the reference has previously been unregistered
+     * @param id
+     */
+    getObject<T extends object>(id: AsmRefId<T>): T | null;
 }
 
 export interface AsmInterfaceDefinition {
@@ -120,6 +139,9 @@ export interface AsmInterfaceDefinition {
     /** Tell if the service associated to the interface has been loaded (not used for object or groups) */
     loaded?: boolean;
 }
+
+/** Object reference id */
+export interface AsmRefId<T> extends String {}
 
 /**
  * Tell asimo how console logs should be handled:

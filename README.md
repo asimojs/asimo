@@ -1,20 +1,21 @@
 # asimo
 
-Asimo is a micro libray that allows to improve **JS module dependencies** management. Asimo approach is different from traditional **Dependency Injection (DI)** solutions as its principle is to retrieve dependencies **on-demand** and **asynchronously** (thus the name ASYnchronous MOdule loader).
+Asimo is a micro libray that allows to ease **JS dependency** management (i.e. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional **Dependency Injection (DI)** solutions as its principle is to retrieve dependencies **on-demand** and **asynchronously** (thus the name ASYnchronous MOdule loader).
 
 Asimo was built from the following realizations:
 
 -   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to use a fake _localStorage_ service to simulate different start state in an application).
--   **Dependency Injection is not adapted to client-side code**. Indeed, client applications cannot afford loading a large code base on application start. With Dependency injections, all dependencies are loaded when a given entity is created which eventually results in large code packages. On the contrary, **asimo approach is to load dependencies when needed**, which allows to reference rarely used functionalities anywhere in the application code without any impact on the initial download.
+-   **Dependency Injection is not adapted to client-side code** as client applications cannot afford loading a large code base on application startup. With Dependency injections, all dependencies are loaded when a given entity is created which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to reference rarely used functionalities anywhere in the application without any impact on the initial download. Besides asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
 
 ## Why should you use asimo?
 
-Asimo helps solving 3 categories of problems:
+Asimo helps solving 4 types of problems:
 
 -   **unit testing**: asimo can replace dependencies with mock dependencies (e.g. in the test enviroment, unit tests can call a fake _fetch()_ that will return stable data).
--   **development**: asimo allows to develop _mock environment_ solutions that
-    can simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. Beside the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for unit tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
+-   **development**: asimo simplifies the development of _mock environment_ solutions that
+    simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for unit tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
 -   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup time by optimizing the initial application load. Besides the application code is not aware of the bundle configuration that can be changed without any code refactoring.
+-   **object JSON references**: asimo allows to generate unique string ids associated to typed objects in order to generate ids that can be used in JSON structures (e.g. to model graphs or to reference non-JSON objects in JSON structures). A typical example can be found in MVC architetures to expose references to Controllers from the Model objects (cf. **createObjectRef()** and **getObject()** asimo methods)
 
 Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
@@ -67,7 +68,7 @@ On top of that, and like with any dependency management systems, asimo allows to
 
 ```typescript
 const asm2 = asm.createChildContext("context2");
-// context2 is a name that will help differentiate asm2 from asm
+// context2 is a name that will help differentiate asm2 from asm in case of troubleshooting
 
 // another method - equivalent to asm2.createChildContext("context3");
 const asm3 = createContext({ name: "context3", parent: asm2 });
@@ -304,6 +305,45 @@ Example:
 // Register several interface implementation that will be loaded on-demand through
 // a dynamic module import (this assumes that the implementaion are defined in the module)
 asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupA"));
+```
+
+### `createObjectRef()` / `getObject()` / `removeObjectRef()`
+
+These methods allow to create and store [weak][weakref] object references to any object that we want to make accessible through string identifiers. A common use case can be found in [MVC][mvc] architetures to expose references to [Controllers][mvc] from the Model objects. Incidentally, this also allows to reduce the number of componenet parameters in a React environment as controllers can be retrieved from the View Model tree.
+
+Note: asimo only keep [weak references][weakref] and it is the responsibility of the object owner to keep an actual reference to the object to prevent the object garbage collection. This mechanism ensures that asimo doesn't create any memory leak.
+
+[weakref]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakRef
+[mvc]: https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller
+
+Example:
+
+```typescript
+const objA = {
+    foo: 123,
+    bar: "abc",
+    concat() {
+        this.bar += this.foo;
+    },
+};
+
+// create a reference id (string)
+const refA = asm.createObjectRef(objA);
+
+// retrieve the object from the reference id
+const a = asm.getObject(refA);
+// a type is the same as objA -> VS Code auto-completion works
+expect(a).toBe(objA); // true
+expect(a?.foo).toBe(123);
+expect(a?.bar).toBe("abc");
+a?.concat();
+expect(a?.bar).toBe("abc123");
+
+// remove the ref
+asm.removeObjectRef(refA);
+
+const a2 = asm.getObject(refA);
+expect(a2).toBe(null); // true - internal ref has been removed
 ```
 
 ### `createChildContext()`
