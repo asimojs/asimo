@@ -142,7 +142,7 @@ export function createContext(
             );
         },
         /** Get a service or an object instance (services have priority) - return null if target not found */
-        async retrieve(...iids: (InterfaceId<any> | string)[]): Promise<any | null> {
+        async fetch(...iids: (InterfaceId<any> | string)[]): Promise<any | null> {
             if (iids.length === 1) {
                 const iidOrNs = iids[0];
                 if (!iidOrNs) return null;
@@ -248,7 +248,7 @@ export function createContext(
                 if (throwIfNotFound) {
                     return parent.get(ns as any);
                 } else {
-                    return parent.retrieve(ns as any);
+                    return parent.fetch(ns as any);
                 }
             }
         }

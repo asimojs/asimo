@@ -46,16 +46,16 @@ export interface AsmContext {
      */
     registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
     /**
-     * Retrieve a service or an object instance. For each interface id, asimo will first look in the current
+     * Fetch a service or an object instance. For each interface id, asimo will first look in the current
      * context for services or object factories or groups registered for the interface (in this order) - if not found
      * it will then perform the same lookup in its parent context (recursively, up to the root context).
-     * This method allows to retrieve up to 5 dependencies in one call with type support (more can be retrieved
+     * This method allows to get up to 5 dependencies in one call with type support (more can be fetched
      * without type inference).
      * Note: the parameters can be either InterfaceId objects or interface namespaces (strings).
      * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
      * type cast will be necessary
      * Note: this method will throw an error if the targeted service or object cannot be found/loaded
-     * @see retrieve
+     * @see fetch
      * @param iid the service interface id
      */
     get<T>(iid: IidNs<T>): Promise<T>;
@@ -80,27 +80,27 @@ export interface AsmContext {
      * @see get
      * @param iid
      */
-    retrieve<T>(iid: IidNs<T>): Promise<T | null>;
-    retrieve<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1 | null, T2 | null]>;
-    retrieve<T1, T2, T3>(
+    fetch<T>(iid: IidNs<T>): Promise<T | null>;
+    fetch<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1 | null, T2 | null]>;
+    fetch<T1, T2, T3>(
         iid1: IidNs<T1>,
         iid2: IidNs<T2>,
         iid3: IidNs<T3>,
     ): Promise<[T1 | null, T2 | null, T3 | null]>;
-    retrieve<T1, T2, T3, T4>(
+    fetch<T1, T2, T3, T4>(
         iid1: IidNs<T1>,
         iid2: IidNs<T2>,
         iid3: IidNs<T3>,
         iid4: IidNs<T4>,
     ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null]>;
-    retrieve<T1, T2, T3, T4, T5>(
+    fetch<T1, T2, T3, T4, T5>(
         iid1: IidNs<T1>,
         iid2: IidNs<T2>,
         iid3: IidNs<T3>,
         iid4: IidNs<T4>,
         iid5: IidNs<T5>,
     ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null, T5 | null]>;
-    retrieve(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+    fetch(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      * @param name a name to identifiy and differentiate this context from other contexts

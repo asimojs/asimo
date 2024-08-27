@@ -1,6 +1,6 @@
 # asimo
 
-Asimo is a micro libray that allows to ease **JS dependency** management (i.e. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional **Dependency Injection (DI)** solutions as its principle is to retrieve dependencies **on-demand** and **asynchronously** (thus the name ASYnchronous MOdule loader).
+Asimo is a micro libray that allows to ease **JS dependency** management (i.e. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional solutions like **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allow to load the dependency module on-demand, thus the name ASYnchronous MOdule loader).
 
 Asimo was built from the following realizations:
 
@@ -35,7 +35,7 @@ Other key features:
 
 ## How does it work?
 
-Asimo core principle is to create **Dependency context** objects that will be called by the application to retrieve dependencies. A typical dependency retrieval will look like this:
+Like most dependency management systems, Asimo base principle is to create **Dependency context** objects that will be called by the application to retrieve dependencies. A typical dependency retrieval will look like this:
 
 ```typescript
 // retrieve the calculator service (asynchronous)
@@ -215,11 +215,11 @@ type cast will be necessary, as shown below
 Examples:
 
 ```typescript
-// Retrieve one dependency
+// Get one dependency
 const calc = await asm.get(CalculatorIID);
 calc.add(1, 2); // calc2 type is Calculator
 
-// Retrieve one dependency by namesapce
+// Get one dependency by namesapce
 const calc2 = await asm.get("asimo.src.tests.Calculator");
 (calc2 as Calculator).add(1, 2); // calc2 type is unknown
 
@@ -227,21 +227,21 @@ const calc2 = await asm.get("asimo.src.tests.Calculator");
 const [m, c, a] = await asm.get(MultiplierIID, CalculatorIID, AdderIID);
 ```
 
-### `retrieve()`
+### `fetch()`
 
 This method is similar to _get()_ with the difference that it will return _null_ if the dependency is not found (instead of throwing an exception).
 
 ```typescript
-// Retrieve one dependency
-const calc = await asm.retrieve(CalculatorIID);
+// Get one dependency
+const calc = await asm.fetch(CalculatorIID);
 calc?.add(1, 2); // calc2 type is Calculator | null
 
 // Retrieve one dependency by namesapce
-const calc2 = await asm.get("asimo.src.tests.Calculator");
+const calc2 = await asm.fetch("asimo.src.tests.Calculator");
 (calc2 as Calculator)!.add(1, 2); // calc2 type is unknown
 
 // Retrieve multiple dependencies - also works with namespace strings:
-const [m, c, a] = await asm.get(MultiplierIID, CalculatorIID, AdderIID);
+const [m, c, a] = await asm.fetch(MultiplierIID, CalculatorIID, AdderIID);
 //     m is of type Multiplier
 //     c is of type Calculator
 //     a is of type Adder

@@ -295,9 +295,9 @@ describe("Asimo", () => {
             expect(m2.numberOfCalls).toBe(1);
         });
 
-        it("should create multiple instances of a given object (root context) / retrieve", async () => {
-            const m1 = (await asm.retrieve(MultiplierIID))!;
-            const m2 = (await asm.retrieve(MultiplierIID))!;
+        it("should create multiple instances of a given object (root context) / fetch", async () => {
+            const m1 = (await asm.fetch(MultiplierIID))!;
+            const m2 = (await asm.fetch(MultiplierIID))!;
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -311,8 +311,8 @@ describe("Asimo", () => {
             expect(m2.numberOfCalls).toBe(1);
         });
 
-        it("should return null if object is not found (retrieve)", async () => {
-            const calc = await asm.retrieve("asimo.src.tests.Calc123");
+        it("should return null if object is not found (fetch)", async () => {
+            const calc = await asm.fetch("asimo.src.tests.Calc123");
             expect(calc).toBe(null);
         });
 
@@ -338,15 +338,15 @@ describe("Asimo", () => {
             expect(m2.numberOfCalls).toBe(1);
         });
 
-        it("should create multiple instances of a given object (sub context) / retrieve", async () => {
+        it("should create multiple instances of a given object (sub context) / fetch", async () => {
             asm.registerFactory(MultiplierIID, () => {
                 const m = new _MultiplierImpl();
                 m.defaultArg = 3;
                 return m;
             });
 
-            const m1 = (await asm.retrieve(MultiplierIID))!;
-            const m2 = (await asm.retrieve(MultiplierIID))!;
+            const m1 = (await asm.fetch(MultiplierIID))!;
+            const m2 = (await asm.fetch(MultiplierIID))!;
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -379,8 +379,8 @@ describe("Asimo", () => {
             expect(c2.numberOfCalls).toBe(1); // c2 === c1
         });
 
-        it("should return object and service instances / retrieve", async () => {
-            const [m, c1, c2] = await asm.retrieve(MultiplierIID, CalculatorIID, CalculatorIID);
+        it("should return object and service instances / fetch", async () => {
+            const [m, c1, c2] = await asm.fetch(MultiplierIID, CalculatorIID, CalculatorIID);
             expect(m?.multiply(2, 5)).toBe(10);
             expect(c1).toBe(c2);
             expect(m?.numberOfCalls).toBe(1);
@@ -397,7 +397,7 @@ describe("Asimo", () => {
         });
 
         it("should return multiple object instances", async () => {
-            const [m1, m2] = await asm.retrieve(MultiplierIID, MultiplierIID);
+            const [m1, m2] = await asm.fetch(MultiplierIID, MultiplierIID);
             expect(m1?.multiply(2, 5)).toBe(10);
             expect(m1?.numberOfCalls).toBe(1);
             expect(m2?.numberOfCalls).toBe(0);
