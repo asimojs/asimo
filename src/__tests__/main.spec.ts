@@ -8,7 +8,7 @@ import { AdderIID, _add } from "./adder";
 import { Calculator, CalculatorIID } from "./types";
 
 describe("Asimo", () => {
-    let asm: AsmContext;
+    let context: AsmContext;
 
     function createTestContext(name?: string) {
         const c = rsm.createChildContext(name || "test");
@@ -23,7 +23,7 @@ describe("Asimo", () => {
 
     beforeEach(() => {
         // run tests in an independent context
-        asm = createTestContext();
+        context = createTestContext();
     });
 
     it("should be available from globalThis", async () => {
@@ -111,7 +111,7 @@ describe("Asimo", () => {
         expect(s1bis).toBe(s1);
         expect(s1bis?.numberOfCalls).toBe(1);
 
-        const s = await asm.get(CalculatorIID)!;
+        const s = await context.get(CalculatorIID)!;
         expect(s).not.toBe(s1);
         expect(s).not.toBe(s2);
         expect(s?.numberOfCalls).toBe(0);
@@ -120,9 +120,9 @@ describe("Asimo", () => {
     it("should support async factories", async () => {
         // create a 2nd interface id for the calculator
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-        asm.registerService(CalcIID, async () => new _CalculatorService());
+        context.registerService(CalcIID, async () => new _CalculatorService());
 
-        const calc = await asm.get(CalcIID)!;
+        const calc = await context.get(CalcIID)!;
 
         expect(calc?.numberOfCalls).toBe(0);
         expect(calc?.add(21, 21)).toBe(42);
@@ -130,10 +130,10 @@ describe("Asimo", () => {
     });
 
     it("should delegate creation to parent context", async () => {
-        const calc1 = await asm.get(CalculatorIID)!;
+        const calc1 = await context.get(CalculatorIID)!;
         calc1?.add(1, 2);
 
-        const c1 = asm.createChildContext();
+        const c1 = context.createChildContext();
         const calc2 = await c1.get(CalculatorIID)!;
 
         expect(calc2).toBe(calc1);
@@ -141,10 +141,10 @@ describe("Asimo", () => {
     });
 
     it("should support get with string namespaces", async () => {
-        const calc1 = await asm.get(CalculatorIID.ns);
+        const calc1 = await context.get(CalculatorIID.ns);
         (calc1 as Calculator).add(1, 2);
 
-        const c1 = asm.createChildContext();
+        const c1 = context.createChildContext();
         const calc2 = await c1.get(CalculatorIID)!;
 
         expect(calc2).toBe(calc1);
@@ -152,27 +152,27 @@ describe("Asimo", () => {
     });
 
     it("should return null for unknown interfaces", async () => {
-        const aco = asm.consoleOutput;
+        const aco = context.consoleOutput;
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
 
-        asm.consoleOutput = "";
+        context.consoleOutput = "";
         let err = "";
         try {
-            const calc = await asm.get(CalcIID)!;
+            const calc = await context.get(CalcIID)!;
         } catch (ex) {
             err = ex.message;
         }
-        asm.consoleOutput = aco;
-        expect(err).toBe("[asimo:/asm] Interface not found: asimo.src.tests.Calc");
+        context.consoleOutput = aco;
+        expect(err).toBe('[Dependency Context] Interface "asimo.src.tests.Calc" not found in /asm');
     });
 
     describe("Invalid factories", () => {
         it("should return null when factory return undefined", async () => {
             // create a 2nd interface id for the calculator
             const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-            asm.registerService(CalcIID, () => undefined);
+            context.registerService(CalcIID, () => undefined);
 
-            const calc = await asm.get(CalcIID)!;
+            const calc = await context.get(CalcIID)!;
 
             expect(calc).toBe(null);
         });
@@ -180,9 +180,9 @@ describe("Asimo", () => {
         it("should return null when async factory returns undefined", async () => {
             // create a 2nd interface id for the calculator
             const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-            asm.registerService(CalcIID, async () => undefined);
+            context.registerService(CalcIID, async () => undefined);
 
-            const calc = await asm.get(CalcIID)!;
+            const calc = await context.get(CalcIID)!;
 
             expect(calc).toBe(null);
         });
@@ -190,9 +190,9 @@ describe("Asimo", () => {
         it("should return null when factory does not return an object", async () => {
             // create a 2nd interface id for the calculator
             const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-            asm.registerService(CalcIID, () => 123 as any);
+            context.registerService(CalcIID, () => 123 as any);
 
-            const calc = await asm.get(CalcIID)!;
+            const calc = await context.get(CalcIID)!;
 
             expect(calc).toBe(null);
         });
@@ -200,9 +200,9 @@ describe("Asimo", () => {
         it("should return null when async factory does not return an object", async () => {
             // create a 2nd interface id for the calculator
             const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
-            asm.registerService(CalcIID, async () => 123 as any);
+            context.registerService(CalcIID, async () => 123 as any);
 
-            const calc = await asm.get(CalcIID)!;
+            const calc = await context.get(CalcIID)!;
 
             expect(calc).toBe(null);
         });
@@ -210,10 +210,10 @@ describe("Asimo", () => {
 
     describe("Sync style service dependencies", () => {
         it("should load a service with a custom context", async () => {
-            const calc = (await asm.get(CalculatorIID))!;
-            const inc = (await asm.get(SyncIncrementorIID))!;
+            const calc = (await context.get(CalculatorIID))!;
+            const inc = (await context.get(SyncIncrementorIID))!;
 
-            await inc.init(asm);
+            await inc.init(context);
 
             expect(calc.numberOfCalls).toBe(0);
             expect(inc.increment(41)).toBe(42);
@@ -225,8 +225,8 @@ describe("Asimo", () => {
 
         it("should load a service with the default context", async () => {
             const rootCalc = (await rsm.get(CalculatorIID))!;
-            const calc = (await asm.get(CalculatorIID))!;
-            const inc = (await asm.get(SyncIncrementorIID))!;
+            const calc = (await context.get(CalculatorIID))!;
+            const inc = (await context.get(SyncIncrementorIID))!;
 
             await inc.init(); // no args => rootAsm will be used
 
@@ -242,17 +242,17 @@ describe("Asimo", () => {
         });
 
         it("should support function services", async () => {
-            const add = await asm.get(AdderIID);
+            const add = await context.get(AdderIID);
             expect(add(39, 3)).toBe(42);
         });
     });
 
     describe("Async style service dependencies", () => {
         it("should load a service with a custom context", async () => {
-            const calc = (await asm.get(CalculatorIID))!;
-            const inc = (await asm.get(AsyncIncrementorIID))!;
+            const calc = (await context.get(CalculatorIID))!;
+            const inc = (await context.get(AsyncIncrementorIID))!;
 
-            inc.di = asm;
+            inc.di = context;
 
             expect(calc.numberOfCalls).toBe(0);
             expect(await inc.increment(41)).toBe(42);
@@ -263,8 +263,8 @@ describe("Asimo", () => {
         });
         it("should load a service with the default context", async () => {
             const rootCalc = (await rsm.get(CalculatorIID))!;
-            const calc = await asm.get(CalculatorIID);
-            const inc = (await asm.get(AsyncIncrementorIID))!;
+            const calc = await context.get(CalculatorIID);
+            const inc = (await context.get(AsyncIncrementorIID))!;
 
             rootCalc.numberOfCalls = 0; // reset
             expect(calc.numberOfCalls).toBe(0);
@@ -280,8 +280,8 @@ describe("Asimo", () => {
 
     describe("Object factories", () => {
         it("should create multiple instances of a given object (root context / get", async () => {
-            const m1 = await asm.get(MultiplierIID);
-            const m2 = await asm.get(MultiplierIID);
+            const m1 = await context.get(MultiplierIID);
+            const m2 = await context.get(MultiplierIID);
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -296,8 +296,8 @@ describe("Asimo", () => {
         });
 
         it("should create multiple instances of a given object (root context) / fetch", async () => {
-            const m1 = (await asm.fetch(MultiplierIID))!;
-            const m2 = (await asm.fetch(MultiplierIID))!;
+            const m1 = (await context.fetch(MultiplierIID))!;
+            const m2 = (await context.fetch(MultiplierIID))!;
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -312,19 +312,19 @@ describe("Asimo", () => {
         });
 
         it("should return null if object is not found (fetch)", async () => {
-            const calc = await asm.fetch("asimo.src.tests.Calc123");
+            const calc = await context.fetch("asimo.src.tests.Calc123");
             expect(calc).toBe(null);
         });
 
         it("should create multiple instances of a given object (sub context) / get", async () => {
-            asm.registerFactory(MultiplierIID, () => {
+            context.registerFactory(MultiplierIID, () => {
                 const m = new _MultiplierImpl();
                 m.defaultArg = 3;
                 return m;
             });
 
-            const m1 = await asm.get(MultiplierIID);
-            const m2 = await asm.get(MultiplierIID);
+            const m1 = await context.get(MultiplierIID);
+            const m2 = await context.get(MultiplierIID);
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -339,14 +339,14 @@ describe("Asimo", () => {
         });
 
         it("should create multiple instances of a given object (sub context) / fetch", async () => {
-            asm.registerFactory(MultiplierIID, () => {
+            context.registerFactory(MultiplierIID, () => {
                 const m = new _MultiplierImpl();
                 m.defaultArg = 3;
                 return m;
             });
 
-            const m1 = (await asm.fetch(MultiplierIID))!;
-            const m2 = (await asm.fetch(MultiplierIID))!;
+            const m1 = (await context.fetch(MultiplierIID))!;
+            const m2 = (await context.fetch(MultiplierIID))!;
 
             expect(m1).not.toBe(m2);
             expect(m1.numberOfCalls).toBe(0);
@@ -363,7 +363,7 @@ describe("Asimo", () => {
 
     describe("Multi getter", () => {
         it("should return multiple object instances", async () => {
-            const [m1, m2] = await asm.get(MultiplierIID, MultiplierIID);
+            const [m1, m2] = await context.get(MultiplierIID, MultiplierIID);
             expect(m1.multiply(2, 5)).toBe(10);
             expect(m1.numberOfCalls).toBe(1);
             expect(m2.numberOfCalls).toBe(0);
@@ -371,7 +371,7 @@ describe("Asimo", () => {
         });
 
         it("should return object and service instances", async () => {
-            const [m, c1, c2] = await asm.get(MultiplierIID, CalculatorIID, CalculatorIID);
+            const [m, c1, c2] = await context.get(MultiplierIID, CalculatorIID, CalculatorIID);
             expect(m.multiply(2, 5)).toBe(10);
             expect(c1).toBe(c2);
             expect(m.numberOfCalls).toBe(1);
@@ -380,7 +380,7 @@ describe("Asimo", () => {
         });
 
         it("should return object and service instances / fetch", async () => {
-            const [m, c1, c2] = await asm.fetch(MultiplierIID, CalculatorIID, CalculatorIID);
+            const [m, c1, c2] = await context.fetch(MultiplierIID, CalculatorIID, CalculatorIID);
             expect(m?.multiply(2, 5)).toBe(10);
             expect(c1).toBe(c2);
             expect(m?.numberOfCalls).toBe(1);
@@ -391,13 +391,13 @@ describe("Asimo", () => {
         it("should return multiple instances through string namespaces", async () => {
             const ns1 = MultiplierIID.ns;
             const ns2 = CalculatorIID.ns;
-            const [m, c] = await asm.get(ns1, ns2);
+            const [m, c] = await context.get(ns1, ns2);
             expect((m as Multiplier).multiply(2, 5)).toBe(10);
             expect((c as Calculator).add(3, 4)).toBe(7);
         });
 
         it("should return multiple object instances", async () => {
-            const [m1, m2] = await asm.fetch(MultiplierIID, MultiplierIID);
+            const [m1, m2] = await context.fetch(MultiplierIID, MultiplierIID);
             expect(m1?.multiply(2, 5)).toBe(10);
             expect(m1?.numberOfCalls).toBe(1);
             expect(m2?.numberOfCalls).toBe(0);

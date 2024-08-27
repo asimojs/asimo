@@ -58,6 +58,8 @@ export function createContext(
     const factories = new Map<string, () => any | Promise<any>>();
     // services or loaders that have already been instanciated
     const services = new Map<string, Promise<any>>();
+    // objects that can be retrieved through getObject / fetchObject
+    let objects: Map<string, object> | null = null;
 
     const ctxt = {
         /** The context name */
@@ -88,6 +90,15 @@ export function createContext(
                 defs.push(def);
             }
             return defs;
+        },
+        /** Register an object instance */
+        registerObject<T extends object>(iid: InterfaceId<T>, o: T): void {
+            if (validate(iid, null, "registerObject")) {
+                if (!objects) {
+                    objects = new Map();
+                }
+                objects.set(iid.ns, o);
+            }
         },
         /** Register a service factory */
         registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
@@ -130,7 +141,9 @@ export function createContext(
             if (iids.length === 1) {
                 const iidOrNs = iids[0];
                 if (!iidOrNs)
-                    throw new Error(`[asimo:${path}] get(): Interface id cannot be empty`);
+                    throw new Error(
+                        `[Dependency Context] get(): Interface id cannot be empty (context: ${path})`,
+                    );
                 return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
             }
             return Promise.all(
@@ -149,6 +162,25 @@ export function createContext(
                     get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns, true, false),
                 ),
             );
+        },
+        /** Retrieve an object that has previously been registered through registerObject(). */
+        getObject<T>(iidOrNs: InterfaceId<T> | string): T {
+            const ns = typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns;
+            const r = objects?.get(ns);
+            if (r !== undefined) return r as T;
+            if (parent) {
+                try {
+                    return parent.getObject(ns);
+                } catch (ex) {} // must catch to get the right context path in the error message
+            }
+            throw new Error(`[Dependency Context] Object "${ns}" not found in ${path}`);
+        },
+        /** Retrieve an object that has previously been registered through registerObject(). */
+        fetchObject<T>(iidOrNs: InterfaceId<T> | string): T | null {
+            const ns = typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns;
+            const r = objects?.get(ns);
+            if (r !== undefined) return r as T;
+            return parent?.fetchObject(ns) || null;
         },
         createChildContext(name?: string): AsmContext {
             return createContext({ name, parent: ctxt });
@@ -217,7 +249,9 @@ export function createContext(
             }
             if (parent) {
                 if (throwIfNotFound) {
-                    return parent.get(ns as any);
+                    try {
+                        return parent.get(ns as any);
+                    } catch (ex) {} // must catch to get the right context path in the error message
                 } else {
                     return parent.fetch(ns as any);
                 }
@@ -226,7 +260,7 @@ export function createContext(
 
         if (throwIfNotFound) {
             logError("Interface not found:", ns);
-            throw new Error(`[asimo:${path}] Interface not found: ${ns}`);
+            throw new Error(`[Dependency Context] Interface "${ns}" not found in ${path}`);
         }
         return NULL_PROMISE;
     }
@@ -234,7 +268,7 @@ export function createContext(
     function validate(
         iid: InterfaceId<any>,
         factory: (() => any) | null,
-        context: "registerService" | "registerFactory" | "registerGroup",
+        context: "registerService" | "registerFactory" | "registerGroup" | "registerObject",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
             logError(`${context}: Invalid interface id:`, JSON.stringify(iid));

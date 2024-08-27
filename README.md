@@ -112,7 +112,7 @@ export interface Calculator {
     add(a: number, b: number): number;
 }
 
-// interface id token associated to the typescript interface
+// interface id token that associates a string namespace (the runtime token) to the typescript interface
 export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
 ```
 

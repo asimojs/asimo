@@ -58,7 +58,9 @@ describe("Asimo Logs", () => {
             err = ex.message;
         }
         expect(logs.join("")).toBe("ASM [/asm] Interface not found: asimo.src.tests.Calc123");
-        expect(err).toBe("[asimo:/asm] Interface not found: asimo.src.tests.Calc123");
+        expect(err).toBe(
+            '[Dependency Context] Interface "asimo.src.tests.Calc123" not found in /asm',
+        );
         logs = [];
 
         try {
@@ -67,7 +69,9 @@ describe("Asimo Logs", () => {
             err = ex.message;
         }
         expect(logs.join("")).toBe("ASM [/asm] Interface not found: asimo.src.tests.Adder2");
-        expect(err).toBe("[asimo:/asm] Interface not found: asimo.src.tests.Adder2");
+        expect(err).toBe(
+            '[Dependency Context] Interface "asimo.src.tests.Adder2" not found in /asm',
+        );
     });
 
     it("should not log when consoleOutput is empty", async () => {

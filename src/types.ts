@@ -1,7 +1,6 @@
 /**
  * Asimo context object used to asynchronously get or create dependencies
- * Root context is exposed through the asm global object. Sub-contexts can be created with the asm.createChildContext()
- * method
+ * The root context is exposed through the asm global object. Sub-contexts can be created through asm.createChildContext()
  */
 export interface AsmContext {
     /**
@@ -21,6 +20,11 @@ export interface AsmContext {
      * The interface definitions that are currently loaded in the context
      */
     readonly definitions: AsmInterfaceDefinition[];
+    /**
+     * Register an object instance.
+     * Object instances can be retrieved synchronously on the contrary to Service and Factory objects
+     */
+    registerObject<T extends object>(iid: InterfaceId<T>, o: T): void;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the AsmContext. Services will be created on-demand, when retrieved for the first time
@@ -101,6 +105,20 @@ export interface AsmContext {
         iid5: IidNs<T5>,
     ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null, T5 | null]>;
     fetch(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+    /**
+     * Retrieve an object that has previously been registered through registerObject() (synchronous method).
+     * Throw an error if not found (use fetchObject if you don't want an error to be thrown)
+     * @param iid the object interface id
+     * @see fetchObject
+     */
+    getObject<T>(iid: IidNs<T>): T;
+    /**
+     * Retrieve an object that has previously been registered through registerObject() (synchronous method).
+     * Return null if not found (use getObject if you don't want null to be returned)
+     * @param iid the object interface id
+     * @see getObject
+     */
+    fetchObject<T>(iid: IidNs<T>): T | null;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      * @param name a name to identifiy and differentiate this context from other contexts
