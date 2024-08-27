@@ -15,7 +15,6 @@ Asimo helps solving 4 types of problems:
 -   **development**: asimo simplifies the development of _mock environment_ solutions that
     simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for unit tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
 -   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup time by optimizing the initial application load. Besides the application code is not aware of the bundle configuration that can be changed without any code refactoring.
--   **object JSON references**: asimo allows to generate unique string ids associated to typed objects in order to generate ids that can be used in JSON structures (e.g. to model graphs or to reference non-JSON objects in JSON structures). A typical example can be found in MVC architetures to expose references to Controllers from the Model objects (cf. **createObjectRef()** and **getObject()** asimo methods)
 
 Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
@@ -305,45 +304,6 @@ Example:
 // Register several interface implementation that will be loaded on-demand through
 // a dynamic module import (this assumes that the implementaion are defined in the module)
 asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupA"));
-```
-
-### `createObjectRef()` / `getObject()` / `removeObjectRef()`
-
-These methods allow to create and store [weak][weakref] object references to any object that we want to make accessible through string identifiers. A common use case can be found in [MVC][mvc] architetures to expose references to [Controllers][mvc] from the Model objects. Incidentally, this also allows to reduce the number of componenet parameters in a React environment as controllers can be retrieved from the View Model tree.
-
-Note: asimo only keep [weak references][weakref] and it is the responsibility of the object owner to keep an actual reference to the object to prevent the object garbage collection. This mechanism ensures that asimo doesn't create any memory leak.
-
-[weakref]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakRef
-[mvc]: https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller
-
-Example:
-
-```typescript
-const objA = {
-    foo: 123,
-    bar: "abc",
-    concat() {
-        this.bar += this.foo;
-    },
-};
-
-// create a reference id (string)
-const refA = asm.createObjectRef(objA);
-
-// retrieve the object from the reference id
-const a = asm.getObject(refA);
-// a type is the same as objA -> VS Code auto-completion works
-expect(a).toBe(objA); // true
-expect(a?.foo).toBe(123);
-expect(a?.bar).toBe("abc");
-a?.concat();
-expect(a?.bar).toBe("abc123");
-
-// remove the ref
-asm.removeObjectRef(refA);
-
-const a2 = asm.getObject(refA);
-expect(a2).toBe(null); // true - internal ref has been removed
 ```
 
 ### `createChildContext()`

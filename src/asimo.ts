@@ -29,8 +29,6 @@ const STL_DATA = "color: #e39f00;font-weight:bold";
 let consoleOutput: ConsoleOutput = "Errors";
 // counter used to name unnamed contexts
 let count = 0;
-// counter used to create reference ids
-let refCount = 0;
 
 /**
  * Create an asimo context
@@ -60,8 +58,6 @@ export function createContext(
     const factories = new Map<string, () => any | Promise<any>>();
     // services or loaders that have already been instanciated
     const services = new Map<string, Promise<any>>();
-    // object refs
-    let refs: null | Map<string, WeakRef<object>> = null;
 
     const ctxt = {
         /** The context name */
@@ -168,33 +164,8 @@ export function createContext(
                 consoleOutput = "";
             }
         },
-        createObjectRef<T extends object>(o: T): AsmRefId<T> {
-            const ref = new WeakRef(o);
-            if (!refs) {
-                refs = new Map();
-            }
-            const id = `asm-ref-${++refCount}`;
-            refs.set(id, ref);
-            return id;
-        },
-        removeObjectRef<T extends Object>(id: AsmRefId<T>): boolean {
-            if (!refs) return false;
-            return refs.delete(id as string);
-        },
-        getObject<T extends Object>(id: AsmRefId<T>): T | null {
-            return getObject(id) || parent?.getObject(id) || null;
-        },
     };
     return ctxt;
-
-    function getObject<T extends Object>(id: AsmRefId<T>): T | null {
-        if (!refs) return null;
-        const ref = refs.get(id as string);
-        if (ref) {
-            return (ref.deref() as T) || null;
-        }
-        return null;
-    }
 
     async function get<T>(
         ns: string,
