@@ -1,11 +1,11 @@
 # asimo
 
-Asimo is a micro libray that allows to ease **JS dependency** management (i.e. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional solutions like **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allow to load the dependency module on-demand, thus the name ASYnchronous MOdule loader).
+Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional solutions like **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader).
 
 Asimo was built from the following realizations:
 
 -   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to use a fake _localStorage_ service to simulate different start state in an application).
--   **Dependency Injection is not adapted to client-side code** as client applications cannot afford loading a large code base on application startup. With Dependency injections, all dependencies are loaded when a given entity is created which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to reference rarely used functionalities anywhere in the application without any impact on the initial download. Besides asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
+-   **Dependency Injection is not well suited to progressive code load**, such as in client applications where large code bases cannot be loaded on application startup. With Dependency injections, all dependencies are loaded when a given entity is created which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to reference rarely used functionalities anywhere in the application (with their type) without impacting the initial download, as the actual implementation will be loaded on-demand. Besides asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
 
 ## Why should you use asimo?
 
@@ -15,6 +15,7 @@ Asimo helps solving 4 types of problems:
 -   **development**: asimo simplifies the development of _mock environment_ solutions that
     simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for unit tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
 -   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup time by optimizing the initial application load. Besides the application code is not aware of the bundle configuration that can be changed without any code refactoring.
+-   **dependency sharing**: asimo can be used to implement a React-like context outside a JSX environment (as React context can only exist in a DOM-related environment). This allows to provide losely-coupled (but still typed) dependencies through a unique context object and comes in handy to reduce the number of variables to pass to the different parts of the code base.
 
 Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
@@ -34,7 +35,7 @@ Other key features:
 
 ## How does it work?
 
-Like most dependency management systems, Asimo base principle is to create **Dependency context** objects that will be called by the application to retrieve dependencies. A typical dependency retrieval will look like this:
+Like most dependency management systems, Asimo base principle is to create **dependency context** objects that will be called by the application to retrieve dependencies. A typical dependency retrieval will look like this:
 
 ```typescript
 // retrieve the calculator service (asynchronous)
@@ -63,19 +64,31 @@ Asimo supports 3 kinds of factories
 -   **object factories** (cf. **_registerFactory()_**) that produce new object instances everytime they are called.
 -   **group factories** (cf. **_registerGroup()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together).
 
-On top of that, and like with any dependency management systems, asimo allows to **chain dependency contexts** by creating _sub-contexts_ - e.g.
+On top of that, asimo also supports registering any kind of objects. Note: in this case the retrieval methods are synchronous (cf. **_registerObject()_**, **_getObject()_** and **_fetchObject()_**)
 
 ```typescript
-const asm2 = asm.createChildContext("context2");
-// context2 is a name that will help differentiate asm2 from asm in case of troubleshooting
+// Object registration
+const calc = new CalculatorService();
+asm.registerService(CalculatorIID, calc);
 
-// another method - equivalent to asm2.createChildContext("context3");
-const asm3 = createContext({ name: "context3", parent: asm2 });
+const calc2 = asm.getObject(CalculatorIID);
+// calc2 is of type  Calculator (cf. below) and is equal to calc:
+expect(calc2).toBe(true);
+```
+
+Last but not least, and like with any dependency management systems, asimo allows to **chain dependency contexts** by creating _sub-contexts_ - e.g.
+
+```typescript
+const context2 = asm.createChildContext("context2");
+// context2 is a name that will help differentiate context2 from asm in error messages
+
+// another method - equivalent to context2.createChildContext("context3");
+const context3 = createContext({ name: "context3", parent: context2 });
 ```
 
 Note: by default asimo creates a **root context** that is exposed as **asm** by the asimo module (i.e. _@asimojs/asimo_)
 
-In this example, if an application module tries to retrieve a dependency on _asm3_ asimo will first look in _asm3_, then in _asm2_ and then in _asm_ if it hasn't found it before. Asimo offers 2 methods to manage cases where dependency factories are not found (i.e. not registered):
+In this example, if an application module tries to retrieve a dependency on _context3_ asimo will first look in _context3_, then in _context2_ and then in _asm_ if it hasn't found it before. Asimo offers 2 methods to manage cases where dependency factories are not found (i.e. not registered):
 
 -   either it **throws an exception** as the error results from a configuration issue that can only occurs at
     development time because the factory registration is missing. The benefit is that the dependency user doesn't need to check the object returned by asimo. This behavior is implemented by the _get()_ method.
@@ -99,11 +112,25 @@ export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator
 
 In all use cases asimo involves at least 2 modules:
 
--   a **producer** module that contains services or object factories that will be exposed to consumers
--   a **consumer** module that retrieves the producers dynamically, on-demand (the consumer can then keep a reference to its dependencies to avoid further async calls if need be).
+-   a **consumer** module that retrieves the producers dynamically, on-demand (the consumer can then keep a reference to its dependencies to avoid further async calls if need be):
 
 ```typescript
-// Type definition (should be in a separate file to avoid bundling the producer with the consumer)
+// Consumer
+import { asm } from "@asimojs/asimo";
+import { CalculatorIID } from "./types";
+
+async function doSomething() {
+    const calc = await asm.get(CalculatorIID);
+    // Typescript sees that calc is of type Calculator
+    const result = calc.add(1, 2); // 3
+}
+```
+
+-   a **producer** module that contains services or factories that will be exposed to consumers. Producers are usually split in 2 files:
+
+-- a _type_ file:
+
+```typescript
 import { interfaceId } from "@asimojs/asimo";
 
 // typescript interface
@@ -112,9 +139,12 @@ export interface Calculator {
     add(a: number, b: number): number;
 }
 
-// interface id token that associates a string namespace (the runtime token) to the typescript interface
+// interface id token that associates a string namespace
+// (the runtime token) to the typescript interface
 export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
 ```
+
+-- and an _implementation_ file:
 
 ```typescript
 // Producer (implementation file)
@@ -133,18 +163,6 @@ export class CalculatorService implements Calculator {
 
 // Service registration
 asm.registerService(CalculatorIID, () => new CalculatorService());
-```
-
-```typescript
-// Consumer
-import { asm } from "@asimojs/asimo";
-import { CalculatorIID } from "./types";
-
-async function doSomething() {
-    const calc = await asm.get(CalculatorIID);
-    // Typescript types found -> calc is of type Calculator
-    const result = calc.add(1, 2); // 3
-}
 ```
 
 ## Install
@@ -195,7 +213,7 @@ export const AdderIID = interfaceId<Adder>("asimo.src.tests.Adder");
 
 ## `AsmContext`
 
-The AsmContext is the object that contains the registred factoris and that exposes all asimo APIs (but `interfaceId()`):
+The AsmContext is the object that contains the registered factories and that exposes all asimo APIs (but `interfaceId()`):
 
 ### `get()`
 
@@ -248,7 +266,7 @@ const [m, c, a] = await asm.fetch(MultiplierIID, CalculatorIID, AdderIID);
 
 ### `registerService()`
 
-Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function (synchronous or asynchronous). Note: **service factories are only called once**
+Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function (synchronous or asynchronous). Note: **service factories are only called once** whereas object factories are called at each _get()_ (or _fetch()_) in order to generate new object instances.
 
 ```typescript
 registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
@@ -285,11 +303,47 @@ Example:
 asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
 ```
 
+### `registerObject()`
+
+Register any kind of object in the given context.
+
+```typescript
+interface SimpleObject {
+    name: string;
+    increment(value: number): number;
+}
+const SimpleObjectIID = interfaceId<SimpleObject>("asimo.test.objects.simple-object");
+
+const o: SimpleObject = {
+    name: "foo",
+    increment(v) {
+        return v + 1;
+    },
+};
+context.registerObject(SimpleObjectIID, o);
+
+// retrieval is synchronous for objects (no await)
+const o2 = context.getObject(SimpleObjectIID); // o2 type is SimpleObject
+expect(o2).toBe(o);
+const o3 = context.fetchObject(SimpleObjectIID); // o3 type is SimpleObject | null
+expect(o3).toBe(o);
+```
+
+### `getObject()`
+
+Get an object from the given context (or its parent). This function will throw an error if no object is defined (on the contrary to _*fetchObject()*_) - cf. previous example.
+
+### `fetchObject()`
+
+Get an object from the given context (or its parent). This function will return null if no object is defined (on the contrary to _*getObject()*_) - cf. previous example.
+
 ### `registerGroup()`
 
 Register a group loader that will be used to asynchronously load multiple
-services and object factories on-demand (i.e. the group code will only be loaded when
-an explicit `get()` is done on one of its service or object interfaces). Parameters:
+services and object factories gathered in a same **deployment bundle**. The bundle code will be loaded on-demand, when
+an explicit `get()/fetch()` is done on one of its service or object interfaces.
+
+Parameters:
 
 -   **iids**: the list of interface ids that are packaged in this group
 -   **loader**: an async factory that should dynamically import() the required modules
