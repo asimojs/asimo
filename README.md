@@ -1,4 +1,4 @@
-# asimo
+# asimo - asynchronous dependency manager
 
 Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional solutions like **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader).
 
