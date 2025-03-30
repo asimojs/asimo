@@ -18,7 +18,7 @@ export class _SyncIncrementorService implements SyncIncrementor {
 
     async init(c?: AsmContext) {
         const di = c || asm;
-        this.calc = (await di.get(CalculatorIID))!
+        this.calc = (await di.fetch(CalculatorIID))!;
     }
 
     increment(n: number) {

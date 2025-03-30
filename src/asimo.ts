@@ -3,6 +3,7 @@ import {
     AsmInterfaceDefinition,
     AsmRefId,
     ConsoleOutput,
+    IidNs,
     InterfaceId,
     InterfaceNamespace,
 } from "./types";
@@ -29,6 +30,10 @@ const STL_DATA = "color: #e39f00;font-weight:bold";
 let consoleOutput: ConsoleOutput = "Errors";
 // counter used to name unnamed contexts
 let count = 0;
+
+/** Internal value to identify not found interfaces */
+const NOT_FOUND = Symbol("NOT_FOUND");
+const NOT_FOUND_PROMISE = Promise.resolve(NOT_FOUND);
 
 /**
  * Create an asimo context
@@ -118,7 +123,7 @@ export function createContext(
         registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
             const groupId = GROUP + ++groupCount;
             if (typeof loader !== "function") {
-                logError(`[registerGroup] Invalid group loader:`, "" + loader);
+                logError(`[registerGroup] Invalid group loader: ${description(loader)}`);
                 return;
             }
             // factory that will load the group and cache its result in the services map
@@ -137,31 +142,63 @@ export function createContext(
             }
         },
         /** Get a service or an object instance (services have priority) - throw if target not found */
-        async get(...iids: (InterfaceId<any> | string)[]): Promise<any> {
-            if (iids.length === 1) {
-                const iidOrNs = iids[0];
-                if (!iidOrNs)
-                    throw new Error(
-                        `[Dependency Context] get(): Interface id cannot be empty (context: ${path})`,
-                    );
-                return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
+        // async get(iid0: IidNs<any>, iid1OrDefault: any, ...iids: IidNs<any>[]): Promise<any> {
+        //     if (iids.length === 1) {
+        //         const iidOrNs = iids[0];
+        //         if (!iidOrNs)
+        //             throw new Error(
+        //                 `[Dependency Context] get(): Interface id cannot be empty (context: ${path})`,
+        //             );
+        //         return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
+        //     }
+        //     return Promise.all(
+        //         iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)),
+        //     );
+        // },
+        // /** Get a service or an object instance (services have priority) - return null if target not found */
+        async fetch(
+            iid0: IidNs<any>,
+            iid1OrDefault?: any,
+            ...iids: InterfaceId<any>[]
+        ): Promise<any> {
+            const ns0 = namespace(iid0);
+            if (
+                iid1OrDefault === undefined ||
+                iid1OrDefault === null ||
+                typeof iid1OrDefault !== "object" ||
+                !("ns" in iid1OrDefault) ||
+                typeof iid1OrDefault.ns !== "string"
+            ) {
+                // only one argument + optional default
+                const v = await fetch(ns0, true);
+                if (v === NOT_FOUND) {
+                    if (iid1OrDefault !== undefined) {
+                        return iid1OrDefault;
+                    } else {
+                        logError(`Interface not found: ${description(ns0)}`, true);
+                    }
+                }
+                return v;
+            } else {
+                // list of iids
+                const iid1 = iid1OrDefault;
+                const namespaces = [ns0, namespace(iid1), ...iids.map((iid) => namespace(iid))];
+                const values = await Promise.all(namespaces.map((ns) => fetch(ns, true)));
+                const nsNotFounds: string[] = [];
+                for (let i = 0; values.length > i; i++) {
+                    if (values[i] === NOT_FOUND) {
+                        nsNotFounds.push(namespaces[i]);
+                    }
+                }
+                if (nsNotFounds.length) {
+                    if (nsNotFounds.length === 1) {
+                        logError(`Interface not found: "${nsNotFounds[0]}"`, true);
+                    } else {
+                        logError(`Interfaces not found: ["${nsNotFounds.join('", "')}"]`, true);
+                    }
+                }
+                return values;
             }
-            return Promise.all(
-                iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)),
-            );
-        },
-        /** Get a service or an object instance (services have priority) - return null if target not found */
-        async fetch(...iids: (InterfaceId<any> | string)[]): Promise<any | null> {
-            if (iids.length === 1) {
-                const iidOrNs = iids[0];
-                if (!iidOrNs) return null;
-                return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns, true, false);
-            }
-            return Promise.all(
-                iids.map((iidOrNs) =>
-                    get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns, true, false),
-                ),
-            );
         },
         /** Retrieve an object that has previously been registered through registerObject(). */
         getObject<T>(iidOrNs: InterfaceId<T> | string): T {
@@ -199,11 +236,12 @@ export function createContext(
     };
     return ctxt;
 
-    async function get<T>(
-        ns: string,
-        lookupGroups = true,
-        throwIfNotFound = true,
-    ): Promise<T | null> {
+    /** Return the namespace associcate to an interface id */
+    function namespace(iid: IidNs<any>) {
+        return typeof iid === "string" ? iid : iid.ns;
+    }
+
+    async function fetch<T>(ns: string, lookupGroups = true): Promise<T | typeof NOT_FOUND> {
         const serviceId = SERVICE + ns;
         const srv = services.get(serviceId);
         if (srv !== undefined) {
@@ -214,7 +252,7 @@ export function createContext(
         if (f) {
             // service factory exists: instanciate the service
             let p = getPromise(f);
-            let resolve: (v: T | null) => void;
+            let resolve: (v: T | typeof NOT_FOUND) => void;
             const pr = new Promise((r) => {
                 resolve = r;
             });
@@ -224,13 +262,14 @@ export function createContext(
                     services.set(serviceId, v);
                     resolve(v);
                 } else {
-                    // transform undefined into null
+                    logError(`Invalid factory output: "${ns}"`);
+                    // transform undefined or null into NOT_FOUND
                     services.set(serviceId, NULL_PROMISE);
-                    resolve(null);
+                    resolve(NOT_FOUND);
                 }
             });
             services.set(serviceId, pr); // will be changed when pr is resolved
-            return pr as Promise<T | null>;
+            return pr as Promise<T | typeof NOT_FOUND>;
         } else {
             const f2 = factories.get(OBJECT + ns);
             if (f2) {
@@ -243,26 +282,15 @@ export function createContext(
                     const g = getPromise(f3);
                     return g.then(() => {
                         // look for an interface factory once the group has loaded
-                        return get(ns, false, throwIfNotFound) as any;
+                        return fetch(ns, false) as any;
                     });
                 }
             }
             if (parent) {
-                if (throwIfNotFound) {
-                    try {
-                        return parent.get(ns as any);
-                    } catch (ex) {} // must catch to get the right context path in the error message
-                } else {
-                    return parent.fetch(ns as any);
-                }
+                return parent.fetch(ns as any, NOT_FOUND);
             }
         }
-
-        if (throwIfNotFound) {
-            logError("Interface not found:", ns);
-            throw new Error(`[Dependency Context] Interface "${ns}" not found in ${path}`);
-        }
-        return NULL_PROMISE;
+        return NOT_FOUND_PROMISE;
     }
 
     function validate(
@@ -271,23 +299,34 @@ export function createContext(
         context: "registerService" | "registerFactory" | "registerGroup" | "registerObject",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
-            logError(`${context}: Invalid interface id:`, JSON.stringify(iid));
+            logError(`[${context}] Invalid interface id: ${description(iid)}`);
             return false;
         }
         if (factory && typeof factory !== "function") {
-            logError(`${context}: Invalid factory:`, "" + factory);
+            logError(`[${context}] Invalid factory: ${description(factory)}`);
             return false;
         }
         return true;
+    }
+
+    function description(o: any) {
+        let desc = "" + o;
+        try {
+            desc = JSON.stringify(o);
+        } catch (ex) {}
+        return desc;
     }
 
     function removeGroupEntry(iidNs: string) {
         factories.delete(GROUP + iidNs);
     }
 
-    function logError(msg: string, data: any) {
+    function logError(msg: string, throwError = false) {
         if (consoleOutput === "Errors") {
-            console.log(`%cASM [${path}] %c${msg} %c${data}`, STL_ASM, "color: ", STL_DATA);
+            console.log(`%cASM [${path}] %c${msg}`, STL_ASM, "color: ", STL_DATA);
+        }
+        if (throwError) {
+            throw new Error(`ASM [${path}] ${msg}`);
         }
     }
 

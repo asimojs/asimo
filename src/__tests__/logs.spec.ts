@@ -12,6 +12,7 @@ describe("Asimo Logs", () => {
     const console1 = globalThis.console;
 
     const AdderIID2 = interfaceId<Adder>("asimo.src.tests.Adder2");
+    const AdderIID3 = interfaceId<Adder>("asimo.src.tests.Adder3");
 
     function mockGlobalConsole() {
         globalThis.console = Object.create(console1, {
@@ -53,37 +54,66 @@ describe("Asimo Logs", () => {
         expect(logs.join("")).toBe("");
         let err = "";
         try {
-            await asm.get("asimo.src.tests.Calc123");
+            await asm.fetch("asimo.src.tests.Calc123");
         } catch (ex) {
             err = ex.message;
         }
-        expect(logs.join("")).toBe("ASM [/asm] Interface not found: asimo.src.tests.Calc123");
-        expect(err).toBe(
-            '[Dependency Context] Interface "asimo.src.tests.Calc123" not found in /asm',
+        expect(logs.join("")).toBe(
+            'ASM [/asm/test] Interface not found: "asimo.src.tests.Calc123"',
         );
+        expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc123"');
         logs = [];
 
         try {
-            const add = await asm.get(AdderIID2);
+            const add = await asm.fetch(AdderIID2);
         } catch (ex) {
             err = ex.message;
         }
-        expect(logs.join("")).toBe("ASM [/asm] Interface not found: asimo.src.tests.Adder2");
-        expect(err).toBe(
-            '[Dependency Context] Interface "asimo.src.tests.Adder2" not found in /asm',
-        );
+        expect(logs.join("")).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
+        expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
     });
+
+    it("should log errors when fetching multiple iids (1 error)", async () => {
+        expect(logs.join("")).toBe("");
+        let err = "";
+        try {
+            await asm.fetch(CalculatorIID, AdderIID2);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join("")).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
+        expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
+        logs = [];
+    });
+
+    it("should log errors when fetching multiple iids (>1 error)", async () => {
+        expect(logs.join("")).toBe("");
+        asm.registerService(AdderIID2, () => 123 as any);
+        let err = "";
+        try {
+            await asm.fetch(AdderIID2);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join(";")).toBe(
+            'ASM [/asm/test] Invalid factory output: "asimo.src.tests.Adder2";ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"',
+        );
+        expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
+        logs = [];
+    });
+
+    it("should log errors when factory don't output objects or functions", async () => {});
 
     it("should not log when consoleOutput is empty", async () => {
         asm.consoleOutput = "";
         expect(logs.join("")).toBe("");
         try {
-            await asm.get("asimo.src.tests.Calc123");
+            await asm.fetch("asimo.src.tests.Calc123");
         } catch (ex) {}
         expect(logs.join("")).toBe("");
         logs = [];
         try {
-            const add = await asm.get(AdderIID2);
+            const add = await asm.fetch(AdderIID2);
             expect(add).toBe(null);
         } catch (ex) {}
         expect(logs.join("")).toBe("");
@@ -93,35 +123,35 @@ describe("Asimo Logs", () => {
     it("should validate iids", async () => {
         logs = [];
         asm.registerService(123 as any, () => 123);
-        expect(logs.join("")).toBe("ASM [/asm/test] registerService: Invalid interface id: 123");
+        expect(logs.join("")).toBe("ASM [/asm/test] [registerService] Invalid interface id: 123");
 
         logs = [];
         asm.registerService({ ns: "" }, () => 123);
         expect(logs.join("")).toBe(
-            'ASM [/asm/test] registerService: Invalid interface id: {"ns":""}',
+            'ASM [/asm/test] [registerService] Invalid interface id: {"ns":""}',
         );
 
         logs = [];
         asm.registerService({ ns: 234 as any }, () => 123);
         expect(logs.join("")).toBe(
-            'ASM [/asm/test] registerService: Invalid interface id: {"ns":234}',
+            'ASM [/asm/test] [registerService] Invalid interface id: {"ns":234}',
         );
 
         logs = [];
         asm.registerService(undefined as any, () => 123);
         expect(logs.join("")).toBe(
-            "ASM [/asm/test] registerService: Invalid interface id: undefined",
+            "ASM [/asm/test] [registerService] Invalid interface id: undefined",
         );
     });
 
     it("should validate factories and group loaders", async () => {
         logs = [];
         asm.registerService(CalculatorIID, 123 as any);
-        expect(logs.join("")).toBe("ASM [/asm/test] registerService: Invalid factory: 123");
+        expect(logs.join("")).toBe("ASM [/asm/test] [registerService] Invalid factory: 123");
 
         logs = [];
         asm.registerFactory(CalculatorIID, 123 as any);
-        expect(logs.join("")).toBe("ASM [/asm/test] registerFactory: Invalid factory: 123");
+        expect(logs.join("")).toBe("ASM [/asm/test] [registerFactory] Invalid factory: 123");
 
         logs = [];
         asm.registerGroup([CalculatorIID], 123 as any);

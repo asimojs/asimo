@@ -18,10 +18,12 @@ export class _AsyncIncrementorService implements AsyncIncrementor {
 
     async increment(n: number) {
         if (!this.di) throw "Not DI context";
-        return (await this.di.get(CalculatorIID))!.add(n, this.offset);
+        return (await this.di.fetch(CalculatorIID))!.add(n, this.offset);
     }
 }
 
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
-export const AsyncIncrementorIID = interfaceId<AsyncIncrementor>("asimo.src.tests.AsyncIncrementor");
+export const AsyncIncrementorIID = interfaceId<AsyncIncrementor>(
+    "asimo.src.tests.AsyncIncrementor",
+);
 asm.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());

@@ -62,48 +62,50 @@ export interface AsmContext {
      * @see fetch
      * @param iid the service interface id
      */
-    get<T>(iid: IidNs<T>): Promise<T>;
-    get<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1, T2]>;
-    get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
-    get<T1, T2, T3, T4>(
-        iid1: IidNs<T1>,
-        iid2: IidNs<T2>,
-        iid3: IidNs<T3>,
-        iid4: IidNs<T4>,
-    ): Promise<[T1, T2, T3, T4]>;
-    get<T1, T2, T3, T4, T5>(
-        iid1: IidNs<T1>,
-        iid2: IidNs<T2>,
-        iid3: IidNs<T3>,
-        iid4: IidNs<T4>,
-        iid5: IidNs<T5>,
-    ): Promise<[T1, T2, T3, T4, T5]>;
-    get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+    // get<T>(iid: IidNs<T>, defaultValue?: T | null): Promise<T>;
+    // get<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1, T2]>;
+    // get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
+    // get<T1, T2, T3, T4>(
+    //     iid1: IidNs<T1>,
+    //     iid2: IidNs<T2>,
+    //     iid3: IidNs<T3>,
+    //     iid4: IidNs<T4>,
+    // ): Promise<[T1, T2, T3, T4]>;
+    // get<T1, T2, T3, T4, T5>(
+    //     iid1: IidNs<T1>,
+    //     iid2: IidNs<T2>,
+    //     iid3: IidNs<T3>,
+    //     iid4: IidNs<T4>,
+    //     iid5: IidNs<T5>,
+    // ): Promise<[T1, T2, T3, T4, T5]>;
+    // get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+
     /**
      * Same as get() but will not throw any error and will return null if the service or object cannot be found/loaded
      * @see get
      * @param iid
      */
-    fetch<T>(iid: IidNs<T>): Promise<T | null>;
-    fetch<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1 | null, T2 | null]>;
+    fetch<T>(iid: IidNs<T>): Promise<T>;
+    fetch<T, D extends T | null>(iid: IidNs<T>, defaultValue?: D): Promise<T | D>;
+    fetch<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: IidNs<T2>): Promise<[T1, T2]>;
     fetch<T1, T2, T3>(
-        iid1: IidNs<T1>,
-        iid2: IidNs<T2>,
-        iid3: IidNs<T3>,
-    ): Promise<[T1 | null, T2 | null, T3 | null]>;
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+    ): Promise<[T1, T2, T3]>;
     fetch<T1, T2, T3, T4>(
-        iid1: IidNs<T1>,
-        iid2: IidNs<T2>,
-        iid3: IidNs<T3>,
-        iid4: IidNs<T4>,
-    ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null]>;
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+        iid4: InterfaceId<T4>,
+    ): Promise<[T1, T2, T3, T4]>;
     fetch<T1, T2, T3, T4, T5>(
-        iid1: IidNs<T1>,
-        iid2: IidNs<T2>,
-        iid3: IidNs<T3>,
-        iid4: IidNs<T4>,
-        iid5: IidNs<T5>,
-    ): Promise<[T1 | null, T2 | null, T3 | null, T4 | null, T5 | null]>;
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+        iid4: InterfaceId<T4>,
+        iid5: InterfaceId<T5>,
+    ): Promise<[T1, T2, T3, T4, T5]>;
     fetch(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
     /**
      * Retrieve an object that has previously been registered through registerObject() (synchronous method).
