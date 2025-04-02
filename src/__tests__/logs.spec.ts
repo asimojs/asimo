@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { interfaceId, asm as rsm } from "../asimo";
 import { AsmContext } from "../types";
 import { _CalculatorService } from "./calculator";
-import { Adder } from "./adder";
+import { Adder, AdderIID } from "./adder";
 import { CalculatorIID } from "./types";
 
 describe("Asimo Logs", () => {
@@ -12,7 +12,6 @@ describe("Asimo Logs", () => {
     const console1 = globalThis.console;
 
     const AdderIID2 = interfaceId<Adder>("asimo.src.tests.Adder2");
-    const AdderIID3 = interfaceId<Adder>("asimo.src.tests.Adder3");
 
     function mockGlobalConsole() {
         globalThis.console = Object.create(console1, {
@@ -102,7 +101,36 @@ describe("Asimo Logs", () => {
         logs = [];
     });
 
-    it("should log errors when factory don't output objects or functions", async () => {});
+    it("should log errors when get doesn't find one or multipe object", async () => {
+        asm.registerObject(CalculatorIID, {} as any);
+        let err = "";
+        try {
+            asm.get(AdderIID2);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join(";")).toBe('ASM [/asm/test] Object not found: "asimo.src.tests.Adder2"');
+
+        logs = [];
+        err = "";
+        try {
+            asm.get(CalculatorIID, AdderIID2);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join(";")).toBe('ASM [/asm/test] Object not found: "asimo.src.tests.Adder2"');
+
+        logs = [];
+        err = "";
+        try {
+            asm.get(AdderIID, AdderIID2);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join(";")).toBe(
+            'ASM [/asm/test] Objects not found: ["asimo.src.tests.Adder", "asimo.src.tests.Adder2"]',
+        );
+    });
 
     it("should not log when consoleOutput is empty", async () => {
         asm.consoleOutput = "";

@@ -22,68 +22,86 @@ export interface AsmContext {
     readonly definitions: AsmInterfaceDefinition[];
     /**
      * Register an object instance.
-     * Object instances can be retrieved synchronously on the contrary to Service and Factory objects
+     * Object instances can be retrieved synchronously through the get() method
+     * @see get
      */
     registerObject<T extends object>(iid: InterfaceId<T>, o: T): void;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the AsmContext. Services will be created on-demand, when retrieved for the first time
+     * Services can be retrieved asynchronoysly through the fetch() method
      * @param iid the interface id
      * @param factory a factory that will be called to instanciate the service
+     * @see fetch
      */
     registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
     /**
      * Register an object factory. The factory will be called any time the get method is called
      * for this interface id. On the contrary to services, there is no restriction on the number
-     * of objects that can be creatd. Besides asimo doesn't keep any reference to the object
+     * of objects that can be created. Besides asimo doesn't keep any reference to the object
      * created.
+     * Objects produced by factories can be retrieved asynchronoysly through the fetch() method
      * @param iid the interface id
      * @param factory a factory that will be called to create an object instance
+     * @see fetch
      */
     registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
     /**
      * Register a group loader that will be used to asynchronously load multiple
      * service and object factories on-demand (i.e. the group code will only be loaded when
      * an explicit get is done on one of its service or object interfaces)
+     * Services or objects produced by service or object factories can be retrieved through the fetch method.
      * @param iids the list of interface ids that are packaged in this group
      * @param loader an async factory that should dynamically import() the required modules
+     * @see fetch
      */
     registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
     /**
-     * Fetch a service or an object instance. For each interface id, asimo will first look in the current
+     * Synchrounsly retrieve an object instance registered with registerObject
+     * For each interface id, asimo will first look in the current context objects - if not found
+     * it will then perform the same lookup in its parent context (recursively, up to the root context).
+     * This method allows to get up to 5 dependencies in one call with type support (more can be retrieved without type inference).
+     * Note: When retrieving 1 resource, the parameters can be either InterfaceId objects or interface namespaces (strings).
+     * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
+     * type cast will be necessary
+     * Note: this method will throw an error if the targeted object is not found - unless a default value is passed as 2nd argument
+     * (this only works when fetching a single resource - e.g. asm.get(AppModuleIID, null) )
+     * @see fetch
+     */
+    get<T>(iid: IidNs<T>): T;
+    get<T, D extends T | null>(iid: IidNs<T>, defaultValue?: D): T | D;
+    get<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: IidNs<T2>): [T1, T2];
+    get<T1, T2, T3>(
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+    ): [T1, T2, T3];
+    get<T1, T2, T3, T4>(
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+        iid4: InterfaceId<T4>,
+    ): [T1, T2, T3, T4];
+    get<T1, T2, T3, T4, T5>(
+        iid1: InterfaceId<T1>,
+        iid2: InterfaceId<T2>,
+        iid3: InterfaceId<T3>,
+        iid4: InterfaceId<T4>,
+        iid5: InterfaceId<T5>,
+    ): [T1, T2, T3, T4, T5];
+    get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
+
+    /**
+     * Asynchronously fetch a service or an object produced by a registered factory. For each interface id, asimo will first look in the current
      * context for services or object factories or groups registered for the interface (in this order) - if not found
      * it will then perform the same lookup in its parent context (recursively, up to the root context).
      * This method allows to get up to 5 dependencies in one call with type support (more can be fetched
      * without type inference).
-     * Note: the parameters can be either InterfaceId objects or interface namespaces (strings).
+     * Note: When fetcing 1 resource, the parameters can be either InterfaceId objects or interface namespaces (strings).
      * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
      * type cast will be necessary
-     * Note: this method will throw an error if the targeted service or object cannot be found/loaded
-     * @see fetch
-     * @param iid the service interface id
-     */
-    // get<T>(iid: IidNs<T>, defaultValue?: T | null): Promise<T>;
-    // get<T1, T2>(iid1: IidNs<T1>, iid2: IidNs<T2>): Promise<[T1, T2]>;
-    // get<T1, T2, T3>(iid1: IidNs<T1>, iid2: IidNs<T2>, iid3: IidNs<T3>): Promise<[T1, T2, T3]>;
-    // get<T1, T2, T3, T4>(
-    //     iid1: IidNs<T1>,
-    //     iid2: IidNs<T2>,
-    //     iid3: IidNs<T3>,
-    //     iid4: IidNs<T4>,
-    // ): Promise<[T1, T2, T3, T4]>;
-    // get<T1, T2, T3, T4, T5>(
-    //     iid1: IidNs<T1>,
-    //     iid2: IidNs<T2>,
-    //     iid3: IidNs<T3>,
-    //     iid4: IidNs<T4>,
-    //     iid5: IidNs<T5>,
-    // ): Promise<[T1, T2, T3, T4, T5]>;
-    // get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
-
-    /**
-     * Same as get() but will not throw any error and will return null if the service or object cannot be found/loaded
-     * @see get
-     * @param iid
+     * Note: this method will throw an error if the targeted service or object cannot be found/loaded - unless a default value is passed
+     * (this only works when fetching a single resource - e.g. asm.fetch(CalculatorIID, null) )
      */
     fetch<T>(iid: IidNs<T>): Promise<T>;
     fetch<T, D extends T | null>(iid: IidNs<T>, defaultValue?: D): Promise<T | D>;
@@ -107,20 +125,6 @@ export interface AsmContext {
         iid5: InterfaceId<T5>,
     ): Promise<[T1, T2, T3, T4, T5]>;
     fetch(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
-    /**
-     * Retrieve an object that has previously been registered through registerObject() (synchronous method).
-     * Throw an error if not found (use fetchObject if you don't want an error to be thrown)
-     * @param iid the object interface id
-     * @see fetchObject
-     */
-    getObject<T>(iid: IidNs<T>): T;
-    /**
-     * Retrieve an object that has previously been registered through registerObject() (synchronous method).
-     * Return null if not found (use getObject if you don't want null to be returned)
-     * @param iid the object interface id
-     * @see getObject
-     */
-    fetchObject<T>(iid: IidNs<T>): T | null;
     /**
      * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
      * @param name a name to identifiy and differentiate this context from other contexts

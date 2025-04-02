@@ -63,7 +63,7 @@ export function createContext(
     const factories = new Map<string, () => any | Promise<any>>();
     // services or loaders that have already been instanciated
     const services = new Map<string, Promise<any>>();
-    // objects that can be retrieved through getObject / fetchObject
+    // objects that can be retrieved through get
     let objects: Map<string, object> | null = null;
 
     const ctxt = {
@@ -141,21 +141,48 @@ export function createContext(
                 validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
             }
         },
-        /** Get a service or an object instance (services have priority) - throw if target not found */
-        // async get(iid0: IidNs<any>, iid1OrDefault: any, ...iids: IidNs<any>[]): Promise<any> {
-        //     if (iids.length === 1) {
-        //         const iidOrNs = iids[0];
-        //         if (!iidOrNs)
-        //             throw new Error(
-        //                 `[Dependency Context] get(): Interface id cannot be empty (context: ${path})`,
-        //             );
-        //         return get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns);
-        //     }
-        //     return Promise.all(
-        //         iids.map((iidOrNs) => get(typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns)),
-        //     );
-        // },
-        // /** Get a service or an object instance (services have priority) - return null if target not found */
+        /** Get a registered object */
+        get(iid0: IidNs<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
+            const ns0 = namespace(iid0);
+            if (
+                iid1OrDefault === undefined ||
+                iid1OrDefault === null ||
+                typeof iid1OrDefault !== "object" ||
+                !("ns" in iid1OrDefault) ||
+                typeof iid1OrDefault.ns !== "string"
+            ) {
+                // only one argument + optional default
+                const v = getObject(ns0);
+                if (v === NOT_FOUND) {
+                    if (iid1OrDefault !== undefined) {
+                        return iid1OrDefault;
+                    } else {
+                        logError(`Object not found: ${description(ns0)}`, true);
+                    }
+                }
+                return v;
+            } else {
+                // list of iids
+                const iid1 = iid1OrDefault;
+                const namespaces = [ns0, namespace(iid1), ...iids.map((iid) => namespace(iid))];
+                const values = namespaces.map((ns) => getObject(ns));
+                const nsNotFounds: string[] = [];
+                for (let i = 0; values.length > i; i++) {
+                    if (values[i] === NOT_FOUND) {
+                        nsNotFounds.push(namespaces[i]);
+                    }
+                }
+                if (nsNotFounds.length) {
+                    if (nsNotFounds.length === 1) {
+                        logError(`Object not found: "${nsNotFounds[0]}"`, true);
+                    } else {
+                        logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
+                    }
+                }
+                return values;
+            }
+        },
+        /** Fetch a service or an object instance (services have priority) */
         async fetch(
             iid0: IidNs<any>,
             iid1OrDefault?: any,
@@ -200,25 +227,6 @@ export function createContext(
                 return values;
             }
         },
-        /** Retrieve an object that has previously been registered through registerObject(). */
-        getObject<T>(iidOrNs: InterfaceId<T> | string): T {
-            const ns = typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns;
-            const r = objects?.get(ns);
-            if (r !== undefined) return r as T;
-            if (parent) {
-                try {
-                    return parent.getObject(ns);
-                } catch (ex) {} // must catch to get the right context path in the error message
-            }
-            throw new Error(`[Dependency Context] Object "${ns}" not found in ${path}`);
-        },
-        /** Retrieve an object that has previously been registered through registerObject(). */
-        fetchObject<T>(iidOrNs: InterfaceId<T> | string): T | null {
-            const ns = typeof iidOrNs === "string" ? iidOrNs : iidOrNs.ns;
-            const r = objects?.get(ns);
-            if (r !== undefined) return r as T;
-            return parent?.fetchObject(ns) || null;
-        },
         createChildContext(name?: string): AsmContext {
             return createContext({ name, parent: ctxt });
         },
@@ -239,6 +247,15 @@ export function createContext(
     /** Return the namespace associcate to an interface id */
     function namespace(iid: IidNs<any>) {
         return typeof iid === "string" ? iid : iid.ns;
+    }
+
+    function getObject<T>(ns: string): T | typeof NOT_FOUND {
+        const r = objects?.get(ns);
+        if (r !== undefined) return r as T;
+        if (parent) {
+            return parent.get(ns, NOT_FOUND);
+        }
+        return NOT_FOUND;
     }
 
     async function fetch<T>(ns: string, lookupGroups = true): Promise<T | typeof NOT_FOUND> {
