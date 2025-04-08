@@ -34,7 +34,7 @@ export interface AsmContext {
      * @param factory a factory that will be called to instanciate the service
      * @see fetch
      */
-    registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
+    registerService<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void;
     /**
      * Register an object factory. The factory will be called any time the get method is called
      * for this interface id. On the contrary to services, there is no restriction on the number
@@ -45,7 +45,7 @@ export interface AsmContext {
      * @param factory a factory that will be called to create an object instance
      * @see fetch
      */
-    registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
+    registerFactory<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void;
     /**
      * Register a group loader that will be used to asynchronously load multiple
      * service and object factories on-demand (i.e. the group code will only be loaded when

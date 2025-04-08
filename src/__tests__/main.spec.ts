@@ -130,6 +130,20 @@ describe("Asimo", () => {
         expect(calc?.numberOfCalls).toBe(1);
     });
 
+    it("should pass the context to factories", async () => {
+        // create a 2nd interface id for the calculator
+        const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+        let factoryContext: any = null;
+        context.registerService(CalcIID, async (c: AsmContext) => {
+            factoryContext = c;
+            return new _CalculatorService();
+        });
+
+        const calc = await context.fetch(CalcIID)!;
+        expect(calc?.add(21, 21)).toBe(42);
+        expect(factoryContext).toBe(context);
+    });
+
     it("should delegate creation to parent context", async () => {
         const calc1 = await context.fetch(CalculatorIID)!;
         calc1?.add(1, 2);
@@ -413,8 +427,6 @@ describe("Asimo", () => {
     });
 
     // TODO
-    // support mechanism for service to expose multiple interfaces
     // factory crash error
-    // error management / throwOnError / errLogger
     // 2 different interface id objects with the same namespace should resolve to the same object
 });

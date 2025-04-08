@@ -59,13 +59,13 @@ export function createContext(
     let groupCount = 0;
     // registered factories - keys have the following format:
     // "[object|service|group|loader]:[interfaceNamespace|groupId]"
-    const factories = new Map<string, () => any | Promise<any>>();
+    const factories = new Map<string, (c: AsmContext) => any | Promise<any>>();
     // services or loaders that have already been instanciated
     const services = new Map<string, Promise<any>>();
     // objects that can be retrieved through get
     let objects: Map<string, object> | null = null;
 
-    const ctxt = {
+    const ctxt: AsmContext = {
         /** The context name */
         get name() {
             return name;
@@ -105,14 +105,14 @@ export function createContext(
             }
         },
         /** Register a service factory */
-        registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
+        registerService<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerService")) {
                 factories.set(SERVICE + iid.ns, factory);
                 removeGroupEntry(iid.ns);
             }
         },
         /** Register an object factory */
-        registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void {
+        registerFactory<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerFactory")) {
                 factories.set(OBJECT + iid.ns, factory);
                 removeGroupEntry(iid.ns);
@@ -132,7 +132,7 @@ export function createContext(
                 if (ldp) {
                     return ldp;
                 }
-                ldp = getPromise(loader);
+                ldp = getPromise(loader, ctxt);
                 services.set(groupId, ldp);
                 return ldp;
             };
@@ -283,7 +283,7 @@ export function createContext(
         const f = factories.get(serviceId);
         if (f) {
             // service factory exists: instanciate the service
-            let p = getPromise(f);
+            let p = getPromise(f, ctxt);
             let resolve: (v: T | typeof NOT_FOUND) => void;
             const pr = new Promise((r) => {
                 resolve = r;
@@ -306,12 +306,12 @@ export function createContext(
             const f2 = factories.get(OBJECT + ns);
             if (f2) {
                 // object factory exists: instantiate the object
-                return getPromise(f2);
+                return getPromise(f2, ctxt);
             } else if (lookupGroups) {
                 const f3 = factories.get(GROUP + ns);
                 if (f3) {
                     // a group loader exists: instantiate the loader and then lookup again
-                    const g = getPromise(f3);
+                    const g = getPromise(f3, ctxt);
                     return g.then(() => {
                         // look for an interface factory once the group has loaded
                         return fetch(ns, false) as any;
@@ -327,7 +327,7 @@ export function createContext(
 
     function validate(
         iid: InterfaceId<any>,
-        factory: (() => any) | null,
+        factory: ((c: AsmContext) => any) | null,
         context: "registerService" | "registerFactory" | "registerGroup" | "registerObject",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
@@ -364,8 +364,8 @@ export function createContext(
         }
     }
 
-    function getPromise<T>(f: () => T | Promise<T>) {
-        let p = f() as Promise<any>;
+    function getPromise<T>(f: (c: AsmContext) => T | Promise<T>, ctxt: AsmContext) {
+        let p = f(ctxt) as Promise<any>;
         if (p && (typeof p === "object" || typeof p === "function")) {
             if (typeof p.then !== "function") {
                 // wrap p as a promise

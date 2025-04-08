@@ -279,10 +279,13 @@ registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
 Examples:
 
 ```typescript
-// Register an object - factory will only be called once
+// Register an service - factory will only be called once
 asm.registerService(CalculatorIID, () => new CalculatorService());
 // Registration with async factory
 asm.registerService(MultiplierIID, async () => new MultiplierService());
+// Factory receive the calling context as argument
+asm.registerService(SomeServiceIID, (c: AsmContext) => new SomeService(c));
+
 // Register a function (as a service)
 asm.registerService(AdderIID, () => add); // add is a function
 ```
