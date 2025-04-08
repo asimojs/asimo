@@ -1,11 +1,11 @@
 import {
     AsmContext,
     AsmInterfaceDefinition,
-    ConsoleOutput,
+    Logger,
     IidNs,
     InterfaceId,
     InterfaceNamespace,
-} from "./types";
+} from "./asimo.types";
 
 export { AsmContext };
 
@@ -25,8 +25,8 @@ const NULL_PROMISE = Promise.resolve(null);
 const STL_ASM = "color: #669df6";
 const STL_DATA = "color: #e39f00;font-weight:bold";
 
-// global console output mode - same value for all contexts
-let consoleOutput: ConsoleOutput = "Errors";
+// global logger - same value for all contexts
+let logger: Logger | null = console;
 // counter used to name unnamed contexts
 let count = 0;
 
@@ -229,16 +229,11 @@ export function createContext(
         createChildContext(name?: string): AsmContext {
             return createContext({ name, parent: ctxt });
         },
-        get consoleOutput() {
-            return consoleOutput;
+        get logger() {
+            return logger;
         },
-        set consoleOutput(v: "" | "Errors") {
-            const lcv = v.toLowerCase();
-            if (lcv === "errors") {
-                consoleOutput = "Errors";
-            } else {
-                consoleOutput = "";
-            }
+        set logger(lg: Logger | null) {
+            logger = lg;
         },
         /**
          * Log the asimo state into an array or in the console if no output argument is provided
@@ -251,7 +246,7 @@ export function createContext(
             out.push(...defs.map((d) => `+ ${d.iid} [${d.type}]${loadState(d)}`));
             ctxt.parent?.logState(out);
             if (!output) {
-                console.log(out);
+                logger?.log(out);
             }
 
             function loadState(d: AsmInterfaceDefinition) {
@@ -359,8 +354,10 @@ export function createContext(
     }
 
     function logError(msg: string, throwError = false) {
-        if (consoleOutput === "Errors") {
+        if (logger === console) {
             console.log(`%cASM [${path}] %c${msg}`, STL_ASM, "color: ", STL_DATA);
+        } else {
+            logger?.log(`ASM [${path}] %c${msg}`);
         }
         if (throwError) {
             throw new Error(`ASM [${path}] ${msg}`);

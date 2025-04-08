@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { interfaceId, asm as rsm } from "../asimo";
-import { AsmContext } from "../types";
+import { AsmContext } from "../asimo.types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
 import { CalculatorIID } from "./types";
@@ -48,6 +48,7 @@ describe("Asimo Logs", () => {
         mockGlobalConsole();
         logs = [];
         asm = createContext();
+        asm.logger = globalThis.console;
     });
 
     afterEach(() => {
@@ -137,8 +138,8 @@ describe("Asimo Logs", () => {
         );
     });
 
-    it("should not log when consoleOutput is empty", async () => {
-        asm.consoleOutput = "";
+    it("should not log when logger is null", async () => {
+        asm.logger = null;
         expect(logs.join("")).toBe("");
         try {
             await asm.fetch("asimo.src.tests.Calc123");
@@ -150,7 +151,7 @@ describe("Asimo Logs", () => {
             expect(add).toBe(null);
         } catch (ex) {}
         expect(logs.join("")).toBe("");
-        asm.consoleOutput = "Errors";
+        asm.logger = console;
     });
 
     it("should validate iids", async () => {

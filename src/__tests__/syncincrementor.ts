@@ -1,5 +1,5 @@
 import { asm, interfaceId } from "../asimo";
-import { AsmContext } from "../types";
+import { AsmContext } from "../asimo.types";
 import { Calculator, CalculatorIID } from "./types";
 
 /**

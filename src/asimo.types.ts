@@ -131,9 +131,9 @@ export interface AsmContext {
      */
     createChildContext(name?: string): AsmContext;
     /**
-     * Tell asimo how console logs should be handled
+     * Define where logs should go - default = console
      */
-    consoleOutput: ConsoleOutput;
+    logger: Logger | null;
     /**
      * Log the asimo state into an array or in the console if no output argument is provided
      * @param output
@@ -151,11 +151,11 @@ export interface AsmInterfaceDefinition {
 }
 
 /**
- * Tell asimo how console logs should be handled:
- * - "" = no logs
- * - "Errors" = errors only
+ * Object that will receive the logs
  */
-export type ConsoleOutput = "" | "Errors";
+export interface Logger {
+    log(...data: any[]): void;
+}
 
 /**
  * String representing an interface namespace - e.g. "myapplication.services.Settings"

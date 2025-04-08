@@ -18,7 +18,7 @@ describe("Asimo", () => {
         c.registerService(SyncIncrementorIID, () => new _SyncIncrementorService());
         c.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());
         c.registerService(AdderIID, () => _add);
-        c.consoleOutput = "";
+        c.logger = null;
         return c;
     }
 
@@ -153,17 +153,17 @@ describe("Asimo", () => {
     });
 
     it("should return null for unknown interfaces", async () => {
-        const aco = context.consoleOutput;
+        const lg = context.logger;
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
 
-        context.consoleOutput = "";
+        context.logger = null;
         let err = "";
         try {
             const calc = await context.fetch(CalcIID)!;
         } catch (ex) {
             err = ex.message;
         }
-        context.consoleOutput = aco;
+        context.logger = lg;
         expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc"');
     });
 
