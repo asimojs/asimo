@@ -22,10 +22,13 @@
         "dependency injection",
         "DI",
         "test",
+        "React context",
         "progressive load",
+        "dynamic import",
         "application packaging",
         "module",
-        "module loader"
+        "module loader",
+        "lazy package manager"
     ],
     "scripts": {
         "clean": "rimraf dist lib",
