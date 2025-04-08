@@ -4,6 +4,7 @@ import { AsmContext } from "../types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
 import { CalculatorIID } from "./types";
+import { _MultiplierImpl, MultiplierIID } from "./multiplier";
 
 describe("Asimo Logs", () => {
     let asm: AsmContext,
@@ -19,7 +20,11 @@ describe("Asimo Logs", () => {
                 writable: true,
                 configurable: true,
                 value: (...args: any[]) => {
-                    logs.push(args[0].replace(/\%c/g, ""));
+                    if (Array.isArray(args[0])) {
+                        logs.push(...args[0]);
+                    } else {
+                        logs.push(args[0].replace(/\%c/g, ""));
+                    }
                 },
             },
         });
@@ -184,5 +189,60 @@ describe("Asimo Logs", () => {
         logs = [];
         asm.registerGroup([CalculatorIID], 123 as any);
         expect(logs.join("")).toBe("ASM [/asm/test] [registerGroup] Invalid group loader: 123");
+    });
+
+    it("should logState in the console", async () => {
+        const c2 = asm.createChildContext("context2");
+        c2.registerService(CalculatorIID, async () => new _CalculatorService());
+        c2.registerService(MultiplierIID, () => new _MultiplierImpl());
+
+        c2.logState();
+        expect(logs).toEqual([
+            "Context /asm/test/context2:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "+ asimo.src.tests.Multiplier [service]: not loaded",
+            "Context /asm/test:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "Context /asm:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "+ asimo.src.tests.Adder [service]: not loaded",
+            "+ asimo.src.tests.Multiplier [object]",
+        ]);
+
+        logs = [];
+        const mult = await c2.fetch(MultiplierIID);
+        expect(mult.multiply(2, 4)).toBe(8);
+        c2.logState();
+        expect(logs).toEqual([
+            "Context /asm/test/context2:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "+ asimo.src.tests.Multiplier [service]: loaded", // loaded here
+            "Context /asm/test:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "Context /asm:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "+ asimo.src.tests.Adder [service]: not loaded",
+            "+ asimo.src.tests.Multiplier [object]",
+        ]);
+    });
+
+    it("should logState in an output array", async () => {
+        const c2 = asm.createChildContext("context2");
+        const out: string[] = [];
+        const [mult, adder] = await c2.fetch(MultiplierIID, AdderIID);
+        expect(mult.multiply(2, 4)).toBe(8);
+        expect(adder(5, 4)).toBe(9);
+
+        c2.logState(out);
+        expect(logs).toEqual([]);
+        expect(out).toEqual([
+            "Context /asm/test/context2 [empty]",
+            "Context /asm/test:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "Context /asm:",
+            "+ asimo.src.tests.Calculator [service]: not loaded",
+            "+ asimo.src.tests.Adder [service]: loaded", // loaded
+            "+ asimo.src.tests.Multiplier [object]",
+        ]);
     });
 });

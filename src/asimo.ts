@@ -1,7 +1,6 @@
 import {
     AsmContext,
     AsmInterfaceDefinition,
-    AsmRefId,
     ConsoleOutput,
     IidNs,
     InterfaceId,
@@ -239,6 +238,27 @@ export function createContext(
                 consoleOutput = "Errors";
             } else {
                 consoleOutput = "";
+            }
+        },
+        /**
+         * Log the asimo state into an array or in the console if no output argument is provided
+         * @param output
+         */
+        logState(output?: string[]) {
+            const out = output || [];
+            const defs = ctxt.definitions;
+            out.push(`Context ${ctxt.path}${defs.length === 0 ? " [empty]" : ":"}`);
+            out.push(...defs.map((d) => `+ ${d.iid} [${d.type}]${loadState(d)}`));
+            ctxt.parent?.logState(out);
+            if (!output) {
+                console.log(out);
+            }
+
+            function loadState(d: AsmInterfaceDefinition) {
+                if (d.type === "service") {
+                    return d.loaded ? ": loaded" : ": not loaded";
+                }
+                return "";
             }
         },
     };

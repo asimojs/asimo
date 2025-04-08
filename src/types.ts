@@ -134,6 +134,11 @@ export interface AsmContext {
      * Tell asimo how console logs should be handled
      */
     consoleOutput: ConsoleOutput;
+    /**
+     * Log the asimo state into an array or in the console if no output argument is provided
+     * @param output
+     */
+    logState(output?: string[]): void;
 }
 
 export interface AsmInterfaceDefinition {
@@ -144,9 +149,6 @@ export interface AsmInterfaceDefinition {
     /** Tell if the service associated to the interface has been loaded (not used for object or groups) */
     loaded?: boolean;
 }
-
-/** Object reference id */
-export interface AsmRefId<T> extends String {}
 
 /**
  * Tell asimo how console logs should be handled:
