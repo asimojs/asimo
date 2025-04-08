@@ -229,6 +229,27 @@ describe("Asimo", () => {
             }
             expect(msg).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc"');
         });
+
+        it("should log an error in case factory call error", async () => {
+            let logs: string[] = [];
+            context.logger = {
+                log(msg: any) {
+                    logs.push("" + msg);
+                },
+            };
+            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            context.registerService(CalcIID, async () => {
+                throw "Unexpected error";
+            });
+
+            const calc = await context.fetch(CalcIID, null);
+            expect(calc).toBe(null);
+
+            expect(logs).toEqual([
+                "ASM [/asm/test] Instantiation error: Unexpected error",
+                'ASM [/asm/test] Invalid factory output: "asimo.src.tests.Calc"',
+            ]);
+        });
     });
 
     describe("Sync style service dependencies", () => {

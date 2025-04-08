@@ -357,24 +357,22 @@ export function createContext(
         if (logger === console) {
             console.log(`%cASM [${path}] %c${msg}`, STL_ASM, "color: ", STL_DATA);
         } else {
-            logger?.log(`ASM [${path}] %c${msg}`);
+            logger?.log(`ASM [${path}] ${msg}`);
         }
         if (throwError) {
             throw new Error(`ASM [${path}] ${msg}`);
         }
     }
 
-    function getPromise<T>(f: (c: AsmContext) => T | Promise<T>, ctxt: AsmContext) {
-        let p = f(ctxt) as Promise<any>;
-        if (p && (typeof p === "object" || typeof p === "function")) {
-            if (typeof p.then !== "function") {
-                // wrap p as a promise
-                p = Promise.resolve(p);
-            }
-        } else {
-            p = NULL_PROMISE;
+    async function getPromise<T>(f: (c: AsmContext) => T | Promise<T>, ctxt: AsmContext) {
+        let v: any | null = null;
+        try {
+            v = (await f(ctxt)) as any;
+        } catch (ex) {
+            v = null;
+            logError(`Instantiation error: ${(ex as any)?.message || ex}`);
         }
-        return p;
+        return v;
     }
 }
 
