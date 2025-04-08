@@ -1,27 +1,29 @@
 # asimo - asynchronous dependency manager
 
-Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base). Asimo approach is different from traditional solutions like **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader).
+Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base). Asimo slightly differs from traditional **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader). In some respects asimo follows the same principle as the [lazy.nvim] package manager.
+
+[lazy.nvim]: https://www.lazyvim.org/configuration/lazy.nvim
 
 Asimo was built from the following realizations:
 
--   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to use a fake _localStorage_ service to simulate different start state in an application).
--   **Dependency Injection is not well suited to progressive code load**, such as in client applications where large code bases cannot be loaded on application startup. With Dependency injections, all dependencies are loaded when a given entity is created which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to reference rarely used functionalities anywhere in the application (with their type) without impacting the initial download, as the actual implementation will be loaded on-demand. Besides asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
+-   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to fake global services like _localStorage_ or _fetch_).
+-   Strict **Dependency Injection is not well suited to client-side applications** where large code bases cannot be loaded on application startup. With Dependency injections, all dependencies of a given entity needs to be loaded when the entity is created - which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to easily reference frequently or rarely used functionalities in the same manner, without impacting the initial download. Besides, asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
 
 ## Why should you use asimo?
 
 Asimo helps solving 4 types of problems:
 
--   **unit testing**: asimo can replace dependencies with mock dependencies (e.g. in the test enviroment, unit tests can call a fake _fetch()_ that will return stable data).
+-   **client integration testing**: asimo can easily replace dependencies with mock dependencies (e.g. in the test enviroment, unit tests can call a fake _fetch()_ that will return stable data).
 -   **development**: asimo simplifies the development of _mock environment_ solutions that
-    simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for unit tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
--   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup time by optimizing the initial application load. Besides the application code is not aware of the bundle configuration that can be changed without any code refactoring.
--   **dependency sharing**: asimo can be used to implement a React-like context outside a JSX environment (as React context can only exist in a DOM-related environment). This allows to provide losely-coupled (but still typed) dependencies through a unique context object and comes in handy to reduce the number of variables to pass to the different parts of the code base.
+    simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for integration tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
+-   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup by optimizing the initial application load. Besides, the application code does not need to be aware of the bundle configuration that can be changed without any code refactoring.
+-   **application context**: asimo can be used to implement a React-like context outside any DOM-related environment (unlike React contexts). This allows to provide losely-coupled (but still typed) dependencies through a unique context object and comes in handy to reduce the number of variables to pass to the different parts of the code base.
 
 Live Demos: 🚀 [sample app architecture (asidemo)][asidemo] or [google search results][results]
 
 Presentation [slides]
 
-Other key features:
+Other important features:
 
 -   **design by interface**: depend on abstraction, not implementation - cf. [SOLID] design principles
 -   full and transparent **typescript support**
@@ -39,14 +41,14 @@ Like most dependency management systems, Asimo base principle is to create **dep
 
 ```typescript
 // retrieve the calculator service (asynchronous)
-const calc = await asm.get(CalculatorIID);
-//     CalculatorIID is the Calculator Interface Identifier
-//     asm is an Asimo dependency context
-//     calc is a Calculator service instance
+const calc = await asm.fetch(CalculatorIID);
+//   CalculatorIID is the Calculator Interface ID
+//   asm is an Asimo dependency context
+//   calc is a Calculator service instance
 
 // use it!
 const result = calc.add(1, 2);
-//     -> the service doesn't need to be async
+//   -> the service doesn't need to be async
 ```
 
 The **Dependency contexts** are objects on which **dependency factories** can be registered - e.g.
@@ -54,26 +56,26 @@ The **Dependency contexts** are objects on which **dependency factories** can be
 ```typescript
 // Service registration
 asm.registerService(CalculatorIID, () => new CalculatorService());
-//     of course CalculatorService must implement the interface associated
-//     to CalculatorIID --> typescript will help you there in case of error
+//   of course CalculatorService must implement the interface associated
+//   to CalculatorIID --> typescript will help you there in case of error
 ```
 
 Asimo supports 3 kinds of factories
 
--   **service factories** (cf. **_registerService()_**) that produce unique objects that will be shared by application modules - i.e. the service instance will be created on the first _get()_ call, and then asimo will always return this instance instead of creating a new one.
+-   **service factories** (cf. **_registerService()_**) that produce unique objects that will be shared by application modules - i.e. the service instance will be created on the first _fetch()_ call, and then asimo will always return this instance instead of creating a new one.
 -   **object factories** (cf. **_registerFactory()_**) that produce new object instances everytime they are called.
--   **group factories** (cf. **_registerGroup()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together).
+-   **group factories** (cf. **_registerGroup()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together and that will be loaded dynamically through dynamic imports).
 
-On top of that, asimo also supports registering any kind of objects. Note: in this case the retrieval methods are synchronous (cf. **_registerObject()_**, **_getObject()_** and **_fetchObject()_**)
+On top of that, asimo also supports registering any kind of **objects** that can be retrieved **synchronously** throught the **_get()_** method.
 
 ```typescript
 // Object registration
 const calc = new CalculatorService();
-asm.registerService(CalculatorIID, calc);
+asm.registerObject(CalculatorIID, calc);
 
-const calc2 = asm.getObject(CalculatorIID);
+const calc2 = asm.get(CalculatorIID);
 // calc2 is of type  Calculator (cf. below) and is equal to calc:
-expect(calc2).toBe(true);
+expect(calc2).toBe(calc);
 ```
 
 Last but not least, and like with any dependency management systems, asimo allows to **chain dependency contexts** by creating _sub-contexts_ - e.g.
@@ -90,9 +92,8 @@ Note: by default asimo creates a **root context** that is exposed as **asm** by 
 
 In this example, if an application module tries to retrieve a dependency on _context3_ asimo will first look in _context3_, then in _context2_ and then in _asm_ if it hasn't found it before. Asimo offers 2 methods to manage cases where dependency factories are not found (i.e. not registered):
 
--   either it **throws an exception** as the error results from a configuration issue that can only occurs at
-    development time because the factory registration is missing. The benefit is that the dependency user doesn't need to check the object returned by asimo. This behavior is implemented by the _get()_ method.
--   or it **returns null** and the dependency user will have to manage the case where the returned object is not available (typescript will show that the type can be null). This behavior is implemented by the _retrieve()_ method.
+-   either it **throws an exception** (if not default values are provided or if _get_ or _fetch_ are used to retrieve multiple dependencies in one call)
+-   or it **returns a default value** and the caller will have to manage the case where the returned object is not available (typescript will show that the type can be null).
 
 The last _special_ part that needs to be mentioned concerns the **interface definitions**. As typescript interfaces cannot be read at runtime, asimo exposes a special **interfaceId()** method that allows to bind a typescript interface with a string (that should be unique - this is why we suggest to use namespaces):
 
@@ -104,15 +105,15 @@ export interface Calculator {
 }
 
 // interface id token associated to the typescript interface
-export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
-// asimo.src.tests.Calculator -> unique namespace (by construction)
+export const CalculatorIID = interfaceId<Calculator>("asimo.tests.Calculator");
+// asimo.tests.Calculator -> unique namespace
 ```
 
 ## Examples
 
 In all use cases asimo involves at least 2 modules:
 
--   a **consumer** module that retrieves the producers dynamically, on-demand (the consumer can then keep a reference to its dependencies to avoid further async calls if need be):
+-   a **consumer** module that retrieves dependencies dynamically (the consumer can then keep a reference to its dependencies to avoid further async calls if need be):
 
 ```typescript
 // Consumer
@@ -126,7 +127,7 @@ async function doSomething() {
 }
 ```
 
--   a **producer** module that contains services or factories that will be exposed to consumers. Producers are usually split in 2 files:
+-   a **producer** module that contains object or service factories that will be exposed to consumers. Producers are usually split in 2 files:
 
 -- a _type_ file:
 
@@ -215,58 +216,61 @@ export const AdderIID = interfaceId<Adder>("asimo.src.tests.Adder");
 
 The AsmContext is the object that contains the registered factories and that exposes all asimo APIs (but `interfaceId()`):
 
-### `get()`
+### `fetch()`
 
-Retrieve a service or an object instance. For each interface id, asimo will first look in the current
-context for services or object factories or groups (in this order) - if not found
-it will then perform the same lookup in its parent context, recursively up to the root context).
+Retrieve a service or an object instance asynchronously. For each interface id passed as argument, asimo will first look in the current context for services or object factories or groups (in this order) - if not found
+it will then perform the same lookup in its parent context, recursively up to the root context.
 This method allows to retrieve up to 5 dependencies in one call with type support (more can be retrieved
 without type inference - cf. call signature).
 
-Note: **get() will throw exceptions if the factory is not defined** for the expected interface. This is usually the preferred behavior as a missing factory generally results from an application configuration issue that is fixed at development time. Thanks to this behavior the dependency user doesn't need to check the type returned by asimo.
-
-Note 2: the parameters can be either `InterfaceId` objects or interface namespaces (strings).
-When using `InterfaceId` typescript will automatically infer the right type - otherwise an explicit
-type cast will be necessary, as shown below
-
-Examples:
+Note: **if the factory is not defined fetch will throw an exceptioin unless a default value is passed as 2nd argument**.
 
 ```typescript
-// Get one dependency
-const calc = await asm.get(CalculatorIID);
-calc.add(1, 2); // calc2 type is Calculator
-
-// Get one dependency by namesapce
-const calc2 = await asm.get("asimo.src.tests.Calculator");
-(calc2 as Calculator).add(1, 2); // calc2 type is unknown
-
-// Retrieve multiple dependencies - also works with namespace strings:
-const [m, c, a] = await asm.get(MultiplierIID, CalculatorIID, AdderIID);
-```
-
-### `fetch()`
-
-This method is similar to _get()_ with the difference that it will return _null_ if the dependency is not found (instead of throwing an exception).
-
-```typescript
-// Get one dependency
+// Get one dependency - throws if not found
 const calc = await asm.fetch(CalculatorIID);
-calc?.add(1, 2); // calc2 type is Calculator | null
+calc.add(1, 2); // calc type is Calculator
+
+// Get one dependency - return the default value if not found
+const calc2 = await asm.fetch(CalculatorIID, null);
+calc2?.add(1, 2); // calc2 type is Calculator | null
 
 // Retrieve one dependency by namesapce
-const calc2 = await asm.fetch("asimo.src.tests.Calculator");
-(calc2 as Calculator)!.add(1, 2); // calc2 type is unknown
+const calc3 = await asm.fetch("asimo.tests.Calculator");
+(calc3 as Calculator)!.add(1, 2); // calc3 type is unknown
 
 // Retrieve multiple dependencies - also works with namespace strings:
 const [m, c, a] = await asm.fetch(MultiplierIID, CalculatorIID, AdderIID);
-//     m is of type Multiplier
-//     c is of type Calculator
-//     a is of type Adder
+//   m is of type Multiplier
+//   c is of type Calculator
+//   a is of type Adder
+```
+
+### `get()`
+
+Get an object from an asimo context (or its parents). On the contrary to _fetch()_, _get()_ is **synchronous** and only returns objects that have been registered through _registerObject()_. This function will throw an error if no default value is passed as 2nd argument.
+
+```typescript
+// register an the object
+asm.registerObject(CalculatorIID, new CalculatorService());
+
+// Get one dependency - throws if not found
+const calc = asm.get(CalculatorIID);
+calc.add(1, 2); // calc type is Calculator
+
+// Get one dependency - return the default value if not found
+const calc2 = asm.get(CalculatorIID, null);
+calc2?.add(1, 2); // calc2 type is Calculator | null
+
+// Retrieve multiple dependencies - also works with namespace strings:
+const [m, c, a] = asm.get(MultiplierIID, CalculatorIID, AdderIID);
+//   m is of type Multiplier
+//   c is of type Calculator
+//   a is of type Adder
 ```
 
 ### `registerService()`
 
-Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function (synchronous or asynchronous). Note: **service factories are only called once** whereas object factories are called at each _get()_ (or _fetch()_) in order to generate new object instances.
+Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function as parameter (synchronous or asynchronous). Note: **service factories are only called once** whereas object factories are called at each _fetch()_ in order to generate new object instances.
 
 ```typescript
 registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
@@ -275,22 +279,22 @@ registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
 Examples:
 
 ```typescript
-// Register an object - factory will only be called once
+// Register an service - factory will only be called once
 asm.registerService(CalculatorIID, () => new CalculatorService());
 // Registration with async factory
 asm.registerService(MultiplierIID, async () => new MultiplierService());
-// Register a function - cf. above
-asm.registerService(AdderIID, () => add);
-//     m is of type Multiplier | null
-//     c is of type Calculator | null
-//     a is of type Adder | null
+// Factory receive the calling context as argument
+asm.registerService(SomeServiceIID, (c: AsmContext) => new SomeService(c));
+
+// Register a function (as a service)
+asm.registerService(AdderIID, () => add); // add is a function
 ```
 
 ### `registerFactory()`
 
-Register an object factory. The factory will be called any time the get method is called
+Register an object factory. The factory will be called any time the _fetch()_ method is called
 for the object's interface id. On the contrary to services, there is no restriction on the number
-of objects that can be creatd. Besides asimo doesn't keep any reference to the object
+of objects that can be creatd. Besides asimo doesn't keep any reference to the object (no risks of memory leak)
 
 ```typescript
 registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
@@ -305,7 +309,7 @@ asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
 
 ### `registerObject()`
 
-Register any kind of object in the given context.
+Register any kind of object in the given context - these objects will be accessible synchronously through the _get()_ method
 
 ```typescript
 interface SimpleObject {
@@ -323,25 +327,15 @@ const o: SimpleObject = {
 context.registerObject(SimpleObjectIID, o);
 
 // retrieval is synchronous for objects (no await)
-const o2 = context.getObject(SimpleObjectIID); // o2 type is SimpleObject
+const o2 = context.get(SimpleObjectIID); // o2 type is SimpleObject
 expect(o2).toBe(o);
-const o3 = context.fetchObject(SimpleObjectIID); // o3 type is SimpleObject | null
-expect(o3).toBe(o);
 ```
-
-### `getObject()`
-
-Get an object from the given context (or its parent). This function will throw an error if no object is defined (on the contrary to _*fetchObject()*_) - cf. previous example.
-
-### `fetchObject()`
-
-Get an object from the given context (or its parent). This function will return null if no object is defined (on the contrary to _*getObject()*_) - cf. previous example.
 
 ### `registerGroup()`
 
 Register a group loader that will be used to asynchronously load multiple
 services and object factories gathered in a same **deployment bundle**. The bundle code will be loaded on-demand, when
-an explicit `get()/fetch()` is done on one of its service or object interfaces.
+an explicit `fetch()` is done on one of its service or object interfaces.
 
 Parameters:
 
@@ -357,12 +351,12 @@ Example:
 ```typescript
 // Register several interface implementation that will be loaded on-demand through
 // a dynamic module import (this assumes that the implementaion are defined in the module)
-asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupA"));
+asm.registerGroup([Service1IID, Object2IID], () => import("./groups/mybundlefiile"));
 ```
 
 ### `createChildContext()`
 
-Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
+Create a child context that can override some of the dependencies defined in its parent (cf. _fetch()_ and _get()_)
 
 ```typescript
 createChildContext(name?:string): AsmContext;
@@ -422,18 +416,42 @@ const defs = asm.definitions;
 // ]
 ```
 
-### `consoleOutput`
+### `logState`
 
-Tell asimo how console logs should be handled - 2 possible values: `""` or `"Errors"`
+Log a given context state (i.e. list of registered dependencies) into and array or to the `logger` (console by default) if not _output_ argument is provided.
 
--   `""`: no logs
--   `"Errors"`: log errors (e.g. invalid arguments or invalid resolution) [**default**]
+```typescript
+logState(output?: string[]): void;
+```
+
+Example:
+
+```typescript
+mycontext.logState();
+```
+
+```bash
+# console output:
+Context /asm/test/mycontext:
++ asimo.src.tests.Calculator [service]: not loaded
++ asimo.src.tests.Multiplier [service]: loaded
+Context /asm/test:
++ asimo.src.tests.Calculator [service]: loaded
+Context /asm:
++ asimo.src.tests.Calculator [service]: not loaded
++ asimo.src.tests.Adder [service]: not loaded
++ asimo.src.tests.Multiplier [object]
+```
+
+### `logger`
+
+Tell asimo where to log errors - default value is `console` but can also be `null` to avoid logging anything
 
 Note: this setting is global, even if set on a child context.
 Example:
 
 ```typescript
-asm.consoleOutput = ""; // deactivate error logs
-// [...]
-asm.consoleOutput = "Errors"; // reactivate error logs
+asm.logger = null; // deactivate error logs
+// [some code here ...]
+asm.logger = console; // reactivate error logs
 ```

@@ -43,11 +43,11 @@ describe("Groups", () => {
             { iid: "asimo.src.tests.groups.Object2", type: "group" }, // factory not loaded
         ]);
 
-        const s1 = await asm.get(Service1IID);
+        const s1 = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1.name).toBe("Service1");
         expect(s1.add(40, 2)).toBe(42);
-        const s1bis = await asm.get(Service1IID);
+        const s1bis = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1).toBe(s1bis);
 
@@ -59,11 +59,11 @@ describe("Groups", () => {
             { iid: "asimo.src.tests.groups.Object2", type: "object" }, // factory loaded
         ]);
 
-        const o2 = await asm.get(Object2IID);
+        const o2 = await asm.fetch(Object2IID);
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.get(Object2IID);
+        const o2bis = await asm.fetch(Object2IID);
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
         expect(o2bis).not.toBe(o2);
@@ -73,20 +73,20 @@ describe("Groups", () => {
     it("should support group loaders (subcontext)", async () => {
         asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupAbis"));
         groupALoadCount = 0;
-        const s1 = await asm.get(Service1IID);
+        const s1 = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1.name).toBe("Service1");
         expect(s1.add(40, 2)).toBe(42);
-        const s1bis = await asm.get(Service1IID);
+        const s1bis = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1).toBe(s1bis);
 
-        const o2 = await asm.get(Object2IID);
+        const o2 = await asm.fetch(Object2IID);
         expect(groupALoadCount).toBe(1);
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.get(Object2IID);
+        const o2bis = await asm.fetch(Object2IID);
         expect(groupALoadCount).toBe(1);
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
@@ -96,17 +96,17 @@ describe("Groups", () => {
     it("should only load group once in case of parallel requests", async () => {
         asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupAter"));
         groupALoadCount = 0;
-        const [s1, o2] = await asm.get(Service1IID, Object2IID);
+        const [s1, o2] = await asm.fetch(Service1IID, Object2IID);
         expect(groupALoadCount).toBe(1);
         expect(s1.name).toBe("Service1");
         expect(s1.add(40, 2)).toBe(42);
-        const s1bis = await asm.get(Service1IID);
+        const s1bis = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1).toBe(s1bis);
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.get(Object2IID);
+        const o2bis = await asm.fetch(Object2IID);
         expect(groupALoadCount).toBe(1);
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
