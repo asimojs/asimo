@@ -124,7 +124,7 @@ describe("Asimo Objects", () => {
         });
 
         it("should throw an error if not found", async () => {
-            context.consoleOutput = "";
+            context.logger = null;
             let err = "";
             try {
                 const o = context.get(SimpleObjectIID);
