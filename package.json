@@ -1,6 +1,6 @@
 {
     "name": "@asimojs/asimo",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "description": "Asynchronous dependency manager for Typescript projects",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
