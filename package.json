@@ -1,7 +1,7 @@
 {
     "name": "@asimojs/asimo",
     "version": "2.0.0",
-    "description": "Asynchronous dependency manager for Typescript projects",
+    "description": "Asynchronous IoC for the browser",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
     "typings": "dist/asimo.d.ts",
@@ -19,8 +19,10 @@
     "bugs": "https://github.com/asimojs/asimo/issues",
     "homepage": "https://github.com/asimojs/asimo",
     "keywords": [
+        "dependency inversion",
         "dependency injection",
         "DI",
+        "IoC",
         "test",
         "React context",
         "progressive load",

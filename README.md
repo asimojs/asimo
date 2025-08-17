@@ -1,15 +1,17 @@
-# asimo - asynchronous dependency manager
+# asimo - asynchronous Inversion of Control for the browser
 
-Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base). Asimo slightly differs from traditional **Dependency Injection (DI)** libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader). In some respects asimo follows the same principle as the [lazy.nvim] package manager.
+Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base) through an asynchronous _Inversion of Control_ ([IoC]) mechanism. Asimo slightly differs from traditional **Dependency Injection** ([DI]) libraries as its principle is to retrieve dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader). In some respects asimo follows the same principle as the [lazy.nvim] package manager.
 
 [lazy.nvim]: https://www.lazyvim.org/configuration/lazy.nvim
+[IoC]: https://en.wikipedia.org/wiki/Inversion_of_control
+[DI]: https://en.wikipedia.org/wiki/Dependency_injection
 
 Asimo was built from the following realizations:
 
 -   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to fake global services like _localStorage_ or _fetch_).
--   Strict **Dependency Injection is not well suited to client-side applications** where large code bases cannot be loaded on application startup. With Dependency injections, all dependencies of a given entity needs to be loaded when the entity is created - which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to easily reference frequently or rarely used functionalities in the same manner, without impacting the initial download. Besides, asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
+-   Strict **[Dependency Injection][DI] is not well suited to client-side applications** where large code bases cannot be loaded on application startup. With Dependency injections, all dependencies of a given entity needs to be loaded when the entity is created - which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to easily reference frequently or rarely used functionalities in the same manner, without impacting the initial download. Besides, asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
 
-## Why should you use asimo?
+## What problem does it solve?
 
 Asimo helps solving 4 types of problems:
 
