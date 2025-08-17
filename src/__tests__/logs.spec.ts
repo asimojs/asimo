@@ -58,16 +58,6 @@ describe("Asimo Logs", () => {
     it("should log errors on the console by default", async () => {
         expect(logs.join("")).toBe("");
         let err = "";
-        try {
-            await asm.fetch("asimo.src.tests.Calc123");
-        } catch (ex) {
-            err = ex.message;
-        }
-        expect(logs.join("")).toBe(
-            'ASM [/asm/test] Interface not found: "asimo.src.tests.Calc123"',
-        );
-        expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc123"');
-        logs = [];
 
         try {
             const add = await asm.fetch(AdderIID2);

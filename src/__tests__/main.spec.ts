@@ -155,17 +155,6 @@ describe("Asimo", () => {
         expect(calc2?.numberOfCalls).toBe(1);
     });
 
-    it("should support get with string namespaces", async () => {
-        const calc1 = await context.fetch(CalculatorIID.ns);
-        (calc1 as Calculator).add(1, 2);
-
-        const c1 = context.createChildContext();
-        const calc2 = await c1.fetch(CalculatorIID)!;
-
-        expect(calc2).toBe(calc1);
-        expect(calc2?.numberOfCalls).toBe(1);
-    });
-
     it("should return null for unknown interfaces", async () => {
         const lg = context.logger;
         const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
@@ -356,7 +345,7 @@ describe("Asimo", () => {
         });
 
         it("should return null if object is not found (fetch)", async () => {
-            const calc = await context.fetch("asimo.src.tests.Calc123", null);
+            const calc = await context.fetch({ ns: "asimo.src.tests.Calc123" }, null);
             expect(calc).toBe(null);
         });
 

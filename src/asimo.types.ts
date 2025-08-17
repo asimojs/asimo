@@ -68,9 +68,9 @@ export interface AsmContext {
      * (this only works when fetching a single resource - e.g. asm.get(AppModuleIID, null) )
      * @see fetch
      */
-    get<T>(iid: IidNs<T>): T;
-    get<T, D extends T | null>(iid: IidNs<T>, defaultValue?: D): T | D;
-    get<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: IidNs<T2>): [T1, T2];
+    get<T>(iid: InterfaceId<T>): T;
+    get<T, D extends T | null>(iid: InterfaceId<T>, defaultValue?: D): T | D;
+    get<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: InterfaceId<T2>): [T1, T2];
     get<T1, T2, T3>(
         iid1: InterfaceId<T1>,
         iid2: InterfaceId<T2>,
@@ -103,9 +103,9 @@ export interface AsmContext {
      * Note: this method will throw an error if the targeted service or object cannot be found/loaded - unless a default value is passed
      * (this only works when fetching a single resource - e.g. asm.fetch(CalculatorIID, null) )
      */
-    fetch<T>(iid: IidNs<T>): Promise<T>;
-    fetch<T, D extends T | null>(iid: IidNs<T>, defaultValue?: D): Promise<T | D>;
-    fetch<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: IidNs<T2>): Promise<[T1, T2]>;
+    fetch<T>(iid: InterfaceId<T>): Promise<T>;
+    fetch<T, D extends T | null>(iid: InterfaceId<T>, defaultValue?: D): Promise<T | D>;
+    fetch<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: InterfaceId<T2>): Promise<[T1, T2]>;
     fetch<T1, T2, T3>(
         iid1: InterfaceId<T1>,
         iid2: InterfaceId<T2>,
@@ -168,8 +168,3 @@ export type InterfaceNamespace = string;
 export interface InterfaceId<T> {
     ns: InterfaceNamespace;
 }
-
-/**
- * IID or Namespace: parameter type used to retrieve an object from asimo
- */
-export type IidNs<T> = InterfaceId<T> | string;

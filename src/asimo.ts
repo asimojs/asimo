@@ -2,7 +2,6 @@ import {
     AsmContext,
     AsmInterfaceDefinition,
     Logger,
-    IidNs,
     InterfaceId,
     InterfaceNamespace,
 } from "./asimo.types";
@@ -108,14 +107,14 @@ export function createContext(
         registerService<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerService")) {
                 factories.set(SERVICE + iid.ns, factory);
-                removeGroupEntry(iid.ns);
+                removeGroupEntry(iid);
             }
         },
         /** Register an object factory */
         registerFactory<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerFactory")) {
                 factories.set(OBJECT + iid.ns, factory);
-                removeGroupEntry(iid.ns);
+                removeGroupEntry(iid);
             }
         },
         /** Register a factory group */
@@ -141,8 +140,8 @@ export function createContext(
             }
         },
         /** Get a registered object */
-        get(iid0: IidNs<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
-            const ns0 = namespace(iid0);
+        get(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
+            const ns0 = iid0.ns;
             if (
                 iid1OrDefault === undefined ||
                 iid1OrDefault === null ||
@@ -151,7 +150,7 @@ export function createContext(
                 typeof iid1OrDefault.ns !== "string"
             ) {
                 // only one argument + optional default
-                const v = getObject(ns0);
+                const v = getObject(iid0);
                 if (v === NOT_FOUND) {
                     if (iid1OrDefault !== undefined) {
                         return iid1OrDefault;
@@ -162,13 +161,12 @@ export function createContext(
                 return v;
             } else {
                 // list of iids
-                const iid1 = iid1OrDefault;
-                const namespaces = [ns0, namespace(iid1), ...iids.map((iid) => namespace(iid))];
-                const values = namespaces.map((ns) => getObject(ns));
+                const iidList = [iid0, iid1OrDefault, ...iids];
+                const values = iidList.map((iid) => getObject(iid));
                 const nsNotFounds: string[] = [];
                 for (let i = 0; values.length > i; i++) {
                     if (values[i] === NOT_FOUND) {
-                        nsNotFounds.push(namespaces[i]);
+                        nsNotFounds.push(iidList[i].ns);
                     }
                 }
                 if (nsNotFounds.length) {
@@ -183,11 +181,10 @@ export function createContext(
         },
         /** Fetch a service or an object instance (services have priority) */
         async fetch(
-            iid0: IidNs<any>,
+            iid0: InterfaceId<any>,
             iid1OrDefault?: any,
             ...iids: InterfaceId<any>[]
         ): Promise<any> {
-            const ns0 = namespace(iid0);
             if (
                 iid1OrDefault === undefined ||
                 iid1OrDefault === null ||
@@ -196,24 +193,26 @@ export function createContext(
                 typeof iid1OrDefault.ns !== "string"
             ) {
                 // only one argument + optional default
-                const v = await fetch(ns0, true);
+                const v = await fetchValue(iid0, true);
                 if (v === NOT_FOUND) {
                     if (iid1OrDefault !== undefined) {
                         return iid1OrDefault;
                     } else {
-                        logError(`Interface not found: ${description(ns0)}`, true);
+                        logError(`Interface not found: ${description(iid0.ns)}`, true);
                     }
                 }
                 return v;
             } else {
                 // list of iids
-                const iid1 = iid1OrDefault;
-                const namespaces = [ns0, namespace(iid1), ...iids.map((iid) => namespace(iid))];
-                const values = await Promise.all(namespaces.map((ns) => fetch(ns, true)));
+                const iidList = [iid0, iid1OrDefault, ...iids];
+                const values = await Promise.allSettled(
+                    iidList.map((iid) => fetchValue(iid, true)),
+                );
                 const nsNotFounds: string[] = [];
                 for (let i = 0; values.length > i; i++) {
-                    if (values[i] === NOT_FOUND) {
-                        nsNotFounds.push(namespaces[i]);
+                    const v = values[i];
+                    if (v.status === "rejected" || v.value === NOT_FOUND) {
+                        nsNotFounds.push(iidList[i].ns);
                     }
                 }
                 if (nsNotFounds.length) {
@@ -223,7 +222,7 @@ export function createContext(
                         logError(`Interfaces not found: ["${nsNotFounds.join('", "')}"]`, true);
                     }
                 }
-                return values;
+                return values.map((v) => (v.status === "fulfilled" ? v.value : null));
             }
         },
         createChildContext(name?: string): AsmContext {
@@ -259,21 +258,20 @@ export function createContext(
     };
     return ctxt;
 
-    /** Return the namespace associcate to an interface id */
-    function namespace(iid: IidNs<any>) {
-        return typeof iid === "string" ? iid : iid.ns;
-    }
-
-    function getObject<T>(ns: string): T | typeof NOT_FOUND {
-        const r = objects?.get(ns);
+    function getObject<T>(iid: InterfaceId<any>): T | typeof NOT_FOUND {
+        const r = objects?.get(iid.ns);
         if (r !== undefined) return r as T;
         if (parent) {
-            return parent.get(ns, NOT_FOUND);
+            return parent.get(iid, NOT_FOUND);
         }
         return NOT_FOUND;
     }
 
-    async function fetch<T>(ns: string, lookupGroups = true): Promise<T | typeof NOT_FOUND> {
+    async function fetchValue<T>(
+        iid: InterfaceId<any>,
+        lookupGroups = true,
+    ): Promise<T | typeof NOT_FOUND> {
+        const ns = iid.ns;
         const serviceId = SERVICE + ns;
         const srv = services.get(serviceId);
         if (srv !== undefined) {
@@ -314,12 +312,12 @@ export function createContext(
                     const g = getPromise(f3, ctxt);
                     return g.then(() => {
                         // look for an interface factory once the group has loaded
-                        return fetch(ns, false) as any;
+                        return fetchValue(iid, false) as any;
                     });
                 }
             }
             if (parent) {
-                return parent.fetch(ns as any, NOT_FOUND);
+                return parent.fetch(iid, NOT_FOUND);
             }
         }
         return NOT_FOUND_PROMISE;
@@ -349,8 +347,8 @@ export function createContext(
         return desc;
     }
 
-    function removeGroupEntry(iidNs: string) {
-        factories.delete(GROUP + iidNs);
+    function removeGroupEntry(iid: InterfaceId<any>) {
+        factories.delete(GROUP + iid.ns);
     }
 
     function logError(msg: string, throwError = false) {
