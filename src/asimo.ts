@@ -4,17 +4,38 @@ import {
     Logger,
     InterfaceId,
     InterfaceNamespace,
+    SyncIID,
+    AsyncIID,
 } from "./asimo.types";
 
-export { AsmContext };
+export { AsmContext, InterfaceId, SyncIID, AsyncIID };
 
 /**
- * Create an interface id object that will be used to associate an interface namepsace with a typescript type
- * @param ns the interface namespace - e.g. "myapplication.services.Settings"
+ * Create an interface id token that will be used to associate an interface namepsace with a typescript type
+ * @param ns the interface namespace, e.g. "myapplication.services.Settings"
  * @returns an InterfaceId object
+ * @deprecated use syncIID / asyncIID instead
  */
-export function interfaceId<T>(ns: InterfaceNamespace): InterfaceId<T> {
-    return { ns } as InterfaceId<T>;
+export function interfaceId<T>(ns: InterfaceNamespace): AsyncIID<T> {
+    return { ns, sync: false } as AsyncIID<T>;
+}
+
+/**
+ * Create an interface token for values that can be retrieved synchronously
+ * @param ns the interface namespace, e.g. "myapplication.services.Settings"
+ * @returns
+ */
+export function syncIID<T>(ns: InterfaceNamespace): SyncIID<T> {
+    return { ns, sync: true } as SyncIID<T>;
+}
+
+/**
+ * Create an interface token for values that can be retrieved asynchronously
+ * @param ns the interface namespac, e.g. "myapplication.services.Settings"
+ * @returns
+ */
+export function asyncIID<T>(ns: InterfaceNamespace): AsyncIID<T> {
+    return { ns, sync: false } as AsyncIID<T>;
 }
 
 const SERVICE = "service:";
@@ -95,7 +116,7 @@ export function createContext(
             return defs;
         },
         /** Register an object instance */
-        registerObject<T extends object>(iid: InterfaceId<T>, o: T): void {
+        registerObject<T extends object>(iid: SyncIID<T>, o: T): void {
             if (validate(iid, null, "registerObject")) {
                 if (!objects) {
                     objects = new Map();
@@ -104,14 +125,14 @@ export function createContext(
             }
         },
         /** Register a service factory */
-        registerService<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
+        registerService<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerService")) {
                 factories.set(SERVICE + iid.ns, factory);
                 removeGroupEntry(iid);
             }
         },
         /** Register an object factory */
-        registerFactory<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void {
+        registerFactory<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void {
             if (validate(iid, factory, "registerFactory")) {
                 factories.set(OBJECT + iid.ns, factory);
                 removeGroupEntry(iid);
@@ -139,6 +160,66 @@ export function createContext(
                 validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
             }
         },
+        get2(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
+            // check if we try to retrieve one or multiple values
+            if (
+                iid1OrDefault === undefined ||
+                iid1OrDefault === null ||
+                typeof iid1OrDefault !== "object" ||
+                !("ns" in iid1OrDefault && "sync" in iid1OrDefault) ||
+                typeof iid1OrDefault.ns !== "string" ||
+                typeof iid1OrDefault.ns !== "boolean"
+            ) {
+                // only one argument + optional default
+                let v: any = undefined;
+                if (iid0.sync) {
+                    v = getObject(iid0);
+                } else {
+                    v = fetchValue(iid0, true);
+                }
+                if (v === NOT_FOUND) {
+                    if (iid1OrDefault !== undefined) {
+                        return iid1OrDefault;
+                    } else {
+                        logError(`Object not found: ${description(iid0.ns)}`, true);
+                    }
+                }
+                return v;
+            } else {
+                const syncMode = iid0.sync;
+                // multiple arguments -> check if they are all sync or async
+                if (iid1OrDefault.sync !== syncMode || iids.some((iid) => iid.sync !== syncMode)) {
+                    logError(`SyncIID and AsyncIID arguments cannot be mixed`, true);
+                }
+
+                // list of iids
+                const iidList = [iid0, iid1OrDefault, ...iids];
+
+                if (syncMode) {
+                    const nsNotFounds: string[] = [];
+                    let values: any[];
+                    values = iidList.map((iid) => getObject(iid));
+
+                    for (let i = 0; values.length > i; i++) {
+                        if (values[i] === NOT_FOUND) {
+                            nsNotFounds.push(iidList[i].ns);
+                        }
+                    }
+                    if (nsNotFounds.length) {
+                        if (nsNotFounds.length === 1) {
+                            logError(`Object not found: "${nsNotFounds[0]}"`, true);
+                        } else {
+                            logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
+                        }
+                    }
+                    return values;
+                } else {
+                    // async mode
+                    return fetchObjects(iids as AsyncIID<any>[]);
+                }
+            }
+        },
+
         /** Get a registered object */
         get(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
             const ns0 = iid0.ns;
@@ -265,6 +346,25 @@ export function createContext(
             return parent.get(iid, NOT_FOUND);
         }
         return NOT_FOUND;
+    }
+
+    async function fetchObjects(iids: AsyncIID<any>[]) {
+        const values = await Promise.allSettled(iids.map((iid) => fetchValue(iid, true)));
+        const nsNotFounds: string[] = [];
+        for (let i = 0; values.length > i; i++) {
+            const v = values[i];
+            if (v.status === "rejected" || v.value === NOT_FOUND) {
+                nsNotFounds.push(iids[i].ns);
+            }
+        }
+        if (nsNotFounds.length) {
+            if (nsNotFounds.length === 1) {
+                logError(`Interface not found: "${nsNotFounds[0]}"`, true);
+            } else {
+                logError(`Interfaces not found: ["${nsNotFounds.join('", "')}"]`, true);
+            }
+        }
+        return values.map((v) => (v.status === "fulfilled" ? v.value : null));
     }
 
     async function fetchValue<T>(

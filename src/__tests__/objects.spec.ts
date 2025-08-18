@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, interfaceId, createContext, AsmContext } from "../asimo";
+import { asm as rsm, interfaceId, createContext, AsmContext, syncIID } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
@@ -11,8 +11,8 @@ interface SimpleObject {
     name: string;
     increment(value: number): number;
 }
-const SimpleObjectIID = interfaceId<SimpleObject>("asimo.test.objects.simple-object");
-const SimpleObject2IID = interfaceId<SimpleObject>("asimo.test.objects.simple-object2");
+const SimpleObjectIID = syncIID<SimpleObject>("asimo.test.objects.simple-object");
+const SimpleObject2IID = syncIID<SimpleObject>("asimo.test.objects.simple-object2");
 
 describe("Asimo Objects", () => {
     let context: AsmContext;

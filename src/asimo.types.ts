@@ -25,7 +25,7 @@ export interface AsmContext {
      * Object instances can be retrieved synchronously through the get() method
      * @see get
      */
-    registerObject<T extends object>(iid: InterfaceId<T>, o: T): void;
+    registerObject<T extends object>(iid: SyncIID<T>, o: T): void;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the AsmContext. Services will be created on-demand, when retrieved for the first time
@@ -34,7 +34,7 @@ export interface AsmContext {
      * @param factory a factory that will be called to instanciate the service
      * @see fetch
      */
-    registerService<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void;
+    registerService<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void;
     /**
      * Register an object factory. The factory will be called any time the get method is called
      * for this interface id. On the contrary to services, there is no restriction on the number
@@ -45,7 +45,7 @@ export interface AsmContext {
      * @param factory a factory that will be called to create an object instance
      * @see fetch
      */
-    registerFactory<T>(iid: InterfaceId<T>, factory: (c: AsmContext) => T | Promise<T>): void;
+    registerFactory<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void;
     /**
      * Register a group loader that will be used to asynchronously load multiple
      * service and object factories on-demand (i.e. the group code will only be loaded when
@@ -56,6 +56,30 @@ export interface AsmContext {
      * @see fetch
      */
     registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
+
+    /**
+     * Retrieve one or multiple values from the IoC container.
+     * This method returns synchronously or asynchronously depending on the IID arguments:
+     * - if they are all SyncIIDs, the response will be synchronous
+     * - if they are all AsyncIIDs, the response will be asynchronou (i.e. a Promise)
+     * Note: SyncIID and AsyncIID arguments cannot be mixed.
+     * Note2: this method will throw an error if one of the values is not found. To prevent this behavior
+     * you must retrieve the values one by one and pass a default value as 2nd argument.
+     * Ex: const value = context.get(SomeServiceIID, null);
+     * @see fetch
+     */
+    get2<T>(iid: SyncIID<T>): T;
+    get2<T, D extends T | null>(iid: SyncIID<T>, defaultValue?: D): T | D;
+    get2<Args extends SyncIID<any>[]>(
+        ...iids: Args
+    ): { [K in keyof Args]: Args[K] extends SyncIID<infer T> ? T : never };
+
+    get2<T>(iid: AsyncIID<T>): Promise<T>;
+    get2<T, D extends T | null>(iid: AsyncIID<T>, defaultValue?: D): Promise<T | D>;
+    get2<Args extends AsyncIID<any>[]>(
+        ...iids: Args
+    ): Promise<{ [K in keyof Args]: Args[K] extends AsyncIID<infer T> ? T : never }>;
+
     /**
      * Synchrounsly retrieve an object instance registered with registerObject
      * For each interface id, asimo will first look in the current context objects - if not found
@@ -70,7 +94,7 @@ export interface AsmContext {
      */
     get<T>(iid: InterfaceId<T>): T;
     get<T, D extends T | null>(iid: InterfaceId<T>, defaultValue?: D): T | D;
-    get<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: InterfaceId<T2>): [T1, T2];
+    get<T1, T2>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>): [T1, T2];
     get<T1, T2, T3>(
         iid1: InterfaceId<T1>,
         iid2: InterfaceId<T2>,
@@ -159,12 +183,32 @@ export interface Logger {
 
 /**
  * String representing an interface namespace - e.g. "myapplication.services.Settings"
+ * Must be unique within the scope of an application
  */
 export type InterfaceNamespace = string;
 
 /**
- * Object biding an interface type T with an interface namespace (allows to get typescript validation)
+ * Interface ID Token for synchronous retrieval.
+ * (Binds a type T with a namespace)
  */
-export interface InterfaceId<T> {
+export interface SyncIID<T> {
+    /** The interface unique name - e.g. "myapplication.services.Settings" */
     ns: InterfaceNamespace;
+    /** Tell that the value associated to this interface can be retrieved synchronously */
+    sync: true;
 }
+
+/**
+ * Interface ID Token for asynchronous retrieval.
+ * (Binds a type T with a namespace)
+ */ export interface AsyncIID<T> {
+    /** The interface unique name - e.g. "myapplication.services.Settings" */
+    ns: InterfaceNamespace;
+    /** Tell that the value associated to this interface can be retrieved asynchronously */
+    sync: false;
+}
+
+/**
+ * Interface ID token: binds an interface type T with an interface namespace (allows to get type continuation)
+ */
+export type InterfaceId<T> = SyncIID<T> | AsyncIID<T>;
