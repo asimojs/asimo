@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, interfaceId, createContext, AsmContext, syncIID } from "../asimo";
+import { asm as rsm, AsmContext, syncIID } from "../asimo";
 import { _CalculatorService } from "./calculator";
-import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
-import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
-import { Multiplier, MultiplierIID, _MultiplierImpl } from "./multiplier";
-import { AdderIID, _add } from "./adder";
-import { Calculator, CalculatorIID } from "./types";
 
 interface SimpleObject {
     name: string;

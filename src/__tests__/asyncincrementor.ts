@@ -1,6 +1,6 @@
-import { asm, interfaceId } from "../asimo";
+import { asm, asyncIID } from "../asimo";
 import { AsmContext } from "../asimo.types";
-import { Calculator, CalculatorIID } from "./types";
+import { Calculator, CalculatorIID } from "./calculator.types";
 
 /**
  * Incrementor with a sync increment() method
@@ -23,7 +23,5 @@ export class _AsyncIncrementorService implements AsyncIncrementor {
 }
 
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
-export const AsyncIncrementorIID = interfaceId<AsyncIncrementor>(
-    "asimo.src.tests.AsyncIncrementor",
-);
+export const AsyncIncrementorIID = asyncIID<AsyncIncrementor>("asimo.src.tests.AsyncIncrementor");
 asm.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());

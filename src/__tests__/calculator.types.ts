@@ -1,4 +1,4 @@
-import { interfaceId } from "../asimo";
+import { asyncIID } from "../asimo";
 
 // typescript interface
 export interface Calculator {
@@ -7,4 +7,4 @@ export interface Calculator {
 }
 
 // interface id token associated to the typescript interface
-export const CalculatorIID = interfaceId<Calculator>("asimo.src.tests.Calculator");
+export const CalculatorIID = asyncIID<Calculator>("asimo.src.tests.Calculator");

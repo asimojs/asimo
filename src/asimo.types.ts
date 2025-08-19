@@ -1,6 +1,6 @@
 /**
- * Asimo context object used to asynchronously get or create dependencies
- * The root context is exposed through the asm global object. Sub-contexts can be created through asm.createChildContext()
+ * Asimo IoC container that stores retrievable dependencies
+ * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through asm.createChildContext()
  */
 export interface AsmContext {
     /**
@@ -58,99 +58,42 @@ export interface AsmContext {
     registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
 
     /**
-     * Retrieve one or multiple values from the IoC container.
-     * This method returns synchronously or asynchronously depending on the IID arguments:
-     * - if they are all SyncIIDs, the response will be synchronous
-     * - if they are all AsyncIIDs, the response will be asynchronou (i.e. a Promise)
-     * Note: SyncIID and AsyncIID arguments cannot be mixed.
-     * Note2: this method will throw an error if one of the values is not found. To prevent this behavior
+     * Retrieve one or multiple values from the IoC container synchronously. Will recursively search
+     * for the values in the parent containers if not found.
+     *
+     * Note: this method will throw an error if one of the values is not found. To prevent this behavior
      * you must retrieve the values one by one and pass a default value as 2nd argument.
-     * Ex: const value = context.get(SomeServiceIID, null);
-     * @see fetch
+     * @example
+     * const service = context.get(SomeServiceIID); // throws if not found
+     * const service = context.get(SomeServiceIID, null); // null is the default value
+     * const [service, otherService] = context.get(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
+     * @see fetch()
      */
-    get2<T>(iid: SyncIID<T>): T;
-    get2<T, D extends T | null>(iid: SyncIID<T>, defaultValue?: D): T | D;
-    get2<Args extends SyncIID<any>[]>(
+    get<T>(iid: SyncIID<T>): T;
+    get<T, D extends T | null>(iid: SyncIID<T>, defaultValue?: D): T | D;
+    get<Args extends SyncIID<any>[]>(
         ...iids: Args
     ): { [K in keyof Args]: Args[K] extends SyncIID<infer T> ? T : never };
 
-    get2<T>(iid: AsyncIID<T>): Promise<T>;
-    get2<T, D extends T | null>(iid: AsyncIID<T>, defaultValue?: D): Promise<T | D>;
-    get2<Args extends AsyncIID<any>[]>(
+    /**
+     * Retrieve one or multiple values from the IoC container asynchronously. Will recursively search
+     * for the values in the parent containers if not found.
+     *
+     * Note: this method will throw an error if one of the values is not found. To prevent this behavior
+     * you must retrieve the values one by one and pass a default value as 2nd argument.
+     * @example
+     * const service = await context.fetch(SomeServiceIID); // throws if not found
+     * const service = await context.fetch(SomeServiceIID, null); // null is the default value
+     * const [service, otherService] = await context.fetch(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
+     * @see get()
+     */
+    fetch<T>(iid: AsyncIID<T>): Promise<T>;
+    fetch<T, D extends T | null>(iid: AsyncIID<T>, defaultValue?: D): Promise<T | D>;
+    fetch<Args extends AsyncIID<any>[]>(
         ...iids: Args
     ): Promise<{ [K in keyof Args]: Args[K] extends AsyncIID<infer T> ? T : never }>;
-
     /**
-     * Synchrounsly retrieve an object instance registered with registerObject
-     * For each interface id, asimo will first look in the current context objects - if not found
-     * it will then perform the same lookup in its parent context (recursively, up to the root context).
-     * This method allows to get up to 5 dependencies in one call with type support (more can be retrieved without type inference).
-     * Note: When retrieving 1 resource, the parameters can be either InterfaceId objects or interface namespaces (strings).
-     * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
-     * type cast will be necessary
-     * Note: this method will throw an error if the targeted object is not found - unless a default value is passed as 2nd argument
-     * (this only works when fetching a single resource - e.g. asm.get(AppModuleIID, null) )
-     * @see fetch
-     */
-    get<T>(iid: InterfaceId<T>): T;
-    get<T, D extends T | null>(iid: InterfaceId<T>, defaultValue?: D): T | D;
-    get<T1, T2>(iid1: InterfaceId<T1>, iid2: InterfaceId<T2>): [T1, T2];
-    get<T1, T2, T3>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-    ): [T1, T2, T3];
-    get<T1, T2, T3, T4>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-        iid4: InterfaceId<T4>,
-    ): [T1, T2, T3, T4];
-    get<T1, T2, T3, T4, T5>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-        iid4: InterfaceId<T4>,
-        iid5: InterfaceId<T5>,
-    ): [T1, T2, T3, T4, T5];
-    get(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
-
-    /**
-     * Asynchronously fetch a service or an object produced by a registered factory. For each interface id, asimo will first look in the current
-     * context for services or object factories or groups registered for the interface (in this order) - if not found
-     * it will then perform the same lookup in its parent context (recursively, up to the root context).
-     * This method allows to get up to 5 dependencies in one call with type support (more can be fetched
-     * without type inference).
-     * Note: When fetcing 1 resource, the parameters can be either InterfaceId objects or interface namespaces (strings).
-     * When using InterfaceId typescript will automatically infer the right type - otherwise an explicit
-     * type cast will be necessary
-     * Note: this method will throw an error if the targeted service or object cannot be found/loaded - unless a default value is passed
-     * (this only works when fetching a single resource - e.g. asm.fetch(CalculatorIID, null) )
-     */
-    fetch<T>(iid: InterfaceId<T>): Promise<T>;
-    fetch<T, D extends T | null>(iid: InterfaceId<T>, defaultValue?: D): Promise<T | D>;
-    fetch<T1, T2>(iid1: InterfaceId<T1>, InterfaceId: InterfaceId<T2>): Promise<[T1, T2]>;
-    fetch<T1, T2, T3>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-    ): Promise<[T1, T2, T3]>;
-    fetch<T1, T2, T3, T4>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-        iid4: InterfaceId<T4>,
-    ): Promise<[T1, T2, T3, T4]>;
-    fetch<T1, T2, T3, T4, T5>(
-        iid1: InterfaceId<T1>,
-        iid2: InterfaceId<T2>,
-        iid3: InterfaceId<T3>,
-        iid4: InterfaceId<T4>,
-        iid5: InterfaceId<T5>,
-    ): Promise<[T1, T2, T3, T4, T5]>;
-    fetch(...iids: (InterfaceId<any> | string)[]): Promise<any[]>;
-    /**
-     * Create a child context that can override some of the dependencies defined in its parent (cf. get behaviour)
+     * Create a child container that can override some of the dependencies defined in its parent (cf. get/fetch)
      * @param name a name to identifiy and differentiate this context from other contexts
      */
     createChildContext(name?: string): AsmContext;

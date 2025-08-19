@@ -1,4 +1,4 @@
-import { asm, interfaceId } from "../asimo";
+import { asm, asyncIID } from "../asimo";
 
 export interface Multiplier {
     numberOfCalls: number;
@@ -10,12 +10,12 @@ export class _MultiplierImpl implements Multiplier {
     numberOfCalls = 0;
 
     multiply(a: number, b?: number) {
-        b = (b === undefined) ? this.defaultArg : b;
+        b = b === undefined ? this.defaultArg : b;
         this.numberOfCalls++;
         return a * b;
     }
 }
 
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
-export const MultiplierIID = interfaceId<Multiplier>("asimo.src.tests.Multiplier");
+export const MultiplierIID = asyncIID<Multiplier>("asimo.src.tests.Multiplier");
 asm.registerFactory(MultiplierIID, () => new _MultiplierImpl());

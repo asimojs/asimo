@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { asm as rsm } from "../asimo";
-import { CalculatorIID } from "./types";
-import { AsmContext } from "../types";
+import { CalculatorIID } from "./calculator.types";
+import { AsmContext } from "../asimo.types";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
 import { Object2IID, Service1IID } from "./groups/interfaces";

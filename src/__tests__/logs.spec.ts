@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { interfaceId, asm as rsm } from "../asimo";
+import { asyncIID, asm as rsm, syncIID } from "../asimo";
 import { AsmContext } from "../asimo.types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
-import { CalculatorIID } from "./types";
+import { Calculator, CalculatorIID } from "./calculator.types";
 import { _MultiplierImpl, MultiplierIID } from "./multiplier";
+
+const CalculatorSIID = syncIID<Calculator>("asimo.src.tests.logs.Calculator");
 
 describe("Asimo Logs", () => {
     let asm: AsmContext,
@@ -12,7 +14,8 @@ describe("Asimo Logs", () => {
 
     const console1 = globalThis.console;
 
-    const AdderIID2 = interfaceId<Adder>("asimo.src.tests.Adder2");
+    const AdderIID2 = asyncIID<Adder>("asimo.src.tests.Adder2");
+    const AdderSIID2 = syncIID<Adder>("asimo.src.tests.Adder2");
 
     function mockGlobalConsole() {
         globalThis.console = Object.create(console1, {
@@ -98,10 +101,10 @@ describe("Asimo Logs", () => {
     });
 
     it("should log errors when get doesn't find one or multipe object", async () => {
-        asm.registerObject(CalculatorIID, {} as any);
+        asm.registerObject(CalculatorSIID, {} as any);
         let err = "";
         try {
-            asm.get(AdderIID2);
+            asm.get(AdderSIID2);
         } catch (ex) {
             err = ex.message;
         }
@@ -110,7 +113,7 @@ describe("Asimo Logs", () => {
         logs = [];
         err = "";
         try {
-            asm.get(CalculatorIID, AdderIID2);
+            asm.get(CalculatorSIID, AdderSIID2);
         } catch (ex) {
             err = ex.message;
         }
@@ -119,7 +122,7 @@ describe("Asimo Logs", () => {
         logs = [];
         err = "";
         try {
-            asm.get(AdderIID, AdderIID2);
+            asm.get(AdderIID as any, AdderIID2);
         } catch (ex) {
             err = ex.message;
         }
@@ -132,7 +135,7 @@ describe("Asimo Logs", () => {
         asm.logger = null;
         expect(logs.join("")).toBe("");
         try {
-            await asm.fetch("asimo.src.tests.Calc123");
+            await asm.fetch({ ns: "asimo.src.tests.Calc123", sync: false });
         } catch (ex) {}
         expect(logs.join("")).toBe("");
         logs = [];
@@ -150,13 +153,13 @@ describe("Asimo Logs", () => {
         expect(logs.join("")).toBe("ASM [/asm/test] [registerService] Invalid interface id: 123");
 
         logs = [];
-        asm.registerService({ ns: "" }, () => 123);
+        asm.registerService({ ns: "", sync: false }, () => 123);
         expect(logs.join("")).toBe(
-            'ASM [/asm/test] [registerService] Invalid interface id: {"ns":""}',
+            'ASM [/asm/test] [registerService] Invalid interface id: {"ns":"","sync":false}',
         );
 
         logs = [];
-        asm.registerService({ ns: 234 as any }, () => 123);
+        asm.registerService({ ns: 234 } as any, () => 123);
         expect(logs.join("")).toBe(
             'ASM [/asm/test] [registerService] Invalid interface id: {"ns":234}',
         );

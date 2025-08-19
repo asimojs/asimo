@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, interfaceId, createContext, AsmContext } from "../asimo";
+import { asm as rsm, asyncIID, createContext, AsmContext } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
 import { Multiplier, MultiplierIID, _MultiplierImpl } from "./multiplier";
 import { AdderIID, _add } from "./adder";
-import { Calculator, CalculatorIID } from "./types";
+import { Calculator, CalculatorIID } from "./calculator.types";
 
 describe("Asimo", () => {
     let context: AsmContext;
@@ -120,7 +120,7 @@ describe("Asimo", () => {
 
     it("should support async factories", async () => {
         // create a 2nd interface id for the calculator
-        const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+        const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
         context.registerService(CalcIID, async () => new _CalculatorService());
 
         const calc = await context.fetch(CalcIID)!;
@@ -132,7 +132,7 @@ describe("Asimo", () => {
 
     it("should pass the context to factories", async () => {
         // create a 2nd interface id for the calculator
-        const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+        const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
         let factoryContext: any = null;
         context.registerService(CalcIID, async (c: AsmContext) => {
             factoryContext = c;
@@ -157,7 +157,7 @@ describe("Asimo", () => {
 
     it("should return null for unknown interfaces", async () => {
         const lg = context.logger;
-        const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+        const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
 
         context.logger = null;
         let err = "";
@@ -173,7 +173,7 @@ describe("Asimo", () => {
     describe("Invalid factories", () => {
         it("should return null when factory return undefined", async () => {
             // create a 2nd interface id for the calculator
-            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
             context.registerService(CalcIID, () => undefined);
 
             const calc = await context.fetch(CalcIID, null)!;
@@ -183,7 +183,7 @@ describe("Asimo", () => {
 
         it("should return null when async factory returns undefined", async () => {
             // create a 2nd interface id for the calculator
-            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
             context.registerService(CalcIID, async () => undefined);
 
             const calc = await context.fetch(CalcIID, null)!;
@@ -193,7 +193,7 @@ describe("Asimo", () => {
 
         it("should throw when factory does not return an object", async () => {
             // create a 2nd interface id for the calculator
-            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
             context.registerService(CalcIID, () => 123 as any);
 
             let msg = "";
@@ -207,7 +207,7 @@ describe("Asimo", () => {
 
         it("should throw when async factory does not return an object", async () => {
             // create a 2nd interface id for the calculator
-            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
             context.registerService(CalcIID, async () => 123 as any);
 
             let msg = "";
@@ -226,7 +226,7 @@ describe("Asimo", () => {
                     logs.push("" + msg);
                 },
             };
-            const CalcIID = interfaceId<Calculator>("asimo.src.tests.Calc");
+            const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
             context.registerService(CalcIID, async () => {
                 throw "Unexpected error";
             });
@@ -345,7 +345,7 @@ describe("Asimo", () => {
         });
 
         it("should return null if object is not found (fetch)", async () => {
-            const calc = await context.fetch({ ns: "asimo.src.tests.Calc123" }, null);
+            const calc = await context.fetch({ ns: "asimo.src.tests.Calc123", sync: false }, null);
             expect(calc).toBe(null);
         });
 

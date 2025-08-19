@@ -1,5 +1,5 @@
 import { asm } from "../asimo";
-import { Calculator, CalculatorIID } from "./types";
+import { Calculator, CalculatorIID } from "./calculator.types";
 
 // Calculator implementation
 export class _CalculatorService implements Calculator {

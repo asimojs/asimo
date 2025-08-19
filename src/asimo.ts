@@ -160,68 +160,68 @@ export function createContext(
                 validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
             }
         },
-        get2(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
-            // check if we try to retrieve one or multiple values
-            if (
-                iid1OrDefault === undefined ||
-                iid1OrDefault === null ||
-                typeof iid1OrDefault !== "object" ||
-                !("ns" in iid1OrDefault && "sync" in iid1OrDefault) ||
-                typeof iid1OrDefault.ns !== "string" ||
-                typeof iid1OrDefault.ns !== "boolean"
-            ) {
-                // only one argument + optional default
-                let v: any = undefined;
-                if (iid0.sync) {
-                    v = getObject(iid0);
-                } else {
-                    v = fetchValue(iid0, true);
-                }
-                if (v === NOT_FOUND) {
-                    if (iid1OrDefault !== undefined) {
-                        return iid1OrDefault;
-                    } else {
-                        logError(`Object not found: ${description(iid0.ns)}`, true);
-                    }
-                }
-                return v;
-            } else {
-                const syncMode = iid0.sync;
-                // multiple arguments -> check if they are all sync or async
-                if (iid1OrDefault.sync !== syncMode || iids.some((iid) => iid.sync !== syncMode)) {
-                    logError(`SyncIID and AsyncIID arguments cannot be mixed`, true);
-                }
+        // get2(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
+        //     // check if we try to retrieve one or multiple values
+        //     if (
+        //         iid1OrDefault === undefined ||
+        //         iid1OrDefault === null ||
+        //         typeof iid1OrDefault !== "object" ||
+        //         !("ns" in iid1OrDefault && "sync" in iid1OrDefault) ||
+        //         typeof iid1OrDefault.ns !== "string" ||
+        //         typeof iid1OrDefault.ns !== "boolean"
+        //     ) {
+        //         // only one argument + optional default
+        //         let v: any = undefined;
+        //         if (iid0.sync) {
+        //             v = getObject(iid0);
+        //         } else {
+        //             v = fetchValue(iid0, true);
+        //         }
+        //         if (v === NOT_FOUND) {
+        //             if (iid1OrDefault !== undefined) {
+        //                 return iid1OrDefault;
+        //             } else {
+        //                 logError(`Object not found: ${description(iid0.ns)}`, true);
+        //             }
+        //         }
+        //         return v;
+        //     } else {
+        //         const syncMode = iid0.sync;
+        //         // multiple arguments -> check if they are all sync or async
+        //         if (iid1OrDefault.sync !== syncMode || iids.some((iid) => iid.sync !== syncMode)) {
+        //             logError(`SyncIID and AsyncIID arguments cannot be mixed`, true);
+        //         }
 
-                // list of iids
-                const iidList = [iid0, iid1OrDefault, ...iids];
+        //         // list of iids
+        //         const iidList = [iid0, iid1OrDefault, ...iids];
 
-                if (syncMode) {
-                    const nsNotFounds: string[] = [];
-                    let values: any[];
-                    values = iidList.map((iid) => getObject(iid));
+        //         if (syncMode) {
+        //             const nsNotFounds: string[] = [];
+        //             let values: any[];
+        //             values = iidList.map((iid) => getObject(iid));
 
-                    for (let i = 0; values.length > i; i++) {
-                        if (values[i] === NOT_FOUND) {
-                            nsNotFounds.push(iidList[i].ns);
-                        }
-                    }
-                    if (nsNotFounds.length) {
-                        if (nsNotFounds.length === 1) {
-                            logError(`Object not found: "${nsNotFounds[0]}"`, true);
-                        } else {
-                            logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
-                        }
-                    }
-                    return values;
-                } else {
-                    // async mode
-                    return fetchObjects(iids as AsyncIID<any>[]);
-                }
-            }
-        },
+        //             for (let i = 0; values.length > i; i++) {
+        //                 if (values[i] === NOT_FOUND) {
+        //                     nsNotFounds.push(iidList[i].ns);
+        //                 }
+        //             }
+        //             if (nsNotFounds.length) {
+        //                 if (nsNotFounds.length === 1) {
+        //                     logError(`Object not found: "${nsNotFounds[0]}"`, true);
+        //                 } else {
+        //                     logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
+        //                 }
+        //             }
+        //             return values;
+        //         } else {
+        //             // async mode
+        //             return fetchObjects(iids as AsyncIID<any>[]);
+        //         }
+        //     }
+        // },
 
         /** Get a registered object */
-        get(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
+        get(iid0: SyncIID<any>, iid1OrDefault?: any, ...iids: SyncIID<any>[]): any {
             const ns0 = iid0.ns;
             if (
                 iid1OrDefault === undefined ||
@@ -262,9 +262,9 @@ export function createContext(
         },
         /** Fetch a service or an object instance (services have priority) */
         async fetch(
-            iid0: InterfaceId<any>,
+            iid0: AsyncIID<any>,
             iid1OrDefault?: any,
-            ...iids: InterfaceId<any>[]
+            ...iids: AsyncIID<any>[]
         ): Promise<any> {
             if (
                 iid1OrDefault === undefined ||
@@ -339,7 +339,7 @@ export function createContext(
     };
     return ctxt;
 
-    function getObject<T>(iid: InterfaceId<any>): T | typeof NOT_FOUND {
+    function getObject<T>(iid: SyncIID<any>): T | typeof NOT_FOUND {
         const r = objects?.get(iid.ns);
         if (r !== undefined) return r as T;
         if (parent) {
@@ -368,7 +368,7 @@ export function createContext(
     }
 
     async function fetchValue<T>(
-        iid: InterfaceId<any>,
+        iid: AsyncIID<any>,
         lookupGroups = true,
     ): Promise<T | typeof NOT_FOUND> {
         const ns = iid.ns;
