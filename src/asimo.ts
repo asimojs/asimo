@@ -161,65 +161,6 @@ export function createContainer(
                 validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
             }
         },
-        // get2(iid0: InterfaceId<any>, iid1OrDefault?: any, ...iids: InterfaceId<any>[]): any {
-        //     // check if we try to retrieve one or multiple values
-        //     if (
-        //         iid1OrDefault === undefined ||
-        //         iid1OrDefault === null ||
-        //         typeof iid1OrDefault !== "object" ||
-        //         !("ns" in iid1OrDefault && "sync" in iid1OrDefault) ||
-        //         typeof iid1OrDefault.ns !== "string" ||
-        //         typeof iid1OrDefault.ns !== "boolean"
-        //     ) {
-        //         // only one argument + optional default
-        //         let v: any = undefined;
-        //         if (iid0.sync) {
-        //             v = getObject(iid0);
-        //         } else {
-        //             v = fetchValue(iid0, true);
-        //         }
-        //         if (v === NOT_FOUND) {
-        //             if (iid1OrDefault !== undefined) {
-        //                 return iid1OrDefault;
-        //             } else {
-        //                 logError(`Object not found: ${description(iid0.ns)}`, true);
-        //             }
-        //         }
-        //         return v;
-        //     } else {
-        //         const syncMode = iid0.sync;
-        //         // multiple arguments -> check if they are all sync or async
-        //         if (iid1OrDefault.sync !== syncMode || iids.some((iid) => iid.sync !== syncMode)) {
-        //             logError(`SyncIID and AsyncIID arguments cannot be mixed`, true);
-        //         }
-
-        //         // list of iids
-        //         const iidList = [iid0, iid1OrDefault, ...iids];
-
-        //         if (syncMode) {
-        //             const nsNotFounds: string[] = [];
-        //             let values: any[];
-        //             values = iidList.map((iid) => getObject(iid));
-
-        //             for (let i = 0; values.length > i; i++) {
-        //                 if (values[i] === NOT_FOUND) {
-        //                     nsNotFounds.push(iidList[i].ns);
-        //                 }
-        //             }
-        //             if (nsNotFounds.length) {
-        //                 if (nsNotFounds.length === 1) {
-        //                     logError(`Object not found: "${nsNotFounds[0]}"`, true);
-        //                 } else {
-        //                     logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
-        //                 }
-        //             }
-        //             return values;
-        //         } else {
-        //             // async mode
-        //             return fetchObjects(iids as AsyncIID<any>[]);
-        //         }
-        //     }
-        // },
 
         /** Get a registered object */
         get(iid0: SyncIID<any>, iid1OrDefault?: any, ...iids: SyncIID<any>[]): any {
@@ -320,7 +261,7 @@ export function createContainer(
         logState(output?: string[]) {
             const out = output || [];
             const defs = ctxt.definitions;
-            out.push(`Context ${ctxt.path}${defs.length === 0 ? " [empty]" : ":"}`);
+            out.push(`Container ${ctxt.path}${defs.length === 0 ? " [empty]" : ":"}`);
             out.push(...defs.map((d) => `+ ${d.iid} [${d.type}]${loadState(d)}`));
             ctxt.parent?.logState(out);
             if (!output) {
@@ -344,25 +285,6 @@ export function createContainer(
             return parent.get(iid, NOT_FOUND);
         }
         return NOT_FOUND;
-    }
-
-    async function fetchObjects(iids: AsyncIID<any>[]) {
-        const values = await Promise.allSettled(iids.map((iid) => fetchValue(iid, true)));
-        const nsNotFounds: string[] = [];
-        for (let i = 0; values.length > i; i++) {
-            const v = values[i];
-            if (v.status === "rejected" || v.value === NOT_FOUND) {
-                nsNotFounds.push(iids[i].ns);
-            }
-        }
-        if (nsNotFounds.length) {
-            if (nsNotFounds.length === 1) {
-                logError(`Interface not found: "${nsNotFounds[0]}"`, true);
-            } else {
-                logError(`Interfaces not found: ["${nsNotFounds.join('", "')}"]`, true);
-            }
-        }
-        return values.map((v) => (v.status === "fulfilled" ? v.value : null));
     }
 
     async function fetchValue<T>(

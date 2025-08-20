@@ -16,6 +16,7 @@ describe("Asimo Logs", () => {
 
     const AdderIID2 = asyncIID<Adder>("asimo.src.tests.Adder2");
     const AdderSIID2 = syncIID<Adder>("asimo.src.tests.Adder2");
+    const AdderIID3 = asyncIID<Adder>("asimo.src.tests.Adder3");
 
     function mockGlobalConsole() {
         globalThis.console = Object.create(console1, {
@@ -59,6 +60,23 @@ describe("Asimo Logs", () => {
     });
 
     it("should log errors on the console by default", async () => {
+        expect(logs.join("")).toBe("");
+        let err = "";
+
+        try {
+            const [add2, add3] = await asm.fetch(AdderIID2, AdderIID3);
+        } catch (ex) {
+            err = ex.message;
+        }
+        expect(logs.join("")).toBe(
+            'ASM [/asm/test] Interfaces not found: ["asimo.src.tests.Adder2", "asimo.src.tests.Adder3"]',
+        );
+        expect(err).toBe(
+            'ASM [/asm/test] Interfaces not found: ["asimo.src.tests.Adder2", "asimo.src.tests.Adder3"]',
+        );
+    });
+
+    it("should log errors on the console by default (multiple iids)", async () => {
         expect(logs.join("")).toBe("");
         let err = "";
 
@@ -192,12 +210,12 @@ describe("Asimo Logs", () => {
 
         c2.logState();
         expect(logs).toEqual([
-            "Context /asm/test/context2:",
+            "Container /asm/test/context2:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Multiplier [service]: not loaded",
-            "Context /asm/test:",
+            "Container /asm/test:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
-            "Context /asm:",
+            "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: not loaded",
             "+ asimo.src.tests.Multiplier [object]",
@@ -208,12 +226,12 @@ describe("Asimo Logs", () => {
         expect(mult.multiply(2, 4)).toBe(8);
         c2.logState();
         expect(logs).toEqual([
-            "Context /asm/test/context2:",
+            "Container /asm/test/context2:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Multiplier [service]: loaded", // loaded here
-            "Context /asm/test:",
+            "Container /asm/test:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
-            "Context /asm:",
+            "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: not loaded",
             "+ asimo.src.tests.Multiplier [object]",
@@ -230,10 +248,10 @@ describe("Asimo Logs", () => {
         c2.logState(out);
         expect(logs).toEqual([]);
         expect(out).toEqual([
-            "Context /asm/test/context2 [empty]",
-            "Context /asm/test:",
+            "Container /asm/test/context2 [empty]",
+            "Container /asm/test:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
-            "Context /asm:",
+            "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: loaded", // loaded
             "+ asimo.src.tests.Multiplier [object]",

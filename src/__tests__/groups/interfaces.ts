@@ -1,6 +1,6 @@
-import { asyncIID } from "../../asimo";
+import { asyncIID, interfaceId } from "../../asimo";
 
-export const Service1IID = asyncIID<Service1>("asimo.src.tests.groups.Service1");
+export const Service1IID = interfaceId<Service1>("asimo.src.tests.groups.Service1");
 export interface Service1 {
     readonly name: string;
     add(a: number, b: number): number;
