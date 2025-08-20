@@ -44,8 +44,8 @@ Like most dependency management systems, Asimo base principle is to create **dep
 ```typescript
 // retrieve the calculator service (asynchronous)
 const calc = await asm.fetch(CalculatorIID);
-//   CalculatorIID is the Calculator Interface ID
-//   asm is an Asimo dependency context
+//   CalculatorIID is the Calculator Interface ID with async retrieval
+//   asm is an Asimo dependency container
 //   calc is a Calculator service instance
 
 // use it!
@@ -53,7 +53,7 @@ const result = calc.add(1, 2);
 //   -> the service doesn't need to be async
 ```
 
-The **Dependency contexts** are objects on which **dependency factories** can be registered - e.g.
+The **Dependency contexts** are objects on which **dependency factories** or **objects** can be registered - e.g.
 
 ```typescript
 // Service registration
@@ -73,9 +73,9 @@ On top of that, asimo also supports registering any kind of **objects** that can
 ```typescript
 // Object registration
 const calc = new CalculatorService();
-asm.registerObject(CalculatorIID, calc);
+asm.registerObject(CalculatorSIID, calc);
 
-const calc2 = asm.get(CalculatorIID);
+const calc2 = asm.get(CalculatorSIID);
 // calc2 is of type  Calculator (cf. below) and is equal to calc:
 expect(calc2).toBe(calc);
 ```
@@ -83,11 +83,8 @@ expect(calc2).toBe(calc);
 Last but not least, and like with any dependency management systems, asimo allows to **chain dependency contexts** by creating _sub-contexts_ - e.g.
 
 ```typescript
-const context2 = asm.createChildContext("context2");
 // context2 is a name that will help differentiate context2 from asm in error messages
-
-// another method - equivalent to context2.createChildContext("context3");
-const context3 = createContext({ name: "context3", parent: context2 });
+const context2 = createContainer({ name: "context2", parent: asm });
 ```
 
 Note: by default asimo creates a **root context** that is exposed as **asm** by the asimo module (i.e. _@asimojs/asimo_)
@@ -106,8 +103,10 @@ export interface Calculator {
     add(a: number, b: number): number;
 }
 
-// interface id token associated to the typescript interface
-export const CalculatorIID = interfaceId<Calculator>("asimo.tests.Calculator");
+// asynchronous interface id token associated to the Calculator interface
+export const CalculatorIID = asyncIID<Calculator>("asimo.tests.Calculator");
+// synchronous interface id token associated to the Calculator interface
+export const CalculatorSIID = syncIID<Calculator>("asimo.tests.Calculator");
 // asimo.tests.Calculator -> unique namespace
 ```
 
@@ -123,7 +122,7 @@ import { asm } from "@asimojs/asimo";
 import { CalculatorIID } from "./types";
 
 async function doSomething() {
-    const calc = await asm.get(CalculatorIID);
+    const calc = await asm.get(CalculatorSIID);
     // Typescript sees that calc is of type Calculator
     const result = calc.add(1, 2); // 3
 }
@@ -180,8 +179,8 @@ yarn add @asimojs/asimo
 
 Asimo core module exports 3 entities:
 
--   `asm` - the root `AsmContext` that exposes most asimo APIs
--   `createContext()` - that allows to create asimo contexts
+-   `asm` - the root `IoCContainer` that exposes most asimo APIs
+-   `createContainer()` - that allows to create asimo contexts
 -   `interfaceId()` - that allows to create interface id objects that associate interface namepsaces with typescript types:
 
 ```typescript
@@ -214,9 +213,9 @@ interface Adder {
 export const AdderIID = interfaceId<Adder>("asimo.src.tests.Adder");
 ```
 
-## `AsmContext`
+## `IoCContainer`
 
-The AsmContext is the object that contains the registered factories and that exposes all asimo APIs (but `interfaceId()`):
+The IoCContainer is the object that contains the registered factories and that exposes all asimo APIs (but `interfaceId()`):
 
 ### `fetch()`
 
@@ -256,15 +255,15 @@ Get an object from an asimo context (or its parents). On the contrary to _fetch(
 asm.registerObject(CalculatorIID, new CalculatorService());
 
 // Get one dependency - throws if not found
-const calc = asm.get(CalculatorIID);
+const calc = asm.get(CalculatorSIID);
 calc.add(1, 2); // calc type is Calculator
 
 // Get one dependency - return the default value if not found
-const calc2 = asm.get(CalculatorIID, null);
+const calc2 = asm.get(CalculatorSIID, null);
 calc2?.add(1, 2); // calc2 type is Calculator | null
 
 // Retrieve multiple dependencies - also works with namespace strings:
-const [m, c, a] = asm.get(MultiplierIID, CalculatorIID, AdderIID);
+const [m, c, a] = asm.get(MultiplierSIID, CalculatorSIID, AdderSIID);
 //   m is of type Multiplier
 //   c is of type Calculator
 //   a is of type Adder
@@ -275,7 +274,7 @@ const [m, c, a] = asm.get(MultiplierIID, CalculatorIID, AdderIID);
 Register a Service (i.e. a singleton object or function). The service doesn't need to be instantiated at registration time as we need to provide a factory function as parameter (synchronous or asynchronous). Note: **service factories are only called once** whereas object factories are called at each _fetch()_ in order to generate new object instances.
 
 ```typescript
-registerService<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
+registerService<T>(iid: AsyncIID<T>, factory: () => T | Promise<T>): void;
 ```
 
 Examples:
@@ -286,7 +285,7 @@ asm.registerService(CalculatorIID, () => new CalculatorService());
 // Registration with async factory
 asm.registerService(MultiplierIID, async () => new MultiplierService());
 // Factory receive the calling context as argument
-asm.registerService(SomeServiceIID, (c: AsmContext) => new SomeService(c));
+asm.registerService(SomeServiceIID, (c: IoCContainer) => new SomeService(c));
 
 // Register a function (as a service)
 asm.registerService(AdderIID, () => add); // add is a function
@@ -299,7 +298,7 @@ for the object's interface id. On the contrary to services, there is no restrict
 of objects that can be creatd. Besides asimo doesn't keep any reference to the object (no risks of memory leak)
 
 ```typescript
-registerFactory<T>(iid: InterfaceId<T>, factory: () => T | Promise<T>): void;
+registerFactory<T>(iid: AsyncIID<T>, factory: () => T | Promise<T>): void;
 ```
 
 Example:
@@ -318,7 +317,7 @@ interface SimpleObject {
     name: string;
     increment(value: number): number;
 }
-const SimpleObjectIID = interfaceId<SimpleObject>("asimo.test.objects.simple-object");
+const SimpleObjectSIID = syncIID<SimpleObject>("asimo.test.objects.simple-object");
 
 const o: SimpleObject = {
     name: "foo",
@@ -326,10 +325,10 @@ const o: SimpleObject = {
         return v + 1;
     },
 };
-context.registerObject(SimpleObjectIID, o);
+context.registerObject(SimpleObjectSIID, o);
 
 // retrieval is synchronous for objects (no await)
-const o2 = context.get(SimpleObjectIID); // o2 type is SimpleObject
+const o2 = context.get(SimpleObjectSIID); // o2 type is SimpleObject
 expect(o2).toBe(o);
 ```
 
@@ -356,36 +355,13 @@ Example:
 asm.registerGroup([Service1IID, Object2IID], () => import("./groups/mybundlefiile"));
 ```
 
-### `createChildContext()`
-
-Create a child context that can override some of the dependencies defined in its parent (cf. _fetch()_ and _get()_)
-
-```typescript
-createChildContext(name?:string): AsmContext;
-```
-
-Example:
-
-```typescript
-import { asm as rootAsm } from "@asimojs/asimo";
-
-function createContext() {
-    const c = rootAsm.createChildContext();
-    // override calculator service
-    c.registerService(CalculatorIID, () => new CalculatorService());
-    c.registerService(SyncIncrementorIID, () => new SyncIncrementorService());
-    c.registerService(AsyncIncrementorIID, () => new AsyncIncrementorService());
-    return c;
-}
-```
-
 ### `parent`
 
 Return the parent context associated to the current context - or null if the context is a root context (no parents).
 
 ### `name`
 
-Return the context name - helps differentiating multiple contexts. A unique context name is created if none is profided when creating the context through `createContext()` or `createChildContext()`. Note: the default root contex name is **asm**.
+Return the context name - helps differentiating multiple contexts. A unique context name is created if none is profided when creating the context through `createContainer()`. Note: the default root contex name is **asm**.
 
 ### `path`
 

@@ -1,5 +1,5 @@
 import { asm, asyncIID } from "../asimo";
-import { AsmContext } from "../asimo.types";
+import { IoCContainer } from "../asimo.types";
 import { Calculator, CalculatorIID } from "./calculator.types";
 
 /**
@@ -9,14 +9,14 @@ import { Calculator, CalculatorIID } from "./calculator.types";
 export interface SyncIncrementor {
     offset: number;
     increment(n: number): number;
-    init(c?: AsmContext): Promise<void>;
+    init(c?: IoCContainer): Promise<void>;
 }
 
 export class _SyncIncrementorService implements SyncIncrementor {
     offset = 1;
     calc: Calculator;
 
-    async init(c?: AsmContext) {
+    async init(c?: IoCContainer) {
         const di = c || asm;
         this.calc = (await di.fetch(CalculatorIID))!;
     }

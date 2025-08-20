@@ -1,8 +1,8 @@
 /**
  * Asimo IoC container that stores retrievable dependencies
- * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through asm.createChildContext()
+ * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
  */
-export interface AsmContext {
+export interface IoCContainer {
     /**
      * The context name - helps differentiating multiple contexts
      */
@@ -10,7 +10,7 @@ export interface AsmContext {
     /**
      * The parent context where dependencies will be retrieved if not found in the current context
      */
-    readonly parent: AsmContext | null;
+    readonly parent: IoCContainer | null;
     /**
      * A unique path identifier listing all context names from the top parent context
      * e.g. "/asm/subContext1/subContext2"
@@ -28,13 +28,13 @@ export interface AsmContext {
     registerObject<T extends object>(iid: SyncIID<T>, o: T): void;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
-     * and stored in the AsmContext. Services will be created on-demand, when retrieved for the first time
+     * and stored in the IoCContainer. Services will be created on-demand, when retrieved for the first time
      * Services can be retrieved asynchronoysly through the fetch() method
      * @param iid the interface id
      * @param factory a factory that will be called to instanciate the service
      * @see fetch
      */
-    registerService<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void;
+    registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
     /**
      * Register an object factory. The factory will be called any time the get method is called
      * for this interface id. On the contrary to services, there is no restriction on the number
@@ -45,7 +45,7 @@ export interface AsmContext {
      * @param factory a factory that will be called to create an object instance
      * @see fetch
      */
-    registerFactory<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void;
+    registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
     /**
      * Register a group loader that will be used to asynchronously load multiple
      * service and object factories on-demand (i.e. the group code will only be loaded when
@@ -92,11 +92,6 @@ export interface AsmContext {
     fetch<Args extends AsyncIID<any>[]>(
         ...iids: Args
     ): Promise<{ [K in keyof Args]: Args[K] extends AsyncIID<infer T> ? T : never }>;
-    /**
-     * Create a child container that can override some of the dependencies defined in its parent (cf. get/fetch)
-     * @param name a name to identifiy and differentiate this context from other contexts
-     */
-    createChildContext(name?: string): AsmContext;
     /**
      * Define where logs should go - default = console
      */
@@ -155,3 +150,9 @@ export interface SyncIID<T> {
  * Interface ID token: binds an interface type T with an interface namespace (allows to get type continuation)
  */
 export type InterfaceId<T> = SyncIID<T> | AsyncIID<T>;
+
+/**
+ * IoCContainer name before version 2.5
+ * @deprecated
+ */
+export type AsmContext = IoCContainer;

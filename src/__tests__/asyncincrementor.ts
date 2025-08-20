@@ -1,6 +1,6 @@
 import { asm, asyncIID } from "../asimo";
-import { AsmContext } from "../asimo.types";
-import { Calculator, CalculatorIID } from "./calculator.types";
+import { IoCContainer } from "../asimo.types";
+import { CalculatorIID } from "./calculator.types";
 
 /**
  * Incrementor with a sync increment() method
@@ -8,7 +8,7 @@ import { Calculator, CalculatorIID } from "./calculator.types";
  */
 export interface AsyncIncrementor {
     offset: number;
-    di: AsmContext;
+    di: IoCContainer;
     increment(n: number): Promise<number>;
 }
 

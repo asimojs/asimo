@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { asyncIID, asm as rsm, syncIID } from "../asimo";
-import { AsmContext } from "../asimo.types";
+import { asyncIID, createContainer, asm as rsm, syncIID } from "../asimo";
+import { IoCContainer } from "../asimo.types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
@@ -9,7 +9,7 @@ import { _MultiplierImpl, MultiplierIID } from "./multiplier";
 const CalculatorSIID = syncIID<Calculator>("asimo.src.tests.logs.Calculator");
 
 describe("Asimo Logs", () => {
-    let asm: AsmContext,
+    let asm: IoCContainer,
         logs: string[] = [];
 
     const console1 = globalThis.console;
@@ -39,7 +39,7 @@ describe("Asimo Logs", () => {
     }
 
     function createContext() {
-        const c = rsm.createChildContext("test");
+        const c = createContainer({ name: "test", parent: rsm });
 
         // override calculator service
         c.registerService(CalculatorIID, async () => new _CalculatorService());
@@ -186,7 +186,7 @@ describe("Asimo Logs", () => {
     });
 
     it("should logState in the console", async () => {
-        const c2 = asm.createChildContext("context2");
+        const c2 = createContainer({ name: "context2", parent: asm });
         c2.registerService(CalculatorIID, async () => new _CalculatorService());
         c2.registerService(MultiplierIID, () => new _MultiplierImpl());
 
@@ -221,7 +221,7 @@ describe("Asimo Logs", () => {
     });
 
     it("should logState in an output array", async () => {
-        const c2 = asm.createChildContext("context2");
+        const c2 = createContainer({ name: "context2", parent: asm });
         const out: string[] = [];
         const [mult, adder] = await c2.fetch(MultiplierIID, AdderIID);
         expect(mult.multiply(2, 4)).toBe(8);

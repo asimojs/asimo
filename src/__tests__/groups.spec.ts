@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm } from "../asimo";
+import { createContainer, asm as rsm } from "../asimo";
 import { CalculatorIID } from "./calculator.types";
-import { AsmContext } from "../asimo.types";
+import { IoCContainer } from "../asimo.types";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
 import { Object2IID, Service1IID } from "./groups/interfaces";
@@ -9,11 +9,11 @@ import "./groups/groupADef"; // register groupA on asm root context
 import { _CalculatorService } from "./calculator";
 
 describe("Groups", () => {
-    let asm: AsmContext;
+    let asm: IoCContainer;
     let groupALoadCount = 0;
 
     function createContext() {
-        const c = rsm.createChildContext();
+        const c = createContainer({ name: "test-groups", parent: rsm });
 
         // override calculator service
         c.registerService(CalculatorIID, () => new _CalculatorService());

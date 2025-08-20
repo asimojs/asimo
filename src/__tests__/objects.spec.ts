@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, AsmContext, syncIID } from "../asimo";
+import { asm as rsm, IoCContainer, syncIID, createContainer } from "../asimo";
 import { _CalculatorService } from "./calculator";
 
 interface SimpleObject {
@@ -10,10 +10,10 @@ const SimpleObjectIID = syncIID<SimpleObject>("asimo.test.objects.simple-object"
 const SimpleObject2IID = syncIID<SimpleObject>("asimo.test.objects.simple-object2");
 
 describe("Asimo Objects", () => {
-    let context: AsmContext;
+    let context: IoCContainer;
 
     function createTestContext(name?: string) {
-        const c = rsm.createChildContext(name || "object-test");
+        const c = createContainer({ name: name || "object-test", parent: rsm });
         return c;
     }
 
@@ -60,7 +60,7 @@ describe("Asimo Objects", () => {
                 },
             };
 
-            const context2 = context.createChildContext("child-context");
+            const context2 = createContainer({ name: "child-context", parent: context });
 
             context.registerObject(SimpleObjectIID, o);
 
@@ -84,7 +84,7 @@ describe("Asimo Objects", () => {
         });
 
         it("should get multiple objects", async () => {
-            const context2 = context.createChildContext("child-context");
+            const context2 = createContainer({ name: "child-context", parent: context });
             const o1: SimpleObject = {
                 name: "foo1",
                 increment(v) {

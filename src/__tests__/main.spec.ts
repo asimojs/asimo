@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, asyncIID, createContext, AsmContext } from "../asimo";
+import { asm as rsm, asyncIID, createContainer, IoCContainer } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
@@ -8,10 +8,10 @@ import { AdderIID, _add } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
 
 describe("Asimo", () => {
-    let context: AsmContext;
+    let context: IoCContainer;
 
     function createTestContext(name?: string) {
-        const c = rsm.createChildContext(name || "test");
+        const c = createContainer({ name: name || "test", parent: rsm });
 
         // override calculator service
         c.registerService(CalculatorIID, async () => new _CalculatorService());
@@ -35,9 +35,9 @@ describe("Asimo", () => {
 
     it("should support name, path and parent properties", async () => {
         const c1 = createTestContext("test1");
-        const c2 = createContext({ name: "test2", parent: c1 });
-        const c3 = createContext("test3");
-        const c4 = createContext("some/test/with/secial chars");
+        const c2 = createContainer({ name: "test2", parent: c1 });
+        const c3 = createContainer("test3");
+        const c4 = createContainer("some/test/with/secial chars");
 
         expect(c1.name).toBe("test1");
         expect(c2.name).toBe("test2");
@@ -56,9 +56,9 @@ describe("Asimo", () => {
     });
 
     it("should give a default name to contexts", async () => {
-        const rx = /^AsmContext\d+$/;
-        const c = createContext();
-        const tc = rsm.createChildContext();
+        const rx = /^IoCContainer\d+$/;
+        const c = createContainer();
+        const tc = createContainer({ parent: rsm });
 
         expect(c.name.match(rx)?.length).toBe(1);
         expect(tc.name.match(rx)?.length).toBe(1);
@@ -134,7 +134,7 @@ describe("Asimo", () => {
         // create a 2nd interface id for the calculator
         const CalcIID = asyncIID<Calculator>("asimo.src.tests.Calc");
         let factoryContext: any = null;
-        context.registerService(CalcIID, async (c: AsmContext) => {
+        context.registerService(CalcIID, async (c: IoCContainer) => {
             factoryContext = c;
             return new _CalculatorService();
         });
@@ -148,7 +148,7 @@ describe("Asimo", () => {
         const calc1 = await context.fetch(CalculatorIID)!;
         calc1?.add(1, 2);
 
-        const c1 = context.createChildContext();
+        const c1 = createContainer({ parent: context });
         const calc2 = await c1.fetch(CalculatorIID)!;
 
         expect(calc2).toBe(calc1);

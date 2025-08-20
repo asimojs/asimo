@@ -1,14 +1,15 @@
 import {
-    AsmContext,
+    IoCContainer,
     AsmInterfaceDefinition,
     Logger,
     InterfaceId,
     InterfaceNamespace,
     SyncIID,
     AsyncIID,
+    AsmContext,
 } from "./asimo.types";
 
-export { AsmContext, InterfaceId, SyncIID, AsyncIID };
+export { IoCContainer, AsmContext, InterfaceId, SyncIID, AsyncIID };
 
 /**
  * Create an interface id token that will be used to associate an interface namepsace with a typescript type
@@ -55,21 +56,21 @@ const NOT_FOUND = Symbol("NOT_FOUND");
 const NOT_FOUND_PROMISE = Promise.resolve(NOT_FOUND);
 
 /**
- * Create an asimo context
+ * Create an asimo IoC Container
  * @param nameOrOptions the context name or an options object with the following properties:
  * - name: the context name (default: a unique name will be created)
  * - parent: the parent context (default: null = root context)
- * @returns an asimo context
+ * @returns an asimo IoC Container
  */
-export function createContext(
-    nameOrOptions?: string | { name?: string; parent?: AsmContext },
-): AsmContext {
+export function createContainer(
+    nameOrOptions?: string | { name?: string; parent?: IoCContainer },
+): IoCContainer {
     let name = "";
-    let parent: AsmContext | null = null;
+    let parent: IoCContainer | null = null;
     if (typeof nameOrOptions === "string") {
-        name = nameOrOptions || `AsmContext${++count}`;
+        name = nameOrOptions || `IoCContainer${++count}`;
     } else {
-        name = nameOrOptions?.name || `AsmContext${++count}`;
+        name = nameOrOptions?.name || `IoCContainer${++count}`;
         parent = nameOrOptions?.parent || null;
     }
     name = name.replace(/\//g, "\\/");
@@ -79,13 +80,13 @@ export function createContext(
     let groupCount = 0;
     // registered factories - keys have the following format:
     // "[object|service|group|loader]:[interfaceNamespace|groupId]"
-    const factories = new Map<string, (c: AsmContext) => any | Promise<any>>();
+    const factories = new Map<string, (c: IoCContainer) => any | Promise<any>>();
     // services or loaders that have already been instanciated
     const services = new Map<string, Promise<any>>();
     // objects that can be retrieved through get
     let objects: Map<string, object> | null = null;
 
-    const ctxt: AsmContext = {
+    const ctxt: IoCContainer = {
         /** The context name */
         get name() {
             return name;
@@ -125,14 +126,14 @@ export function createContext(
             }
         },
         /** Register a service factory */
-        registerService<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void {
+        registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
             if (validate(iid, factory, "registerService")) {
                 factories.set(SERVICE + iid.ns, factory);
                 removeGroupEntry(iid);
             }
         },
         /** Register an object factory */
-        registerFactory<T>(iid: AsyncIID<T>, factory: (c: AsmContext) => T | Promise<T>): void {
+        registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
             if (validate(iid, factory, "registerFactory")) {
                 factories.set(OBJECT + iid.ns, factory);
                 removeGroupEntry(iid);
@@ -306,9 +307,6 @@ export function createContext(
                 return values.map((v) => (v.status === "fulfilled" ? v.value : null));
             }
         },
-        createChildContext(name?: string): AsmContext {
-            return createContext({ name, parent: ctxt });
-        },
         get logger() {
             return logger;
         },
@@ -425,7 +423,7 @@ export function createContext(
 
     function validate(
         iid: InterfaceId<any>,
-        factory: ((c: AsmContext) => any) | null,
+        factory: ((c: IoCContainer) => any) | null,
         context: "registerService" | "registerFactory" | "registerGroup" | "registerObject",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
@@ -462,7 +460,7 @@ export function createContext(
         }
     }
 
-    async function getPromise<T>(f: (c: AsmContext) => T | Promise<T>, ctxt: AsmContext) {
+    async function getPromise<T>(f: (c: IoCContainer) => T | Promise<T>, ctxt: IoCContainer) {
         let v: any | null = null;
         try {
             v = (await f(ctxt)) as any;
@@ -474,14 +472,14 @@ export function createContext(
     }
 }
 
-let _asm: AsmContext;
+let _asm: IoCContainer;
 
 // Expose asm on global object to ease debugging from the browser console
 if ((globalThis as any)["asm"]) {
     // asm must be unique
     _asm = (globalThis as any)["asm"];
 } else {
-    _asm = createContext("asm");
+    _asm = createContainer("asm");
 }
 (globalThis as any)["asm"] = _asm;
 
