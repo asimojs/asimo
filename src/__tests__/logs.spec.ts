@@ -119,7 +119,7 @@ describe("Asimo Logs", () => {
     });
 
     it("should log errors when get doesn't find one or multipe object", async () => {
-        asm.registerObject(CalculatorSIID, {} as any);
+        asm.set(CalculatorSIID, {} as any);
         let err = "";
         try {
             asm.get(AdderSIID2);

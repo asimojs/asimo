@@ -27,7 +27,7 @@ export interface IoCContainer {
      * @param iid the (sync) interface id
      * @see get
      */
-    registerObject<T extends object>(iid: SyncIID<T>, o: T): void;
+    set<T extends object>(iid: SyncIID<T>, o: T): void;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the IoC Container. Services will be created on-demand, when retrieved for the first time.

@@ -1,6 +1,6 @@
 # asimo - Inversion of Control for the browser
 
-Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base) through an _Inversion of Control_ ([IoC]) mechanism, that supports both synchronous and asynchronous mechanisms. Asimo slightly differs from traditional IoC solutions that are frequently based on **Dependency Injection** ([DI]) as its principle is to retrieve most dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader). In some respects asimo follows the same principle as the [lazy.nvim] package manager.
+Asimo is a micro libray that helps managing **JS objects & modules dependencies** (e.g. to share/retrieve objects or modules in a JS/TS code base) through an _Inversion of Control_ ([IoC]) mechanism, that supports both synchronous and asynchronous retrieval possibilities. Asimo slightly differs from traditional IoC solutions that are frequently based on **Dependency Injection** ([DI]) as its principle is to retrieve most dependencies **on-demand** and **asynchronously** (which also allows to load the dependency module on-demand, thus the name ASYnchronous MOdule loader). In some respects asimo follows the same principle as the [lazy.nvim] package manager.
 
 [lazy.nvim]: https://www.lazyvim.org/configuration/lazy.nvim
 [IoC]: https://en.wikipedia.org/wiki/Inversion_of_control
@@ -11,11 +11,11 @@ Asimo was built from the following realizations:
 -   **Advanced testing requires a _generic_ mechanism to replace code dependencies in test environments** (e.g. to fake global services like _localStorage_ or _fetch_).
 -   Strict **[Dependency Injection][DI] is not well suited to client-side applications** where large code bases cannot be loaded on application startup. With Dependency injection, all dependencies of a given entity needs to be loaded when the entity is created - which eventually results in large code packages (unless significant effort is made to prevent that issue). On the contrary, **asimo approach is to load dependencies on-demand**, which allows to easily reference frequently or rarely used functionalities in the same manner, without impacting the initial download. Besides, asimo allows to group JS modules into bundles independently from the code structure (in other words the code doesn't need special attention to support efficient progressive load)
 
-## Why using IoC and asimo for your client-side code?
+## Why using IoC and asimo?
 
 Asimo helps solving the following problems:
 
--   **client integration testing**: asimo can easily replace dependencies with mock dependencies (e.g. in the test enviroment, unit tests can call a fake _fetch()_ that will return stable data).
+-   **client integration testing**: asimo can easily replace dependencies with mock dependencies (e.g. in the test enviroment, unit tests can call a fake _[fetch()][fetch]_ that will return stable data).
 -   **development**: asimo simplifies the development of _mock environment_ solutions that
     simulate and synchronize multiple external dependencies (e.g. _fetch()_, _localStorage_, _SSE events_, etc.). The mock environment can define multiple profiles that will correspond to different datasets / behaviours. On top of that, the mock environment code can be loaded dynamically as an asimo bundle (i.e. through a dynamic import) and won't be packaged with the rest of the application. Last but not least this mock environment (mockenv) can be used for integration tests, development, demos and also for full client integration tests with tools like [Playwright] - more in the [asidemo] example
 -   **application code splitting**: asimo allows to package the application into several bundles that will be downloaded on-demand, when one of its modules is required. This allows to improve the application startup by optimizing the initial application load. Besides, the application code does not need to be aware of the bundle configuration that can be changed without any code refactoring.
@@ -37,6 +37,7 @@ Other important features:
 [results]: https://asimojs.github.io/dpademo/homer_simpson.html
 [asidemo]: https://asimojs.github.io/asidemo/
 [slides]: https://docs.google.com/presentation/d/1NfAnUP9j1HitSrCWxmEuJs3ATZnbHdN8N_q1GLW29hU
+[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
 
 ## How does it work?
 
@@ -74,7 +75,7 @@ On top of that, asimo also supports registering any kind of **objects** that can
 ```typescript
 // Object registration
 const calc = new CalculatorService();
-asm.registerObject(CalculatorSIID, calc);
+asm.set(CalculatorSIID, calc);
 
 const calc2 = asm.get(CalculatorSIID);
 // calc2 is of type  Calculator (cf. below) and is equal to calc:
@@ -270,11 +271,11 @@ const [m, c, a] = await asm.fetch(MultiplierIID, CalculatorIID, AdderIID);
 
 ### `get()`
 
-Get an object from an asimo container (or its parents). On the contrary to _fetch()_, _get()_ is **synchronous** and only returns objects that have been registered through _registerObject()_ with a SyncIID token. This function will throw an error if no default value is passed as 2nd argument.
+Get an object from an asimo container (or its parents). On the contrary to _fetch()_, _get()_ is **synchronous** and only returns objects that have been registered through _set()_ with a SyncIID token. This function will throw an error if no default value is passed as 2nd argument.
 
 ```typescript
 // register an the object
-asm.registerObject(CalculatorSIID, new CalculatorService());
+asm.set(CalculatorSIID, new CalculatorService());
 
 // Get one dependency - throws if not found
 const calc = asm.get(CalculatorSIID);
@@ -289,6 +290,30 @@ const [m, c, a] = asm.get(MultiplierSIID, CalculatorSIID, AdderSIID);
 //   m is of type Multiplier
 //   c is of type Calculator
 //   a is of type Adder
+```
+
+### `set()`
+
+Register any kind of object in the given container - these objects will be accessible synchronously through the _get()_ method
+
+```typescript
+interface SimpleObject {
+    name: string;
+    increment(value: number): number;
+}
+const SimpleObjectSIID = syncIID<SimpleObject>("asimo.test.objects.simple-object");
+
+const o: SimpleObject = {
+    name: "foo",
+    increment(v) {
+        return v + 1;
+    },
+};
+container.set(SimpleObjectSIID, o);
+
+// retrieval is synchronous for objects (no await)
+const o2 = container.get(SimpleObjectSIID); // o2 type is SimpleObject
+expect(o2).toBe(o);
 ```
 
 ### `registerService()`
@@ -328,30 +353,6 @@ Example:
 ```typescript
 // Register an object factory
 asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
-```
-
-### `registerObject()`
-
-Register any kind of object in the given container - these objects will be accessible synchronously through the _get()_ method
-
-```typescript
-interface SimpleObject {
-    name: string;
-    increment(value: number): number;
-}
-const SimpleObjectSIID = syncIID<SimpleObject>("asimo.test.objects.simple-object");
-
-const o: SimpleObject = {
-    name: "foo",
-    increment(v) {
-        return v + 1;
-    },
-};
-container.registerObject(SimpleObjectSIID, o);
-
-// retrieval is synchronous for objects (no await)
-const o2 = container.get(SimpleObjectSIID); // o2 type is SimpleObject
-expect(o2).toBe(o);
 ```
 
 ### `registerGroup()`

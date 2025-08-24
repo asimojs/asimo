@@ -117,8 +117,8 @@ export function createContainer(
             return defs;
         },
         /** Register an object instance */
-        registerObject<T extends object>(iid: SyncIID<T>, o: T): void {
-            if (validate(iid, null, "registerObject")) {
+        set<T extends object>(iid: SyncIID<T>, o: T): void {
+            if (validate(iid, null, "set")) {
                 if (!objects) {
                     objects = new Map();
                 }
@@ -346,7 +346,7 @@ export function createContainer(
     function validate(
         iid: InterfaceId<any>,
         factory: ((c: IoCContainer) => any) | null,
-        context: "registerService" | "registerFactory" | "registerGroup" | "registerObject",
+        context: "registerService" | "registerFactory" | "registerGroup" | "set",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
             logError(`[${context}] Invalid interface id: ${description(iid)}`);

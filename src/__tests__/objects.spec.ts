@@ -31,7 +31,7 @@ describe("Asimo Objects", () => {
                 },
             };
 
-            context.registerObject(SimpleObjectIID, o);
+            context.set(SimpleObjectIID, o);
 
             const o2 = context.get(SimpleObjectIID);
             expect(o2).toBe(o);
@@ -45,7 +45,7 @@ describe("Asimo Objects", () => {
                     return v + 10;
                 },
             };
-            context.registerObject(SimpleObjectIID, o3);
+            context.set(SimpleObjectIID, o3);
             const o4 = context.get(SimpleObjectIID);
             expect(o4).toBe(o3);
             expect(o4.name).toBe("foobar");
@@ -62,7 +62,7 @@ describe("Asimo Objects", () => {
 
             const context2 = createContainer({ name: "child-context", parent: context });
 
-            context.registerObject(SimpleObjectIID, o);
+            context.set(SimpleObjectIID, o);
 
             const o2 = context2.get(SimpleObjectIID);
             expect(o2).toBe(o);
@@ -76,7 +76,7 @@ describe("Asimo Objects", () => {
                     return v + 10;
                 },
             };
-            context.registerObject(SimpleObjectIID, o3);
+            context.set(SimpleObjectIID, o3);
             const o4 = context2.get(SimpleObjectIID);
             expect(o4).toBe(o3);
             expect(o4.name).toBe("foobar");
@@ -97,8 +97,8 @@ describe("Asimo Objects", () => {
                     return v + 2;
                 },
             };
-            context.registerObject(SimpleObjectIID, o1);
-            context2.registerObject(SimpleObject2IID, o2);
+            context.set(SimpleObjectIID, o1);
+            context2.set(SimpleObject2IID, o2);
 
             const [o21, o22] = context2.get(SimpleObjectIID, SimpleObject2IID);
             expect(o21.increment(1)).toBe(2);
