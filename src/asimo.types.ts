@@ -51,17 +51,17 @@ export interface IoCContainer {
      */
     registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
     /**
-     * Register a group loader that will be used to asynchronously load the code of multiple
-     * service and object factories on-demand (i.e. the group code will only be loaded when
-     * an explicit get is done on one of its service or object interfaces).
+     * Register an interface bundle that will be used to asynchronously load the code of multiple
+     * service and object factories on-demand (i.e. the bundle code will only be loaded when
+     * an explicit fetch is done on one of its service or object interfaces).
      *
      * Services or objects produced by service or object factories can be retrieved through the fetch method.
-     * @example asm.registerGroup([Service1IID, Object2IID], () => import("./groups/mybundlefile"));
+     * @example asm.registerBundle([Service1IID, Object2IID], () => import("./groups/mybundlefile"));
      * @param iids the list of interface ids that are packaged in this group
      * @param loader an async factory that should dynamically import() the required modules
      * @see fetch
      */
-    registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
+    registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
     /**
      * Retrieve one or multiple values from the IoC container synchronously. Will recursively search
      * for the values in the parent containers if not found.

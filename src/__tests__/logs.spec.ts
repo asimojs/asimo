@@ -189,7 +189,7 @@ describe("Asimo Logs", () => {
         );
     });
 
-    it("should validate factories and group loaders", async () => {
+    it("should validate factories and bundle loaders", async () => {
         logs = [];
         asm.registerService(CalculatorIID, 123 as any);
         expect(logs.join("")).toBe("ASM [/asm/test] [registerService] Invalid factory: 123");
@@ -199,8 +199,8 @@ describe("Asimo Logs", () => {
         expect(logs.join("")).toBe("ASM [/asm/test] [registerFactory] Invalid factory: 123");
 
         logs = [];
-        asm.registerGroup([CalculatorIID], 123 as any);
-        expect(logs.join("")).toBe("ASM [/asm/test] [registerGroup] Invalid group loader: 123");
+        asm.registerBundle([CalculatorIID], 123 as any);
+        expect(logs.join("")).toBe("ASM [/asm/test] [registerBundle] Invalid group loader: 123");
     });
 
     it("should logState in the console", async () => {

@@ -140,10 +140,10 @@ export function createContainer(
             }
         },
         /** Register a factory group */
-        registerGroup(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
+        registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
             const groupId = GROUP + ++groupCount;
             if (typeof loader !== "function") {
-                logError(`[registerGroup] Invalid group loader: ${description(loader)}`);
+                logError(`[registerBundle] Invalid group loader: ${description(loader)}`);
                 return;
             }
             // factory that will load the group and cache its result in the services map
@@ -158,7 +158,8 @@ export function createContainer(
                 return ldp;
             };
             for (const iid of iids) {
-                validate(iid, null, "registerGroup") && factories.set(GROUP + iid.ns, groupFactory);
+                validate(iid, null, "registerBundle") &&
+                    factories.set(GROUP + iid.ns, groupFactory);
             }
         },
 
@@ -346,7 +347,7 @@ export function createContainer(
     function validate(
         iid: InterfaceId<any>,
         factory: ((c: IoCContainer) => any) | null,
-        context: "registerService" | "registerFactory" | "registerGroup" | "set",
+        context: "registerService" | "registerFactory" | "registerBundle" | "set",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
             logError(`[${context}] Invalid interface id: ${description(iid)}`);

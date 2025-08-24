@@ -68,7 +68,7 @@ Asimo supports 3 kinds of factories
 
 -   **service factories** (cf. **_registerService()_**) that produce unique objects that will be shared by application modules - i.e. the service instance will be created on the first _fetch()_ call, and then asimo will always return this instance instead of creating a new one.
 -   **object factories** (cf. **_registerFactory()_**) that produce new object instances everytime they are called.
--   **group factories** (cf. **_registerGroup()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together and that will be loaded dynamically through dynamic imports).
+-   **bundle factories** (cf. **_registerBundle()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together and that will be loaded dynamically through dynamic imports).
 
 On top of that, asimo also supports registering any kind of **objects** that can be retrieved **synchronously** throught the **_get()_** method.
 
@@ -188,7 +188,7 @@ yarn add @asimojs/asimo
 Asimo core module exports 4 entities:
 
 -   `asm` - the root `IoCContainer` that exposes most asimo APIs
--   `createContainer()` - that allows to create asimo contexts
+-   `createContainer()` - that allows to create asimo containers (aka. contexts)
 -   `asyncIID()` - to create interface id token for dependencies that can be retrieved asynchronously
 -   `syncIID()` - to create interface id token for dependencies that can be retrieved synchronously
 
@@ -355,10 +355,10 @@ Example:
 asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
 ```
 
-### `registerGroup()`
+### `registerBundle()`
 
-Register a group loader that will be used to asynchronously load multiple
-services and object factories gathered in a same **deployment bundle**. The bundle code will be loaded on-demand, when
+Register an interface bundle that will be used to asynchronously load multiple
+service and object factories gathered in a same **deployment bundle**. The bundle code will be loaded on-demand, when
 an explicit `fetch()` is done on one of its service or object interfaces.
 
 Parameters:
@@ -367,7 +367,7 @@ Parameters:
 -   **loader**: an async factory that should dynamically import() the required modules
 
 ```typescript
-registerGroup(iids:InterfaceId<any>[], loader: () => Promise<unknown>): void;
+registerBundle(iids:InterfaceId<any>[], loader: () => Promise<unknown>): void;
 ```
 
 Example:
@@ -375,7 +375,7 @@ Example:
 ```typescript
 // Register several interface implementations that will be loaded on-demand
 // through a dynamic module import
-asm.registerGroup([Service1IID, Object2IID], () => import("./groups/mybundlefile"));
+asm.registerBundle([Service1IID, Object2IID], () => import("./groups/mybundlefile"));
 ```
 
 where `mybundlefile` will contain code like:
@@ -469,7 +469,7 @@ Container /asm:
 
 ### `logger`
 
-Tell asimo where to log errors - default value is `console` but can also be `null` to avoid logging anything
+Tell asimo where to log errors - default value is `console` but can also be `null` to avoid logging anything.
 
 Note: this setting is global, even if set on a child container.
 Example:

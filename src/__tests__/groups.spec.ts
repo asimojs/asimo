@@ -71,7 +71,7 @@ describe("Groups", () => {
     });
 
     it("should support group loaders (subcontext)", async () => {
-        asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupAbis"));
+        asm.registerBundle([Service1IID, Object2IID], () => import("./groups/groupAbis"));
         groupALoadCount = 0;
         const s1 = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
@@ -94,7 +94,7 @@ describe("Groups", () => {
     });
 
     it("should only load group once in case of parallel requests", async () => {
-        asm.registerGroup([Service1IID, Object2IID], () => import("./groups/groupAter"));
+        asm.registerBundle([Service1IID, Object2IID], () => import("./groups/groupAter"));
         groupALoadCount = 0;
         const [s1, o2] = await asm.fetch(Service1IID, Object2IID);
         expect(groupALoadCount).toBe(1);
