@@ -1,6 +1,6 @@
 {
     "name": "@asimojs/asimo",
-    "version": "2.0.0",
+    "version": "4.0.0",
     "description": "Asynchronous IoC for the browser",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
