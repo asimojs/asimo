@@ -3,7 +3,7 @@
  *
  * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
  */
-export interface IoCContainer {
+export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> {
     /**
      * The container name - helps differentiating multiple contexts
      */
@@ -11,7 +11,7 @@ export interface IoCContainer {
     /**
      * The parent container where dependencies will be retrieved if not found in the current container
      */
-    readonly parent: IoCContainer | null;
+    readonly parent: IoCContainer<any> | null;
     /**
      * A unique path identifier listing all container names from the top parent container
      * e.g. "/asm/subContext1/subContext2"
@@ -37,7 +37,7 @@ export interface IoCContainer {
      * @param factory a factory that will be called to instanciate the service
      * @see fetch
      */
-    registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
+    registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer<IIDs>) => T | Promise<T>): void;
     /**
      * Register an interface bundle that will be used to asynchronously load the code of multiple
      * service and object factories on-demand (i.e. the bundle code will only be loaded when
@@ -62,9 +62,9 @@ export interface IoCContainer {
      * const [service, otherService] = container.get(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
      * @see fetch()
      */
-    get<T>(iid: SyncIID<T>): T;
-    get<T, D extends T | null>(iid: SyncIID<T>, defaultValue?: D): T | D;
-    get<Args extends SyncIID<any>[]>(
+    get<T>(iid: Extract<IIDs, SyncIID<T>>): T;
+    get<T, D extends T | null>(iid: SyncIID<T>, defaultValue: D): T | D;
+    get<Args extends Extract<IIDs, SyncIID<any>>[]>(
         ...iids: Args
     ): { [K in keyof Args]: Args[K] extends SyncIID<infer T> ? T : never };
     /**
@@ -79,9 +79,9 @@ export interface IoCContainer {
      * const [service, otherService] = await container.fetch(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
      * @see get()
      */
-    fetch<T>(iid: AsyncIID<T>): Promise<T>;
-    fetch<T, D extends T | null>(iid: AsyncIID<T>, defaultValue?: D): Promise<T | D>;
-    fetch<Args extends AsyncIID<any>[]>(
+    fetch<T>(iid: Extract<IIDs, AsyncIID<T>>): Promise<T>;
+    fetch<T, D extends T | null>(iid: AsyncIID<T>, defaultValue: D): Promise<T | D>;
+    fetch<Args extends Extract<IIDs, AsyncIID<any>>[]>(
         ...iids: Args
     ): Promise<{ [K in keyof Args]: Args[K] extends AsyncIID<infer T> ? T : never }>;
     /**
@@ -114,7 +114,7 @@ export interface AsmInterfaceDefinition {
     /** The interface id */
     iid: string;
     /** The type of of object the interface is going to produce */
-    type: "service" | "object" | "group";
+    type: "service" | "group";
     /** Tell if the service associated to the interface has been loaded (not used for object or groups) */
     loaded?: boolean;
 }
@@ -162,4 +162,4 @@ export type InterfaceId<T> = SyncIID<T> | AsyncIID<T>;
  * IoCContainer name before version 2.5
  * @deprecated
  */
-export type AsmContext = IoCContainer;
+export type AsmContext<IIDs extends InterfaceId<any> = InterfaceId<any>> = IoCContainer<IIDs>;

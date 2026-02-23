@@ -63,10 +63,10 @@ const NOT_FOUND_PROMISE = Promise.resolve(NOT_FOUND);
  * @returns an asimo IoC Container
  */
 export function createContainer(
-    nameOrOptions?: string | { name?: string; parent?: IoCContainer },
+    nameOrOptions?: string | { name?: string; parent?: IoCContainer<any> },
 ): IoCContainer {
     let name = "";
-    let parent: IoCContainer | null = null;
+    let parent: IoCContainer<any> | null = null;
     if (typeof nameOrOptions === "string") {
         name = nameOrOptions || `IoCContainer${++count}`;
     } else {
