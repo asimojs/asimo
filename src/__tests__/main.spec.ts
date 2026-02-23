@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { asm as rsm, asyncIID, createContainer, IoCContainer } from "../asimo";
+import { asm as rsm, asyncIID, createContainer, IoCContainer, ContainerIIDs } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
@@ -15,10 +15,7 @@ describe("Asimo", () => {
         | typeof AdderIID
     >;
     let context2: IoCContainer<
-        | typeof CalculatorIID
-        | typeof SyncIncrementorIID
-        | typeof AsyncIncrementorIID
-        | typeof AdderIID
+        | ContainerIIDs<typeof context>
         | typeof MultiplierFactoryIID
     >;
 

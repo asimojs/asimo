@@ -164,6 +164,11 @@ export interface AsyncIID<T> {
 export type InterfaceId<T> = SyncIID<T> | AsyncIID<T>;
 
 /**
+ * Utility type that extracts the IIDs union from an IoCContainer type
+ */
+export type IIDs<C extends IoCContainer<any>> = C extends IoCContainer<infer IIDs> ? IIDs : never;
+
+/**
  * IoCContainer name before version 2.5
  * @deprecated
  */

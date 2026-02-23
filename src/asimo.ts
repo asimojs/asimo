@@ -7,9 +7,10 @@ import {
     SyncIID,
     AsyncIID,
     AsmContext,
+    IIDs,
 } from "./asimo.types";
 
-export { IoCContainer, AsmContext, InterfaceId, SyncIID, AsyncIID };
+export { IoCContainer, AsmContext, InterfaceId, SyncIID, AsyncIID, IIDs as ContainerIIDs };
 
 /**
  * Create an interface id token that will be used to associate an interface namepsace with a typescript type
