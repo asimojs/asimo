@@ -39,18 +39,6 @@ export interface IoCContainer {
      */
     registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
     /**
-     * Register an object factory. The factory will be called any time the fetch method is called
-     * for this interface id. On the contrary to services, there is no restriction on the number
-     * of objects that can be created. Besides asimo doesn't keep any reference to the object
-     * created.
-     *
-     * Objects produced by factories can be retrieved asynchronoysly through the fetch() method.
-     * @param iid the async interface id
-     * @param factory a factory that will be called to create an object instance
-     * @see fetch
-     */
-    registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void;
-    /**
      * Register an interface bundle that will be used to asynchronously load the code of multiple
      * service and object factories on-demand (i.e. the bundle code will only be loaded when
      * an explicit fetch is done on one of its service or object interfaces).

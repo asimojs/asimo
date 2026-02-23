@@ -55,7 +55,7 @@ const result = calc.add(1, 2);
 //   -> the service doesn't need to be async
 ```
 
-The **Dependency containers** are objects on which **dependency factories** or **objects** can be registered - e.g.
+The **Dependency containers** are objects on which **dependency services** or **objects** can be registered - e.g.
 
 ```typescript
 // Service registration
@@ -67,10 +67,9 @@ asm.registerService(CalculatorIID, () => new CalculatorService());
 Asimo supports 3 kinds of factories
 
 -   **service factories** (cf. **_registerService()_**) that produce unique objects that will be shared by application modules - i.e. the service instance will be created on the first _fetch()_ call, and then asimo will always return this instance instead of creating a new one.
--   **object factories** (cf. **_registerFactory()_**) that produce new object instances everytime they are called.
 -   **bundle factories** (cf. **_registerBundle()_**) that are used to declare bundles (i.e. multiple JS modules that will be packaged together and that will be loaded dynamically through dynamic imports).
 
-On top of that, asimo also supports registering any kind of **objects** that can be retrieved **synchronously** throught the **_get()_** method.
+On top of that, asimo also supports registering and retrieving any kind of **object** through the **synchronous** **_set()_** and method and **_get()_** methods.
 
 ```typescript
 // Object registration
@@ -338,23 +337,6 @@ asm.registerService(SomeServiceIID, (c: IoCContainer) => new SomeService(c));
 asm.registerService(AdderIID, () => add); // add is a function
 ```
 
-### `registerFactory()`
-
-Register an object factory. The factory will be called any time the _fetch()_ method is called
-for the object's interface id. On the contrary to services, there is no restriction on the number
-of objects that can be creatd. Besides asimo doesn't keep any reference to the object (no risks of memory leak)
-
-```typescript
-registerFactory<T>(iid: AsyncIID<T>, factory: () => T | Promise<T>): void;
-```
-
-Example:
-
-```typescript
-// Register an object factory
-asm.registerFactory(MultiplierIID, () => new MultiplierImpl());
-```
-
 ### `registerBundle()`
 
 Register an interface bundle that will be used to asynchronously load multiple
@@ -386,7 +368,7 @@ import "./service1";
 import "./object2";
 ```
 
-and each imported file will load the dependency code and register the dependencies through `registerService()` or `registerFactory()`
+and each imported file will load the dependency code and register the dependencies through `registerService()`
 
 ```typescript
 // service1.ts

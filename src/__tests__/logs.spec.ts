@@ -4,7 +4,7 @@ import { IoCContainer } from "../asimo.types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
-import { _MultiplierImpl, MultiplierIID } from "./multiplier";
+import { _MultiplierImpl, MultiplierFactoryIID } from "./multiplier";
 
 const CalculatorSIID = syncIID<Calculator>("asimo.src.tests.logs.Calculator");
 
@@ -66,7 +66,7 @@ describe("Asimo Logs", () => {
         try {
             const [add2, add3] = await asm.fetch(AdderIID2, AdderIID3);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join("")).toBe(
             'ASM [/asm/test] Interfaces not found: ["asimo.src.tests.Adder2", "asimo.src.tests.Adder3"]',
@@ -83,7 +83,7 @@ describe("Asimo Logs", () => {
         try {
             const add = await asm.fetch(AdderIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join("")).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
         expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
@@ -95,7 +95,7 @@ describe("Asimo Logs", () => {
         try {
             await asm.fetch(CalculatorIID, AdderIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join("")).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
         expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"');
@@ -109,7 +109,7 @@ describe("Asimo Logs", () => {
         try {
             await asm.fetch(AdderIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join(";")).toBe(
             'ASM [/asm/test] Invalid factory output: "asimo.src.tests.Adder2";ASM [/asm/test] Interface not found: "asimo.src.tests.Adder2"',
@@ -124,7 +124,7 @@ describe("Asimo Logs", () => {
         try {
             asm.get(AdderSIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join(";")).toBe('ASM [/asm/test] Object not found: "asimo.src.tests.Adder2"');
 
@@ -133,7 +133,7 @@ describe("Asimo Logs", () => {
         try {
             asm.get(CalculatorSIID, AdderSIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join(";")).toBe('ASM [/asm/test] Object not found: "asimo.src.tests.Adder2"');
 
@@ -142,7 +142,7 @@ describe("Asimo Logs", () => {
         try {
             asm.get(AdderIID as any, AdderIID2);
         } catch (ex) {
-            err = ex.message;
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         expect(logs.join(";")).toBe(
             'ASM [/asm/test] Objects not found: ["asimo.src.tests.Adder", "asimo.src.tests.Adder2"]',
@@ -189,14 +189,10 @@ describe("Asimo Logs", () => {
         );
     });
 
-    it("should validate factories and bundle loaders", async () => {
+    it("should validate bundle loaders", async () => {
         logs = [];
         asm.registerService(CalculatorIID, 123 as any);
         expect(logs.join("")).toBe("ASM [/asm/test] [registerService] Invalid factory: 123");
-
-        logs = [];
-        asm.registerFactory(CalculatorIID, 123 as any);
-        expect(logs.join("")).toBe("ASM [/asm/test] [registerFactory] Invalid factory: 123");
 
         logs = [];
         asm.registerBundle([CalculatorIID], 123 as any);
@@ -206,43 +202,43 @@ describe("Asimo Logs", () => {
     it("should logState in the console", async () => {
         const c2 = createContainer({ name: "context2", parent: asm });
         c2.registerService(CalculatorIID, async () => new _CalculatorService());
-        c2.registerService(MultiplierIID, () => new _MultiplierImpl());
+        c2.registerService(MultiplierFactoryIID, () => () => new _MultiplierImpl());
 
         c2.logState();
         expect(logs).toEqual([
             "Container /asm/test/context2:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
-            "+ asimo.src.tests.Multiplier [service]: not loaded",
+            "+ asimo.src.tests.MultiplierFactory [service]: not loaded",
             "Container /asm/test:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: not loaded",
-            "+ asimo.src.tests.Multiplier [object]",
+            "+ asimo.src.tests.MultiplierFactory [service]: not loaded",
         ]);
 
         logs = [];
-        const mult = await c2.fetch(MultiplierIID);
-        expect(mult.multiply(2, 4)).toBe(8);
+        const f = await c2.fetch(MultiplierFactoryIID);
+        expect(f().multiply(2, 4)).toBe(8);
         c2.logState();
         expect(logs).toEqual([
             "Container /asm/test/context2:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
-            "+ asimo.src.tests.Multiplier [service]: loaded", // loaded here
+            "+ asimo.src.tests.MultiplierFactory [service]: loaded", // loaded here
             "Container /asm/test:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: not loaded",
-            "+ asimo.src.tests.Multiplier [object]",
+            "+ asimo.src.tests.MultiplierFactory [service]: not loaded", // not loaded here
         ]);
     });
 
     it("should logState in an output array", async () => {
         const c2 = createContainer({ name: "context2", parent: asm });
         const out: string[] = [];
-        const [mult, adder] = await c2.fetch(MultiplierIID, AdderIID);
-        expect(mult.multiply(2, 4)).toBe(8);
+        const [f, adder] = await c2.fetch(MultiplierFactoryIID, AdderIID);
+        expect(f().multiply(2, 4)).toBe(8);
         expect(adder(5, 4)).toBe(9);
 
         c2.logState(out);
@@ -254,7 +250,7 @@ describe("Asimo Logs", () => {
             "Container /asm:",
             "+ asimo.src.tests.Calculator [service]: not loaded",
             "+ asimo.src.tests.Adder [service]: loaded", // loaded
-            "+ asimo.src.tests.Multiplier [object]",
+            "+ asimo.src.tests.MultiplierFactory [service]: loaded", // loaded
         ]);
     });
 });

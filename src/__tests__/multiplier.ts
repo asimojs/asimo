@@ -1,4 +1,4 @@
-import { asm, asyncIID } from "../asimo";
+import { asm, asyncIID, IoCContainer } from "../asimo";
 
 export interface Multiplier {
     numberOfCalls: number;
@@ -16,6 +16,15 @@ export class _MultiplierImpl implements Multiplier {
     }
 }
 
+function multiplierFactory() {
+    return new _MultiplierImpl();
+}
+
 // NB: interface and registration should be defined in separate files to benefit from on-demand module load
-export const MultiplierIID = asyncIID<Multiplier>("asimo.src.tests.Multiplier");
-asm.registerFactory(MultiplierIID, () => new _MultiplierImpl());
+export const MultiplierFactoryIID = asyncIID<typeof multiplierFactory>("asimo.src.tests.MultiplierFactory");
+
+
+asm.registerService(MultiplierFactoryIID, async (c: IoCContainer) => {
+    // the factory could be asyncrhonously initialized
+    return multiplierFactory
+});

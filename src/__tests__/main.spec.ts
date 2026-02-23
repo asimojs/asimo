@@ -3,7 +3,7 @@ import { asm as rsm, asyncIID, createContainer, IoCContainer } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
-import { Multiplier, MultiplierIID, _MultiplierImpl } from "./multiplier";
+import { Multiplier, MultiplierFactoryIID, _MultiplierImpl } from "./multiplier";
 import { AdderIID, _add } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
 
@@ -67,14 +67,14 @@ describe("Asimo", () => {
 
     it("should list the definitions that have been registered in a given context", async () => {
         const c = createTestContext("test1");
-        c.registerFactory(MultiplierIID, () => new _MultiplierImpl());
+        c.registerService(MultiplierFactoryIID, () => () => new _MultiplierImpl());
 
         expect(c.definitions).toMatchObject([
             { iid: "asimo.src.tests.Calculator", type: "service", loaded: false },
             { iid: "asimo.src.tests.SyncIncrementor", type: "service", loaded: false },
             { iid: "asimo.src.tests.AsyncIncrementor", type: "service", loaded: false },
             { iid: "asimo.src.tests.Adder", type: "service", loaded: false },
-            { iid: "asimo.src.tests.Multiplier", type: "object" },
+            { iid: "asimo.src.tests.MultiplierFactory", type: "service" },
         ]);
 
         const calc = await c.fetch(CalculatorIID);
@@ -83,7 +83,7 @@ describe("Asimo", () => {
             { iid: "asimo.src.tests.SyncIncrementor", type: "service", loaded: false },
             { iid: "asimo.src.tests.AsyncIncrementor", type: "service", loaded: false },
             { iid: "asimo.src.tests.Adder", type: "service", loaded: false },
-            { iid: "asimo.src.tests.Multiplier", type: "object" },
+            { iid: "asimo.src.tests.MultiplierFactory", type: "service" },
         ]);
 
         expect(calc.add(2, 3)).toBe(5);
@@ -162,9 +162,9 @@ describe("Asimo", () => {
         context.logger = null;
         let err = "";
         try {
-            const calc = await context.fetch(CalcIID)!;
-        } catch (ex) {
-            err = ex.message;
+            await context.fetch(CalcIID)!;
+        } catch (ex: unknown) {
+            err = ex instanceof Error ? ex.message : "" + ex;
         }
         context.logger = lg;
         expect(err).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc"');
@@ -198,9 +198,9 @@ describe("Asimo", () => {
 
             let msg = "";
             try {
-                const calc = await context.fetch(CalcIID);
+                await context.fetch(CalcIID);
             } catch (ex) {
-                msg = ex.message;
+                msg = ex instanceof Error ? ex.message : "" + ex;
             }
             expect(msg).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc"');
         });
@@ -214,7 +214,7 @@ describe("Asimo", () => {
             try {
                 const calc = await context.fetch(CalcIID)!;
             } catch (ex) {
-                msg = ex.message;
+                msg = ex instanceof Error ? ex.message : "" + ex;
             }
             expect(msg).toBe('ASM [/asm/test] Interface not found: "asimo.src.tests.Calc"');
         });
@@ -311,128 +311,15 @@ describe("Asimo", () => {
         });
     });
 
-    describe("Object factories", () => {
-        it("should create multiple instances of a given object (root context / get", async () => {
-            const m1 = await context.fetch(MultiplierIID);
-            const m2 = await context.fetch(MultiplierIID);
-
-            expect(m1).not.toBe(m2);
-            expect(m1.numberOfCalls).toBe(0);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m1.multiply(2, 4)).toBe(8);
-            expect(m1.multiply(4)).toBe(8);
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m2.multiply(5, 4)).toBe(20);
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(1);
-        });
-
-        it("should create multiple instances of a given object (root context) / fetch", async () => {
-            const m1 = (await context.fetch(MultiplierIID))!;
-            const m2 = (await context.fetch(MultiplierIID))!;
-
-            expect(m1).not.toBe(m2);
-            expect(m1.numberOfCalls).toBe(0);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m1.multiply(2, 4)).toBe(8);
-            expect(m1.multiply(4)).toBe(8);
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m2.multiply(5, 4)).toBe(20);
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(1);
-        });
-
-        it("should return null if object is not found (fetch)", async () => {
-            const calc = await context.fetch({ ns: "asimo.src.tests.Calc123", sync: false }, null);
-            expect(calc).toBe(null);
-        });
-
-        it("should create multiple instances of a given object (sub context) / get", async () => {
-            context.registerFactory(MultiplierIID, () => {
-                const m = new _MultiplierImpl();
-                m.defaultArg = 3;
-                return m;
-            });
-
-            const m1 = await context.fetch(MultiplierIID);
-            const m2 = await context.fetch(MultiplierIID);
-
-            expect(m1).not.toBe(m2);
-            expect(m1.numberOfCalls).toBe(0);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m1.multiply(2, 4)).toBe(8);
-            expect(m1.multiply(4)).toBe(12); // defaultArg is 3
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m2.multiply(5)).toBe(15); // defaultArg is 3
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(1);
-        });
-
-        it("should create multiple instances of a given object (sub context) / fetch", async () => {
-            context.registerFactory(MultiplierIID, () => {
-                const m = new _MultiplierImpl();
-                m.defaultArg = 3;
-                return m;
-            });
-
-            const m1 = (await context.fetch(MultiplierIID))!;
-            const m2 = (await context.fetch(MultiplierIID))!;
-
-            expect(m1).not.toBe(m2);
-            expect(m1.numberOfCalls).toBe(0);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m1.multiply(2, 4)).toBe(8);
-            expect(m1.multiply(4)).toBe(12); // defaultArg is 3
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m2.multiply(5)).toBe(15); // defaultArg is 3
-            expect(m1.numberOfCalls).toBe(2);
-            expect(m2.numberOfCalls).toBe(1);
-        });
-    });
-
     describe("Multi getter", () => {
-        it("should return multiple object instances", async () => {
-            const [m1, m2] = await context.fetch(MultiplierIID, MultiplierIID);
-            expect(m1.multiply(2, 5)).toBe(10);
-            expect(m1.numberOfCalls).toBe(1);
-            expect(m2.numberOfCalls).toBe(0);
-            expect(m2.multiply(2, 21)).toBe(42);
-        });
-
         it("should return object and service instances", async () => {
-            const [m, c1, c2] = await context.fetch(MultiplierIID, CalculatorIID, CalculatorIID);
+            const [f, c1, c2] = await context.fetch(MultiplierFactoryIID, CalculatorIID, CalculatorIID);
+            const m = f();
             expect(m.multiply(2, 5)).toBe(10);
             expect(c1).toBe(c2);
             expect(m.numberOfCalls).toBe(1);
             expect(c1.add(3, 4)).toBe(7);
             expect(c2.numberOfCalls).toBe(1); // c2 === c1
-        });
-
-        it("should return object and service instances / fetch", async () => {
-            const [m, c1, c2] = await context.fetch(MultiplierIID, CalculatorIID, CalculatorIID);
-            expect(m?.multiply(2, 5)).toBe(10);
-            expect(c1).toBe(c2);
-            expect(m?.numberOfCalls).toBe(1);
-            expect(c1?.add(3, 4)).toBe(7);
-            expect(c2?.numberOfCalls).toBe(1); // c2 === c1
-        });
-
-        it("should return multiple instances through string namespaces", async () => {
-            const [m, c] = await context.fetch(MultiplierIID, CalculatorIID);
-            expect((m as Multiplier).multiply(2, 5)).toBe(10);
-            expect((c as Calculator).add(3, 4)).toBe(7);
-        });
-
-        it("should return multiple object instances", async () => {
-            const [m1, m2] = await context.fetch(MultiplierIID, MultiplierIID);
-            expect(m1?.multiply(2, 5)).toBe(10);
-            expect(m1?.numberOfCalls).toBe(1);
-            expect(m2?.numberOfCalls).toBe(0);
-            expect(m2?.multiply(2, 21)).toBe(42);
         });
     });
 

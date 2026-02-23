@@ -6,7 +6,7 @@ export interface Service1 {
     add(a: number, b: number): number;
 }
 
-export const Object2IID = asyncIID<Object2>("asimo.src.tests.groups.Object2");
+export const Object2FactoryIID = asyncIID<() => Object2>("asimo.src.tests.groups.Object2Factory");
 export interface Object2 {
     readonly name: string;
     multiply(a: number, b: number): number;

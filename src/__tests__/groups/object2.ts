@@ -1,5 +1,5 @@
 import { asm } from "../../asimo";
-import { Object2, Object2IID } from "./interfaces";
+import { Object2, Object2FactoryIID } from "./interfaces";
 
 class Obj implements Object2 {
     name = "Object2";
@@ -10,4 +10,4 @@ class Obj implements Object2 {
 }
 
 // This service will be automatically registered when the module is loaded
-asm.registerFactory(Object2IID, () => new Obj());
+asm.registerService(Object2FactoryIID, () => () => new Obj());

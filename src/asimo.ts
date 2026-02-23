@@ -132,13 +132,6 @@ export function createContainer(
                 removeGroupEntry(iid);
             }
         },
-        /** Register an object factory */
-        registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
-            if (validate(iid, factory, "registerFactory")) {
-                factories.set(OBJECT + iid.ns, factory);
-                removeGroupEntry(iid);
-            }
-        },
         /** Register a factory group */
         registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
             const groupId = GROUP + ++groupCount;
@@ -347,7 +340,7 @@ export function createContainer(
     function validate(
         iid: InterfaceId<any>,
         factory: ((c: IoCContainer) => any) | null,
-        context: "registerService" | "registerFactory" | "registerBundle" | "set",
+        context: "registerService" | "registerBundle" | "set",
     ) {
         if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
             logError(`[${context}] Invalid interface id: ${description(iid)}`);

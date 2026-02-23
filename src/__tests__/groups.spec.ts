@@ -4,7 +4,7 @@ import { CalculatorIID } from "./calculator.types";
 import { IoCContainer } from "../asimo.types";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
-import { Object2IID, Service1IID } from "./groups/interfaces";
+import { Object2FactoryIID, Service1IID } from "./groups/interfaces";
 import "./groups/groupADef"; // register groupA on asm root context
 import { _CalculatorService } from "./calculator";
 
@@ -28,7 +28,7 @@ describe("Groups", () => {
         asm = createContext();
     });
 
-    globalThis.notifyGroupALoad = () => {
+    (globalThis as any).notifyGroupALoad = () => {
         groupALoadCount++;
     };
 
@@ -39,8 +39,8 @@ describe("Groups", () => {
             { iid: "asimo.src.tests.groups.Service1", type: "group" }, // service is not loaded yet
         ]);
 
-        expect(rsm.definitions.filter((d) => d.iid === Object2IID.ns)).toMatchObject([
-            { iid: "asimo.src.tests.groups.Object2", type: "group" }, // factory not loaded
+        expect(rsm.definitions.filter((d) => d.iid === Object2FactoryIID.ns)).toMatchObject([
+            { iid: "asimo.src.tests.groups.Object2Factory", type: "group" }, // factory not loaded
         ]);
 
         const s1 = await asm.fetch(Service1IID);
@@ -55,15 +55,16 @@ describe("Groups", () => {
             { iid: "asimo.src.tests.groups.Service1", type: "service", loaded: true }, // loaded!
         ]);
 
-        expect(rsm.definitions.filter((d) => d.iid === Object2IID.ns)).toMatchObject([
-            { iid: "asimo.src.tests.groups.Object2", type: "object" }, // factory loaded
+        expect(rsm.definitions.filter((d) => d.iid === Object2FactoryIID.ns)).toMatchObject([
+            { iid: "asimo.src.tests.groups.Object2Factory", type: "service" }, // factory loaded
         ]);
 
-        const o2 = await asm.fetch(Object2IID);
+        const createO2 = await asm.fetch(Object2FactoryIID);
+        const o2 = createO2();
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.fetch(Object2IID);
+        const o2bis = createO2();
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
         expect(o2bis).not.toBe(o2);
@@ -71,7 +72,7 @@ describe("Groups", () => {
     });
 
     it("should support group loaders (subcontext)", async () => {
-        asm.registerBundle([Service1IID, Object2IID], () => import("./groups/groupAbis"));
+        asm.registerBundle([Service1IID, Object2FactoryIID], () => import("./groups/groupAbis"));
         groupALoadCount = 0;
         const s1 = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
@@ -81,12 +82,13 @@ describe("Groups", () => {
         expect(groupALoadCount).toBe(1);
         expect(s1).toBe(s1bis);
 
-        const o2 = await asm.fetch(Object2IID);
+        const createO2 = await asm.fetch(Object2FactoryIID);
+        const o2 = createO2();
         expect(groupALoadCount).toBe(1);
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.fetch(Object2IID);
+        const o2bis = createO2();
         expect(groupALoadCount).toBe(1);
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
@@ -94,19 +96,20 @@ describe("Groups", () => {
     });
 
     it("should only load group once in case of parallel requests", async () => {
-        asm.registerBundle([Service1IID, Object2IID], () => import("./groups/groupAter"));
+        asm.registerBundle([Service1IID, Object2FactoryIID], () => import("./groups/groupAter"));
         groupALoadCount = 0;
-        const [s1, o2] = await asm.fetch(Service1IID, Object2IID);
+        const [s1, createO2] = await asm.fetch(Service1IID, Object2FactoryIID);
         expect(groupALoadCount).toBe(1);
         expect(s1.name).toBe("Service1");
         expect(s1.add(40, 2)).toBe(42);
         const s1bis = await asm.fetch(Service1IID);
         expect(groupALoadCount).toBe(1);
         expect(s1).toBe(s1bis);
+        const o2 = createO2()
         expect(o2.name).toBe("Object2");
         expect(o2.multiply(3, 2)).toBe(6);
 
-        const o2bis = await asm.fetch(Object2IID);
+        const o2bis = createO2();
         expect(groupALoadCount).toBe(1);
         expect(o2bis.name).toBe("Object2");
         expect(o2bis.multiply(3, 2)).toBe(6);
