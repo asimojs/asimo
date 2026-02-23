@@ -27,7 +27,7 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * @param iid the (sync) interface id
      * @see get
      */
-    set<T extends object>(iid: SyncIID<T>, o: T): void;
+    set<T extends object>(iid: SyncIID<T>, o: T): IoCContainer<IIDs | SyncIID<T>>;
     /**
      * Register a service factory. Services are singleton objects that will be created only once
      * and stored in the IoC Container. Services will be created on-demand, when retrieved for the first time.
@@ -37,7 +37,7 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * @param factory a factory that will be called to instanciate the service
      * @see fetch
      */
-    registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer<IIDs>) => T | Promise<T>): void;
+    registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer<IIDs>) => T | Promise<T>): IoCContainer<IIDs | AsyncIID<T>>;
     /**
      * Register an interface bundle that will be used to asynchronously load the code of multiple
      * service and object factories on-demand (i.e. the bundle code will only be loaded when
@@ -49,7 +49,7 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * @param loader an async factory that should dynamically import() the required modules
      * @see fetch
      */
-    registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void;
+    registerBundle<BIIDs extends InterfaceId<any>[]>(iids: [...BIIDs], loader: () => Promise<unknown>): IoCContainer<IIDs | BIIDs[number]>;
     /**
      * Retrieve one or multiple values from the IoC container synchronously. Will recursively search
      * for the values in the parent containers if not found.
@@ -62,11 +62,11 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * const [service, otherService] = container.get(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
      * @see fetch()
      */
-    get<T>(iid: Extract<IIDs, SyncIID<T>>): T;
+    get<T>(iid: SyncIID<T>): SyncIID<T> extends IIDs ? T : never;
     get<T, D extends T | null>(iid: SyncIID<T>, defaultValue: D): T | D;
-    get<Args extends Extract<IIDs, SyncIID<any>>[]>(
+    get<Args extends SyncIID<any>[]>(
         ...iids: Args
-    ): { [K in keyof Args]: Args[K] extends SyncIID<infer T> ? T : never };
+    ): { [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends SyncIID<infer T> ? T : never) : never };
     /**
      * Retrieve one or multiple values from the IoC container asynchronously. Will recursively search
      * for the values in the parent containers if not found.
@@ -79,11 +79,11 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * const [service, otherService] = await container.fetch(SomeServiceIID, SomeOtherServiceIID); // throws if one is not found
      * @see get()
      */
-    fetch<T>(iid: Extract<IIDs, AsyncIID<T>>): Promise<T>;
+    fetch<T>(iid: AsyncIID<T>): Promise<AsyncIID<T> extends IIDs ? T : never>;
     fetch<T, D extends T | null>(iid: AsyncIID<T>, defaultValue: D): Promise<T | D>;
-    fetch<Args extends Extract<IIDs, AsyncIID<any>>[]>(
+    fetch<Args extends AsyncIID<any>[]>(
         ...iids: Args
-    ): Promise<{ [K in keyof Args]: Args[K] extends AsyncIID<infer T> ? T : never }>;
+    ): Promise<{ [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends AsyncIID<infer T> ? T : never) : never }>;
     /**
      * Define where logs should go - default = console
      */
@@ -141,16 +141,21 @@ export interface SyncIID<T> {
     ns: InterfaceNamespace;
     /** Tell that the value associated to this interface can be retrieved synchronously */
     sync: true;
+    /** Phantom field to make T structural (never set at runtime) */
+    readonly _type?: T;
 }
 
 /**
  * Interface ID Token for asynchronous retrieval.
  * (Binds a type T with a namespace)
- */ export interface AsyncIID<T> {
+ */
+export interface AsyncIID<T> {
     /** The interface unique name - e.g. "myapplication.services.Settings" */
     ns: InterfaceNamespace;
     /** Tell that the value associated to this interface can be retrieved asynchronously */
     sync: false;
+    /** Phantom field to make T structural (never set at runtime) */
+    readonly _type?: T;
 }
 
 /**

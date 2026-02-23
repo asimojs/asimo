@@ -3,22 +3,38 @@ import { asm as rsm, asyncIID, createContainer, IoCContainer } from "../asimo";
 import { _CalculatorService } from "./calculator";
 import { SyncIncrementorIID, _SyncIncrementorService } from "./syncincrementor";
 import { AsyncIncrementorIID, _AsyncIncrementorService } from "./asyncincrementor";
-import { Multiplier, MultiplierFactoryIID, _MultiplierImpl } from "./multiplier";
+import { MultiplierFactoryIID, multiplierFactory } from "./multiplier";
 import { AdderIID, _add } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
 
 describe("Asimo", () => {
-    let context: IoCContainer;
+    let context: IoCContainer<
+        | typeof CalculatorIID
+        | typeof SyncIncrementorIID
+        | typeof AsyncIncrementorIID
+        | typeof AdderIID
+    >;
+    let context2: IoCContainer<
+        | typeof CalculatorIID
+        | typeof SyncIncrementorIID
+        | typeof AsyncIncrementorIID
+        | typeof AdderIID
+        | typeof MultiplierFactoryIID
+    >;
 
     function createTestContext(name?: string) {
-        const c = createContainer({ name: name || "test", parent: rsm });
-
-        // override calculator service
-        c.registerService(CalculatorIID, async () => new _CalculatorService());
-        c.registerService(SyncIncrementorIID, () => new _SyncIncrementorService());
-        c.registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService());
-        c.registerService(AdderIID, () => _add);
+        const c = createContainer({ name: name || "test", parent: rsm })
+            .registerService(CalculatorIID, async () => new _CalculatorService())
+            .registerService(SyncIncrementorIID, () => new _SyncIncrementorService())
+            .registerService(AsyncIncrementorIID, () => new _AsyncIncrementorService())
+            .registerService(AdderIID, () => _add);
         c.logger = null;
+
+        context2 = createContainer({ name: "context2", parent: context }).registerService(
+            MultiplierFactoryIID,
+            () => multiplierFactory,
+        );
+
         return c;
     }
 
@@ -67,7 +83,9 @@ describe("Asimo", () => {
 
     it("should list the definitions that have been registered in a given context", async () => {
         const c = createTestContext("test1");
-        c.registerService(MultiplierFactoryIID, () => () => new _MultiplierImpl());
+        const x = await c.fetch(MultiplierFactoryIID);
+
+        c.registerService(MultiplierFactoryIID, () => multiplierFactory);
 
         expect(c.definitions).toMatchObject([
             { iid: "asimo.src.tests.Calculator", type: "service", loaded: false },
@@ -257,7 +275,7 @@ describe("Asimo", () => {
         });
 
         it("should load a service with the default context", async () => {
-            const rootCalc = (await rsm.fetch(CalculatorIID))!;
+            const rootCalc = (await rsm.fetch(CalculatorIID, null))!;
             const calc = (await context.fetch(CalculatorIID))!;
             const inc = (await context.fetch(SyncIncrementorIID))!;
 
@@ -295,25 +313,29 @@ describe("Asimo", () => {
             expect(calc.numberOfCalls).toBe(2); // calc service was called
         });
         it("should load a service with the default context", async () => {
-            const rootCalc = (await rsm.fetch(CalculatorIID))!;
+            const rootCalc = await rsm.fetch(CalculatorIID, null);
             const calc = await context.fetch(CalculatorIID);
             const inc = (await context.fetch(AsyncIncrementorIID))!;
 
-            rootCalc.numberOfCalls = 0; // reset
+            rootCalc!.numberOfCalls = 0; // reset
             expect(calc.numberOfCalls).toBe(0);
             expect(inc.offset).toBe(1);
             expect(await inc.increment(41)).toBe(42);
-            expect(rootCalc.numberOfCalls).toBe(1); // calc service was called
+            expect(rootCalc!.numberOfCalls).toBe(1); // calc service was called
             inc.offset = 3;
             expect(await inc.increment(42)).toBe(45);
-            expect(rootCalc.numberOfCalls).toBe(2); // calc service was called
+            expect(rootCalc!.numberOfCalls).toBe(2); // calc service was called
             expect(calc.numberOfCalls).toBe(0); // no changes as root calc was used
         });
     });
 
     describe("Multi getter", () => {
         it("should return object and service instances", async () => {
-            const [f, c1, c2] = await context.fetch(MultiplierFactoryIID, CalculatorIID, CalculatorIID);
+            const [f, c1, c2] = await context2.fetch(
+                MultiplierFactoryIID,
+                CalculatorIID,
+                CalculatorIID,
+            );
             const m = f();
             expect(m.multiply(2, 5)).toBe(10);
             expect(c1).toBe(c2);

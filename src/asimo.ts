@@ -62,9 +62,9 @@ const NOT_FOUND_PROMISE = Promise.resolve(NOT_FOUND);
  * - parent: the parent context (default: null = root context)
  * @returns an asimo IoC Container
  */
-export function createContainer(
-    nameOrOptions?: string | { name?: string; parent?: IoCContainer<any> },
-): IoCContainer {
+export function createContainer<IIDs extends InterfaceId<any> = InterfaceId<any>>(
+    nameOrOptions?: string | { name?: string; parent?: IoCContainer<IIDs> },
+): IoCContainer<IIDs> {
     let name = "";
     let parent: IoCContainer<any> | null = null;
     if (typeof nameOrOptions === "string") {
@@ -86,7 +86,7 @@ export function createContainer(
     // objects that can be retrieved through get
     let objects: Map<string, object> | null = null;
 
-    const ctxt: IoCContainer = {
+    const ctxt: IoCContainer<IIDs> = {
         /** The context name */
         get name() {
             return name;
@@ -116,28 +116,12 @@ export function createContainer(
             }
             return defs;
         },
-        /** Register an object instance */
-        set<T extends object>(iid: SyncIID<T>, o: T): void {
-            if (validate(iid, null, "set")) {
-                if (!objects) {
-                    objects = new Map();
-                }
-                objects.set(iid.ns, o);
-            }
-        },
-        /** Register a service factory */
-        registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
-            if (validate(iid, factory, "registerService")) {
-                factories.set(SERVICE + iid.ns, factory);
-                removeGroupEntry(iid);
-            }
-        },
         /** Register a factory group */
-        registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
+        registerBundle<BIIDs extends InterfaceId<any>[]>(iids: [...BIIDs], loader: () => Promise<unknown>): IoCContainer<IIDs | BIIDs[number]> {
             const groupId = GROUP + ++groupCount;
             if (typeof loader !== "function") {
                 logError(`[registerBundle] Invalid group loader: ${description(loader)}`);
-                return;
+                return ctxt as unknown as IoCContainer<IIDs | BIIDs[number]>;
             }
             // factory that will load the group and cache its result in the services map
             const groupFactory = () => {
@@ -154,8 +138,18 @@ export function createContainer(
                 validate(iid, null, "registerBundle") &&
                     factories.set(GROUP + iid.ns, groupFactory);
             }
+            return ctxt as unknown as IoCContainer<IIDs | BIIDs[number]>;
         },
-
+        /** Register an object instance */
+        set<T extends object>(iid: SyncIID<T>, o: T): IoCContainer<IIDs | SyncIID<T>> {
+            if (validate(iid, null, "set")) {
+                if (!objects) {
+                    objects = new Map();
+                }
+                objects.set(iid.ns, o);
+            }
+            return ctxt as unknown as IoCContainer<IIDs | SyncIID<T>>;
+        },
         /** Get a registered object */
         get(iid0: SyncIID<any>, iid1OrDefault?: any, ...iids: SyncIID<any>[]): any {
             const ns0 = iid0.ns;
@@ -195,6 +189,14 @@ export function createContainer(
                 }
                 return values;
             }
+        },
+        /** Register a service factory */
+        registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer<IIDs>) => T | Promise<T>): IoCContainer<IIDs | AsyncIID<T>> {
+            if (validate(iid, factory, "registerService")) {
+                factories.set(SERVICE + iid.ns, factory);
+                removeGroupEntry(iid);
+            }
+            return ctxt as unknown as IoCContainer<IIDs | AsyncIID<T>>;
         },
         /** Fetch a service or an object instance (services have priority) */
         async fetch(
@@ -388,14 +390,15 @@ export function createContainer(
     }
 }
 
-let _asm: IoCContainer;
+export const LoggerIID = syncIID<Logger>("asimo.logger");
+let _asm: IoCContainer<typeof LoggerIID>;
 
 // Expose asm on global object to ease debugging from the browser console
 if ((globalThis as any)["asm"]) {
     // asm must be unique
     _asm = (globalThis as any)["asm"];
 } else {
-    _asm = createContainer("asm");
+    _asm = createContainer("asm").set(LoggerIID, logger);
 }
 (globalThis as any)["asm"] = _asm;
 

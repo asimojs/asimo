@@ -4,7 +4,7 @@ import { IoCContainer } from "../asimo.types";
 import { _CalculatorService } from "./calculator";
 import { Adder, AdderIID } from "./adder";
 import { Calculator, CalculatorIID } from "./calculator.types";
-import { _MultiplierImpl, MultiplierFactoryIID } from "./multiplier";
+import { multiplierFactory, MultiplierFactoryIID } from "./multiplier";
 
 const CalculatorSIID = syncIID<Calculator>("asimo.src.tests.logs.Calculator");
 
@@ -202,7 +202,7 @@ describe("Asimo Logs", () => {
     it("should logState in the console", async () => {
         const c2 = createContainer({ name: "context2", parent: asm });
         c2.registerService(CalculatorIID, async () => new _CalculatorService());
-        c2.registerService(MultiplierFactoryIID, () => () => new _MultiplierImpl());
+        c2.registerService(MultiplierFactoryIID, () => multiplierFactory);
 
         c2.logState();
         expect(logs).toEqual([

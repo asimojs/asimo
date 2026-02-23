@@ -5,7 +5,7 @@ export interface Multiplier {
     multiply(a: number, b?: number): number;
 }
 
-export class _MultiplierImpl implements Multiplier {
+class _MultiplierImpl implements Multiplier {
     defaultArg = 2;
     numberOfCalls = 0;
 
@@ -16,7 +16,7 @@ export class _MultiplierImpl implements Multiplier {
     }
 }
 
-function multiplierFactory() {
+export function multiplierFactory() {
     return new _MultiplierImpl();
 }
 
