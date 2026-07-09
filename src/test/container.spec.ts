@@ -68,6 +68,12 @@ describe("IoC Container", () => {
         // fetch allows to retrieve services with sync and async factories
         const multiply2 = await context.fetch(MULTIPLIER);
         expect(multiply2(3, 4)).toBe(12);
+
+        // get allows to retrieve services with sync and async factories
+        const addPromise = context.get(ADDER);
+        expect(addPromise).toBeInstanceOf(Promise);
+        const add2 = await addPromise;
+        expect(add2(3, 4)).toBe(7);
     });
 
     it("should allow to get and fetch multiple services at once", async () => {   

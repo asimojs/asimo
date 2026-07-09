@@ -39,20 +39,11 @@ export function createIocContainer<Services extends ServiceFactory<InterfaceId<a
 
     return {
         name: params.name,
-        get(...iids: SyncIID<any>[]): any {
+        get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
-                const iid = iids[0];
-                if (!iid.sync) {
-                    throw new Error(`[Asimo] Cannot get async interface ${iid.ns} synchronously`);
-                }
-                return loadService(iid);
+                return loadService(iids[0]);
             }
-            return iids.map((iid) => {
-                if (!iid.sync) {
-                    throw new Error(`[Asimo] Cannot get async interface ${iid.ns} synchronously`);
-                }
-                return loadService(iid);
-            });
+            return iids.map((iid) => loadService(iid));
         },
         async fetch(...iids: InterfaceId<any>[]): Promise<any> {
             if (iids.length === 1) {
