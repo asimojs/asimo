@@ -12,8 +12,8 @@ import {
  * @param ns the interface namespace, e.g. "myapplication.services.Configuration"
  * @returns
  */
-export function syncIID<T>(ns: InterfaceNamespace): SyncIID<T> {
-    return { ns, sync: true } as SyncIID<T>;
+export function syncIID<T>(): <NS extends string>(ns: NS) => SyncIID<T, NS> {
+    return (ns) => ({ ns, sync: true } as any);
 }
 
 /**
@@ -21,17 +21,17 @@ export function syncIID<T>(ns: InterfaceNamespace): SyncIID<T> {
  * @param ns the interface namespace, e.g. "common.utils.Fetch"
  * @returns
  */
-export function asyncIID<T>(ns: InterfaceNamespace): AsyncIID<T> {
-    return { ns, sync: false } as AsyncIID<T>;
+export function asyncIID<T>(): <NS extends string>(ns: NS) => AsyncIID<T, NS> {
+    return (ns) => ({ ns, sync: false } as any);
 }
 
-export function createIocContainer<Services extends ServiceFactory<InterfaceId<any>>[]>(params: {
+export function createIocContainer<const Services extends ServiceFactory<InterfaceId<any, any>>[]>(params: {
     name: string;
     services: [...Services];
 }): IoCContainer<Services[number]['interface']> {
     const serviceMap = new Map<
         InterfaceNamespace,
-        { factory: ServiceFactory<InterfaceId<any>>; instance?: any }
+        { factory: ServiceFactory<InterfaceId<any, any>>; instance?: any }
     >();
     for (const service of params.services) {
         serviceMap.set(service.interface.ns, { factory: service });

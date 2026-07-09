@@ -63,7 +63,8 @@ describe("IoC Container", () => {
         expect(add(2, 3)).toBe(5);
         expect(multiply(2, 3)).toBe(6);
 
-        // const x = context.get(DIVIDER); // TODO: should not be authorized
+        // This generate a TS error because DIVIDER is not part of the container services
+        // const x = context.get(DIVIDER); 
 
         // fetch allows to retrieve services with sync and async factories
         const multiply2 = await context.fetch(MULTIPLIER);
