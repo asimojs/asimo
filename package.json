@@ -1,6 +1,6 @@
 {
     "name": "@asimojs/asimo",
-    "version": "2.0.0",
+    "version": "0.0.0",
     "description": "Asynchronous IoC for the browser",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
@@ -34,18 +34,18 @@
     ],
     "scripts": {
         "clean": "rimraf dist lib",
-        "build": "yarn clean && tsc && vite build && cp -R lib/*.d.ts dist",
+        "build": "pnpm clean && tsc && vite build && cp -R lib/*.d.ts dist",
         "test:watch": "vitest",
         "test": "vitest run",
         "coverage": "vitest run --coverage --coverage.extension=.ts",
-        "prepublish": "yarn build && vitest run"
+        "prepublish": "pnpm build && vitest run"
     },
     "devDependencies": {
-        "@vitest/coverage-v8": "4.0.18",
+        "@vitest/coverage-v8": "4.1.10",
         "rimraf": "6.1.3",
-        "typescript": "^5.9.3",
-        "vite": "^7.3.1",
-        "vitest": "^4.0.18"
+        "typescript": "7.0.2",
+        "vite": "8.1.4",
+        "vitest": "4.1.10"
     },
-    "packageManager": "yarn@3.6.1+sha512.de524adec81a6c3d7a26d936d439d2832e351cdfc5728f9d91f3fc85dd20b04391c038e9b4ecab11cae2b0dd9f0d55fd355af766bc5c1a7f8d25d96bb2a0b2ca"
+    "packageManager": "pnpm@10.13.1"
 }
