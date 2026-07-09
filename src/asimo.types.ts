@@ -74,9 +74,9 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * @see fetch()
      */
     get<T>(iid: SyncIID<T>): SyncIID<T> extends IIDs ? T : never;
-    // get<Args extends SyncIID<any>[]>(
-    //     ...iids: Args
-    // ): { [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends SyncIID<infer T> ? T : never) : never };
+    get<Args extends SyncIID<any>[]>(
+        ...iids: Args
+    ): { [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends SyncIID<infer T> ? T : never) : never };
     /**
      * Retrieve one or multiple values from the IoC container asynchronously. Will recursively search
      * for the values in the parent containers if not found.
@@ -89,9 +89,9 @@ export interface IoCContainer<IIDs extends InterfaceId<any> = InterfaceId<any>> 
      * @see get()
      */
     fetch<T>(iid: InterfaceId<T>): Promise<T>;
-    // fetch<Args extends AsyncIID<any>[]>(
-    //     ...iids: Args
-    // ): Promise<{ [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends AsyncIID<infer T> ? T : never) : never }>;
+    fetch<Args extends InterfaceId<any>[]>(
+        ...iids: Args
+    ): Promise<{ [K in keyof Args]: Args[K] extends IIDs ? (Args[K] extends InterfaceId<infer T> ? T : never) : never }>;
     /**
      * Define where logs should go - default = console
      */

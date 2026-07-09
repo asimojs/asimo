@@ -9,3 +9,8 @@ export interface Multiplier {
     (a: number, b: number): number;
 }
 export const MULTIPLIER = syncIID<Multiplier>("asimo.src.test.Multiplier");
+
+export interface Divider {
+    (a: number, b: number): number;
+}
+export const DIVIDER = syncIID<Divider>("asimo.src.test.Divider");
