@@ -94,6 +94,19 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
         ...iids: Args
     ): Promise<{ [K in keyof Args]: Args[K] extends InterfaceId<infer T, any> ? T : never }>;
     /**
+     * Retrieve one or multiple values from the IoC container synchronously. Will recursively search
+     * for the values in the parent containers if not found.
+     *
+     * Returns null for values that are not found instead of throwing an error.
+     * @example
+     * const service = container.getOptional(SomeServiceIID); // type-safe, T | null
+     * @see get()
+     */
+    getOptional<IID extends InterfaceId<any, any>>(iid: IID): IID extends SyncIID<infer T, any> ? T | null : IID extends AsyncIID<infer T, any> ? Promise<T> | null : never;
+    getOptional<Args extends InterfaceId<any, any>[]>(
+        ...iids: Args
+    ): { [K in keyof Args]: Args[K] extends SyncIID<infer T, any> ? T | null : Args[K] extends AsyncIID<infer T, any> ? Promise<T> | null : never };
+    /**
      * Define where logs should go - default = console
      */
     // logger: Logger | null;
