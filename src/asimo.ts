@@ -9,6 +9,7 @@ import {
 
 interface InternalContainer extends IoCContainer<any> {
     getOptional(...iids: InterfaceId<any>[]): any;
+    fetchOptional(...iids: InterfaceId<any>[]): any;
 }
 
 /**
@@ -68,6 +69,12 @@ export function createIocContainer<
             }
             return Promise.all(iids.map((iid) => loadService(iid)));
         },
+        async fetchOptional(...iids: InterfaceId<any>[]): Promise<any> {
+            if (iids.length === 1) {
+                return fetchOptionalService(iids[0]);
+            }
+            return Promise.all(iids.map((iid) => fetchOptionalService(iid)));
+        },
     };
 
     return container as any;
@@ -103,11 +110,15 @@ export function createIocContainer<
         return getParentService(iid);
     }
 
+    async function fetchOptionalService<T>(iid: InterfaceId<any>): Promise<any> {
+        return getOptionalService(iid);
+    }
+
     function getParentService<T>(iid: InterfaceId<any>): any {
         if (parents) {
             for (const parent of parents) {
                 const parentEntry = (parent as InternalContainer).getOptional(iid);
-                if (parentEntry !== null) {
+                if (parentEntry !== null && parentEntry !== undefined) {
                     return parentEntry;
                 }
             }

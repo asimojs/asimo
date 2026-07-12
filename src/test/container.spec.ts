@@ -129,10 +129,31 @@ describe("IoC Container", () => {
             const divide = context.getOptional(DIVIDER);
             expect(divide).toBeNull();
         });
+
+        it("should allow to fetch optional services that are not necessarily defined on the container", async () => {
+            const context = createIocContainer({
+                name: "math-container",
+                services: [
+                    {
+                        interface: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    },
+                ],
+            });
+
+            const multiply = await context.fetchOptional(MULTIPLIER);
+            expect(multiply!(2, 3)).toBe(6);
+
+            const divide = await context.fetchOptional(DIVIDER);
+            expect(divide).toBeNull();
+        });
     });
 
     describe("Container with parents", () => {
         function createTestContaier() {
+            // c4 -> c2 -> c1
+            //    -> c3
+
             const c1 = createIocContainer({
                 name: "substraction",
                 services: [
@@ -208,6 +229,21 @@ describe("IoC Container", () => {
             const [multiply2, unknown2] = c.getOptional(MULTIPLIER, UNKNOWN);
             expect(multiply2!(3, 4)).toBe(12);
             expect(unknown2).toBeNull();
-});
+        });
+
+        it("should allow to fetch optional services that are not necessarily defined on the container", async () => {
+            const c = createTestContaier();
+
+            const multiply = await c.fetchOptional(MULTIPLIER);
+            expect(multiply!(3, 4)).toBe(12);
+
+            const unknown = await c.fetchOptional(UNKNOWN);
+            expect(unknown).toBeNull();
+
+            const [add2, unknown2, divide2] = await c.fetchOptional(ADDER, UNKNOWN, DIVIDER);
+            expect(add2!(2, 3)).toBe(5);
+            expect(unknown2).toBeNull();
+            expect(divide2!(12, 4)).toBe(3);
+        });
     });
 });

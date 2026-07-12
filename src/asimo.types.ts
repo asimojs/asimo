@@ -107,6 +107,20 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
         ...iids: Args
     ): { [K in keyof Args]: Args[K] extends SyncIID<infer T, any> ? T | null : Args[K] extends AsyncIID<infer T, any> ? Promise<T> | null : never };
     /**
+     * Retrieve one or multiple values from the IoC container asynchronously. Will recursively search
+     * for the values in the parent containers if not found.
+     *
+     * Returns null for values that are not found instead of throwing an error.
+     * Note: even synchronous values are returned as Promises. The union element type is `Promise<T> | null`.
+     * @example
+     * const service = await container.fetchOptional(SomeServiceIID); // type-safe, T | null
+     * @see fetch()
+     */
+    fetchOptional<IID extends InterfaceId<any, any>>(iid: IID): Promise<IID extends InterfaceId<infer T, any> ? T : never | null>;
+    fetchOptional<Args extends InterfaceId<any, any>[]>(
+        ...iids: Args
+    ): Promise<{ [K in keyof Args]: Args[K] extends InterfaceId<infer T, any> ? T : never | null }>;
+    /**
      * Define where logs should go - default = console
      */
     // logger: Logger | null;
