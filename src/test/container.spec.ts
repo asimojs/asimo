@@ -148,6 +148,15 @@ describe("IoC Container", () => {
             expect(divide).toBeNull();
         });
 
+        it("should expose a path equal to its name when the container has no parent", () => {
+            const context = createIocContainer({
+                name: "mycontainer",
+                services: [],
+            });
+
+            expect(context.path).toBe("/mycontainer");
+        });
+
         it("should throw when retrieving unknown services via get/fetch", async () => {
             const context = createIocContainer({
                 name: "math-container",
@@ -215,6 +224,13 @@ describe("IoC Container", () => {
             });
             return c4;
         }
+
+        it("should expose a path built from the first parent's path and its own name", () => {
+            const c = createTestContaier();
+
+            // c4 -> c2 -> c1, c3 (path follows the first parent chain: c1/c2/c4)
+            expect(c.path).toBe("/substraction/addition/multiplier");
+        });
 
         it("should retrieve all dependencies", async () => {
             const c = createTestContaier();

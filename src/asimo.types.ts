@@ -74,10 +74,11 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
      */
     // readonly parents: IoCContainer<any>[] | null;
     /**
-     * A unique path identifier listing all container names from the top parent container
+     * A unique path identifier created by concatenating the 'first parent' container's path 
+     * with the current container's name. This allows to identify a container in a hierarchy of containers.
      * e.g. "/asm/subContext1/subContext2"
      */
-    // readonly path: string;
+    readonly path: string;
     /**
      * Retrieve one or multiple values from the IoC container synchronously. Will recursively search
      * for the values in the parent containers if not found.

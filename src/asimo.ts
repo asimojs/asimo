@@ -50,8 +50,11 @@ export function createIocContainer<
         serviceMap.set(service.interface.ns, { factory: service });
     }
 
+    const path = `${(parents?.[0] as IoCContainer<any>)?.path || ""}/${params.name}`;
+
     const container: InternalContainer = {
         name: params.name,
+        path,
         get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
                 return loadService(iids[0]);
