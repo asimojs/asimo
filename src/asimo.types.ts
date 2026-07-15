@@ -44,6 +44,22 @@ export interface ServiceFactory<IID extends InterfaceId<any, any>> {
 }
 
 /**
+ * Validate that a service factory's `load` matches its interface's sync/async nature.
+ * Resolves to `never` when mismatched (e.g. an async factory for a sync interface) so that
+ * the call site receives a TS error attempting to assign the service to `never`.
+ */
+export type ValidService<S> =
+    S extends { interface: SyncIID<any, any>; load: infer L }
+        ? L extends () => Promise<any>
+            ? never
+            : S
+        : S extends { interface: AsyncIID<any, any>; load: infer L }
+            ? L extends () => Promise<any>
+                ? S
+                : never
+            : S;
+
+/**
  * Asimo IoC Container that stores retrievable dependencies.
  *
  * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()

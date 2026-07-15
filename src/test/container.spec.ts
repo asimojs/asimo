@@ -147,6 +147,27 @@ describe("IoC Container", () => {
             const divide = await context.fetchOptional(DIVIDER);
             expect(divide).toBeNull();
         });
+
+        it("should throw when retrieving unknown services via get/fetch", async () => {
+            const context = createIocContainer({
+                name: "math-container",
+                services: [
+                    {
+                        interface: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    },
+                ],
+            });
+
+            // Bypass type safety intentionally: runtime verifies the throw, typecheck
+            // verification is covered by ts-errors.spec-d.ts
+            expect(() => context.get(DIVIDER as any)).toThrow(
+                "[Asimo] Service not found: asimo.src.test.Divider",
+            );
+            await expect(context.fetch(DIVIDER as any)).rejects.toThrow(
+                "[Asimo] Service not found: asimo.src.test.Divider",
+            );
+        });
     });
 
     describe("Container with parents", () => {

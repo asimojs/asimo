@@ -5,6 +5,7 @@ import {
     IoCContainer,
     ServiceFactory,
     SyncIID,
+    ValidService,
 } from "./asimo.types";
 
 interface InternalContainer extends IoCContainer<any> {
@@ -38,7 +39,7 @@ export function createIocContainer<
 >(params: {
     name: string;
     extends?: Parents;
-    services: [...Services];
+    services: [...{ [K in keyof Services]: ValidService<Services[K]> }];
 }): IoCContainer<Services[number]['interface'] | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const parents = params.extends ?? null;
     const serviceMap = new Map<
