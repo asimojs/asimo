@@ -121,7 +121,7 @@ interface InternalEntry {
     instance?: any;
 }
 
-export function createIocContainer<
+export function createContainer<
     const Services extends readonly ServiceEntry[],
     const Parents extends readonly IoCContainer<any>[] | null | undefined = undefined,
 >(params: {

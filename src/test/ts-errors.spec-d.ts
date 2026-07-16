@@ -1,5 +1,5 @@
 import { describe, it } from "vitest";
-import { bundle, createIocContainer, factory } from "../asimo";
+import { bundle, createContainer, factory } from "../asimo";
 import { addNumbers, divideNumbers, multiplyNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -12,7 +12,7 @@ import { createCalculator } from "./examples/calculator";
  */
 describe("TS Errors", () => {
     it("should not allow a sync factory for an async interface", () => {
-        createIocContainer({
+        createContainer({
             name: "test",
             services: [
                 factory({
@@ -25,7 +25,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow an async factory for a sync interface", () => {
-        createIocContainer({
+        createContainer({
             name: "test",
             services: [
                 factory({
@@ -39,7 +39,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow retrieving unknown services by get/fetch", () => {
-        const context = createIocContainer({
+        const context = createContainer({
             name: "math-container",
             services: [
                 factory({
@@ -62,7 +62,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow a service to declare dependencies that are not registered in the container", () => {
-        createIocContainer({
+        createContainer({
             name: "calculator-container",
             services: [
                 factory({
@@ -89,7 +89,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow a service where a factory is missing a dependency", () => {
-        createIocContainer({
+        createContainer({
             name: "calculator-container",
             services: [
                 factory({
@@ -123,7 +123,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow inline service objects (must use factory())", () => {
-        createIocContainer({
+        createContainer({
             name: "test",
             services: [
                 // @ts-expect-error - inline objects without the __asimoServiceFactory brand are rejected
@@ -136,7 +136,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow a bundle with a SyncIID in provide", () => {
-        createIocContainer({
+        createContainer({
             name: "test",
             services: [
                 bundle({
@@ -149,7 +149,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow a bundle with unregistered dependencies", () => {
-        createIocContainer({
+        createContainer({
             name: "test",
             services: [
                 factory({
@@ -167,7 +167,7 @@ describe("TS Errors", () => {
     });
 
     it("should not allow fetching services not defined int the bundle provide", () => {
-        const c = createIocContainer({
+        const c = createContainer({
             name: "nested-bundle",
             services: [
                 factory({
@@ -178,14 +178,14 @@ describe("TS Errors", () => {
                     provide: [ADDER],
                     dependencies: [],
                     load: async () =>
-                        createIocContainer({
+                        createContainer({
                             name: "bundle-sub",
                             services: [
                                 bundle({
                                     provide: [SUBTRACTOR],
                                     dependencies: [],
                                     load: async () =>
-                                        createIocContainer({
+                                        createContainer({
                                             name: "inner-sub",
                                             services: [
                                                 factory({

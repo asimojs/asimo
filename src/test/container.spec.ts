@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bundle, createIocContainer, factory } from "../asimo";
+import { bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -7,7 +7,7 @@ import { createCalculator } from "./examples/calculator";
 describe("IoC Container", () => {
     describe("Container with no parents", () => {
         it("should create an empty container with a name and services", () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "mycontainer",
                 services: [],
             });
@@ -16,7 +16,7 @@ describe("IoC Container", () => {
         });
 
         it("should create a container with one async service", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "adder-container",
                 services: [
                     factory({
@@ -31,7 +31,7 @@ describe("IoC Container", () => {
         });
 
         it("should create a container with one sync service", () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "multiplier-container",
                 services: [
                     factory({
@@ -46,7 +46,7 @@ describe("IoC Container", () => {
         });
 
         it("should support multiple services in the same container", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "math-container",
                 services: [
                     factory({
@@ -77,7 +77,7 @@ describe("IoC Container", () => {
         });
 
         it("should allow to get and fetch multiple services at once", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "math-container",
                 services: [
                     factory({
@@ -106,7 +106,7 @@ describe("IoC Container", () => {
         });
 
         it("should allow to get optional services that are not necessarily defined on the container", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "math-container",
                 services: [
                     factory({
@@ -124,7 +124,7 @@ describe("IoC Container", () => {
         });
 
         it("should allow to fetch optional services that are not necessarily defined on the container", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "math-container",
                 services: [
                     factory({
@@ -142,7 +142,7 @@ describe("IoC Container", () => {
         });
 
         it("should expose a path equal to its name when the container has no parent", () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "mycontainer",
                 services: [],
             });
@@ -151,7 +151,7 @@ describe("IoC Container", () => {
         });
 
         it("should throw when retrieving unknown services via get/fetch", async () => {
-            const context = createIocContainer({
+            const context = createContainer({
                 name: "math-container",
                 services: [
                     factory({
@@ -172,7 +172,7 @@ describe("IoC Container", () => {
         });
 
         it("should pass the container context to the service factory", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "calculator-container",
                 services: [
                     factory({
@@ -212,7 +212,7 @@ describe("IoC Container", () => {
             // c4 -> c2 -> c1
             //    -> c3
 
-            const c1 = createIocContainer({
+            const c1 = createContainer({
                 name: "substraction",
                 services: [
                     factory({
@@ -221,7 +221,7 @@ describe("IoC Container", () => {
                     }),
                 ],
             });
-            const c2 = createIocContainer({
+            const c2 = createContainer({
                 name: "addition",
                 extends: [c1],
                 services: [
@@ -231,7 +231,7 @@ describe("IoC Container", () => {
                     }),
                 ],
             });
-            const c3 = createIocContainer({
+            const c3 = createContainer({
                 name: "division",
                 services: [
                     factory({
@@ -240,7 +240,7 @@ describe("IoC Container", () => {
                     }),
                 ],
             });
-            const c4 = createIocContainer({
+            const c4 = createContainer({
                 name: "multiplier",
                 extends: [c2, c3],
                 services: [
@@ -313,7 +313,7 @@ describe("IoC Container", () => {
 
         it("should pass the container context to the service factory", async () => {
             const c4 = createTestContaier();
-            const c5 = createIocContainer({
+            const c5 = createContainer({
                 name: "calculator",
                 extends: [c4],
                 services: [
@@ -333,7 +333,7 @@ describe("IoC Container", () => {
         });
 
         it("should throw at runtime when a dependency listed in dependencies is not registered", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "calculator-container",
                 services: [
                     factory({
@@ -371,12 +371,12 @@ describe("IoC Container", () => {
 
     describe("Bundle loading", () => {
         it("should load a bundle on-demand and resolve the requested service", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "bundle-test",
                 services: [
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
-                        load: async () => createIocContainer({
+                        load: async () => createContainer({
                             name: "bundle-sub",
                             services: [
                                 factory({
@@ -401,13 +401,13 @@ describe("IoC Container", () => {
         });
 
         it("should load a bundle via get() since async IIDs return Promise<T>", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "bundle-get-test",
                 services: [
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createIocContainer({
+                        load: async () => createContainer({
                             name: "bundle-sub",
                             services: [
                                 factory({
@@ -434,14 +434,14 @@ describe("IoC Container", () => {
 
         it("should load a bundle only once (subsequent requests use cached instance)", async () => {
             let loadCount = 0;
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "bundle-once-test",
                 services: [
                     bundle({
                         provide: [ADDER],
                         load: async () => {
                             loadCount++;
-                            return createIocContainer({
+                            return createContainer({
                                 name: "bundle-sub",
                                 services: [
                                     factory({
@@ -465,7 +465,7 @@ describe("IoC Container", () => {
         });
 
         it("should throw on circular bundle loading", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "circular-bundle",
                 services: [
                     bundle({
@@ -473,7 +473,7 @@ describe("IoC Container", () => {
                         dependencies: [],
                         load: async (ctx: any) => {
                             await ctx.fetch(ADDER);
-                            return createIocContainer({
+                            return createContainer({
                                 name: "bundle-sub",
                                 services: [],
                             });
@@ -488,19 +488,19 @@ describe("IoC Container", () => {
         });
 
         it("should support nested bundles (bundle returning sub-bundles)", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "nested-bundle",
                 services: [
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createIocContainer({
+                        load: async () => createContainer({
                             name: "bundle-sub",
                             services: [
                                 bundle({
                                     provide: [SUBTRACTOR],
                                     dependencies: [],
-                                    load: async () => createIocContainer({
+                                    load: async () => createContainer({
                                         name: "inner-sub",
                                         services: [
                                             factory({
@@ -528,12 +528,12 @@ describe("IoC Container", () => {
         });
 
         it("should not expose sub-container IIDs not in the bundle's provide at runtime", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "bundle-scope-test",
                 services: [
                     bundle({
                         provide: [ADDER],
-                        load: async () => createIocContainer({
+                        load: async () => createContainer({
                             name: "sub",
                             services: [
                                 factory({
@@ -562,13 +562,13 @@ describe("IoC Container", () => {
         });
 
         it("should throw if a bundle doesn't fully provide its declared services", async () => {
-            const c = createIocContainer({
+            const c = createContainer({
                 name: "nested-bundle",
                 services: [
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createIocContainer({
+                        load: async () => createContainer({
                             name: "bundle-sub",
                             services: [
                                 factory({
