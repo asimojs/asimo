@@ -4,9 +4,10 @@ import {
     addNumbers,
     multiplyNumbers,
     divideNumbers,
-    substractNumbers,
+    subtractNumbers,
 } from "./examples/operations";
-import { ADDER, DIVIDER, MULTIPLIER, SUBSTRACTER, UNKNOWN } from "./examples/types";
+import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
+import { createCalculator } from "./examples/calculator";
 
 describe("IoC Container", () => {
     describe("Container with no parents", () => {
@@ -177,6 +178,41 @@ describe("IoC Container", () => {
                 "[Asimo] Service not found: asimo.src.test.Divider",
             );
         });
+
+it("should pass the container context to the service factory", async () => {
+            const c = createIocContainer({
+                name: "calculator-container",
+                services: [
+                    {
+                        interface: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    },
+                    {
+                        interface: DIVIDER,
+                        load: () => divideNumbers,
+                    },
+                    {
+                        interface: ADDER,
+                        load: async () => addNumbers,
+                    },
+                    {
+                        interface: SUBTRACTOR,
+                        load: async () => subtractNumbers,
+                    },
+                    {
+                        interface: CALCULATOR,
+                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
+                        load: (c) => createCalculator(c),
+                    },
+                ],
+            });
+
+            const calculator = c.get(CALCULATOR);
+            expect(calculator.multiply(3, 4)).toBe(12);
+            expect(calculator.divide(12, 4)).toBe(3);
+            expect(await calculator.add(2, 3)).toBe(5);
+            expect(await calculator.subtract(2, 3)).toBe(-1);
+        });
     });
 
     describe("Container with parents", () => {
@@ -188,8 +224,8 @@ describe("IoC Container", () => {
                 name: "substraction",
                 services: [
                     {
-                        interface: SUBSTRACTER,
-                        load: async () => substractNumbers,
+                        interface: SUBTRACTOR,
+                        load: async () => subtractNumbers,
                     },
                 ],
             });
@@ -241,7 +277,7 @@ describe("IoC Container", () => {
 
             const [add2, substract2, multiply2, divide2] = await c.fetch(
                 ADDER,
-                SUBSTRACTER,
+                SUBTRACTOR,
                 MULTIPLIER,
                 DIVIDER,
             );
@@ -281,6 +317,63 @@ describe("IoC Container", () => {
             expect(add2!(2, 3)).toBe(5);
             expect(unknown2).toBeNull();
             expect(divide2!(12, 4)).toBe(3);
+        });
+
+        it("should pass the container context to the service factory", async () => {
+            const c4 = createTestContaier();
+            const c5 = createIocContainer({
+                name: "calculator",
+                extends: [c4],
+                services: [
+                    {
+                        interface: CALCULATOR,
+                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
+                        load: (c) => createCalculator(c),
+                    },
+                ],
+            });
+
+            const calculator = c5.get(CALCULATOR);
+            expect(calculator.multiply(3, 4)).toBe(12);
+            expect(calculator.divide(12, 4)).toBe(3);
+            expect(await calculator.add(2, 3)).toBe(5);
+            expect(await calculator.subtract(2, 3)).toBe(-1);
+        });
+
+        it("should throw at runtime when a dependency listed in dependencies is not registered", async () => {
+            const c = createIocContainer({
+                name: "calculator-container",
+                services: [
+                    {
+                        interface: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    },
+                    {
+                        interface: DIVIDER,
+                        load: () => divideNumbers,
+                    },
+                    {
+                        interface: ADDER,
+                        load: async () => addNumbers,
+                    },
+                    {
+                        interface: CALCULATOR,
+                        // SUBTRACTOR is not registered — this passes typecheck
+                        // because we bypass it with `as any`, but throws at runtime
+                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR] as any,
+                        load: (ctx: any) => createCalculator(ctx),
+                    },
+                ],
+            });
+
+            const calculator = c.get(CALCULATOR);
+            expect(calculator.multiply(3, 4)).toBe(12);
+            expect(calculator.divide(12, 4)).toBe(3);
+            await expect(calculator.add(2, 3)).resolves.toBe(5);
+            // SUBTRACTOR is missing — subtract() should throw at runtime
+            await expect(calculator.subtract(2, 3)).rejects.toThrow(
+                "[Asimo] Service not found: asimo.src.test.Subtractor",
+            );
         });
     });
 });

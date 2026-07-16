@@ -35,29 +35,58 @@ export interface AsyncIID<T, NS extends string = string> {
  */
 export type InterfaceId<T, NS extends string = string> = SyncIID<T, NS> | AsyncIID<T, NS>;
 
+/** A readonly array of interface IDs used in the `dependencies` property of a ServiceFactory. */
+export type ServiceDeps = InterfaceId<any, any>[];
+
 /**
- * Factory interface for creating services - will be called when a service is requested for the first time.
+ * Factory interface for creating services — called when a service is requested for the first time.
+ *
+ * `Deps` is inferred from the optional `dependencies` array literal. When present, `load`
+ * receives an `IoCContainer` typed with exactly those IIDs. When omitted, `Deps` defaults
+ * to `[]` and `load` receives `IoCContainer<never>` (no service accessible).
  */
-export interface ServiceFactory<IID extends InterfaceId<any, any>> {
-    interface: IID,
-    load(): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+export interface ServiceFactory<
+    IID extends InterfaceId<any, any>,
+    Deps extends ServiceDeps = []
+> {
+    interface: IID;
+    /** Optional list of interface IDs this service depends on — used to type the load context. */
+    dependencies?: Deps;
+    load(context: IoCContainer<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
 }
 
 /**
- * Validate that a service factory's `load` matches its interface's sync/async nature.
- * Resolves to `never` when mismatched (e.g. an async factory for a sync interface) so that
- * the call site receives a TS error attempting to assign the service to `never`.
+ * Branded error type shown in TS error messages when a `dependencies` entry
+ * is not registered in the container (or its parents). The generic carries the
+ * missing IID namespace(s) so the error message is actionable:
+ * "is not assignable to type 'ServiceDependencyNotRegistered<"ns">'"
  */
-export type ValidService<S> =
-    S extends { interface: SyncIID<any, any>; load: infer L }
-        ? L extends () => Promise<any>
-            ? never
-            : S
-        : S extends { interface: AsyncIID<any, any>; load: infer L }
-            ? L extends () => Promise<any>
-                ? S
-                : never
-            : S;
+export interface ServiceDependencyNotRegistered<MissingNS extends string = string> {
+    readonly __asimoErrorDependencyNotRegistered: `Declared dependency not registered in this container or its parents: "${MissingNS}"`;
+}
+
+/**
+ * Maps a service element to its typed ServiceFactory:
+ * - If the service declares `dependencies`, each listed dependency must be registered
+ *   in the container (or its parents) — otherwise resolves to
+ *   `ServiceDependencyNotRegistered<...>` (compile-time error with a descriptive message).
+ *   The `load` context is typed as `IoCContainer<Deps[number]>` (only the listed IIDs).
+ * - If no `dependencies` are declared, the `load` context is typed as the full
+ *   `IoCContainer<AllIIDs>`.
+ *
+ * Matching is structural (`{ interface; dependencies? }`) so mismatched `load` return types
+ * are caught by the reconstructed `ServiceFactory` rather than causing the extension to fail.
+ */
+export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
+    S extends { interface: infer IID extends InterfaceId<any, any>; dependencies?: infer Deps }
+        ? Deps extends ServiceDeps
+            ? [Deps[number]] extends [AllIIDs]
+                ? ServiceFactory<IID, Deps>
+                : ServiceDependencyNotRegistered<
+                    Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string
+                >
+            : ServiceFactory<IID, [AllIIDs]>
+        : S;
 
 /**
  * Asimo IoC Container that stores retrievable dependencies.
@@ -65,6 +94,8 @@ export type ValidService<S> =
  * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
  */
 export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<any, any>> {
+    /** Phantom field to make IIDs invariant (both co- and contravariant positions) */
+    readonly _iids?: (x: IIDs) => IIDs;
     /**
      * The container name - helps differentiating multiple contexts - must not contain any slash character ("/"))
      */
@@ -149,3 +180,11 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
 export interface Logger {
     log(message: string,...data: any[]): void;
 }
+
+/**
+ * Shorthand for `IoCContainer<typeof A | typeof B | ...>` where A, B, ... are InterfaceIds.
+ * @example
+ * // equivalent to IoCContainer<typeof MULTIPLIER | typeof DIVIDER>
+ * type C = Container<[typeof MULTIPLIER, typeof DIVIDER]>;
+ */
+export type Container<IIDs extends InterfaceId<any, any>[]> = IoCContainer<IIDs[number]>;

@@ -3,6 +3,7 @@ import {
     InterfaceId,
     InterfaceNamespace,
     IoCContainer,
+    ServiceDeps,
     ServiceFactory,
     SyncIID,
     ValidService,
@@ -34,20 +35,20 @@ export function asyncIID<T>(): <NS extends string>(ns: NS) => AsyncIID<T, NS> {
 type ContainerIIDs<C> = C extends IoCContainer<infer IIDs> ? IIDs : never;
 
 export function createIocContainer<
-    const Services extends ServiceFactory<InterfaceId<any, any>>[],
+    const Services extends readonly { interface: InterfaceId<any, any>; dependencies?: ServiceDeps }[],
     const Parents extends readonly IoCContainer<any>[] | null | undefined = undefined,
 >(params: {
     name: string;
     extends?: Parents;
-    services: [...{ [K in keyof Services]: ValidService<Services[K]> }];
+    services: [...{ [K in keyof Services]: ValidService<Services[K], Services[number]['interface'] | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
 }): IoCContainer<Services[number]['interface'] | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const parents = params.extends ?? null;
     const serviceMap = new Map<
         InterfaceNamespace,
-        { factory?: ServiceFactory<InterfaceId<any, any>>; instance?: any }
+{ factory?: { load: (ctx: IoCContainer<any>) => any; interface: InterfaceId<any, any> }; instance?: any }
     >();
     for (const service of params.services) {
-        serviceMap.set(service.interface.ns, { factory: service });
+        serviceMap.set((service as ServiceFactory<InterfaceId<any, any>, any>).interface.ns, { factory: service as any });
     }
 
     const path = `${(parents?.[0] as IoCContainer<any>)?.path || ""}/${params.name}`;
@@ -83,12 +84,12 @@ export function createIocContainer<
 
     return container as any;
 
-    function resolveEntry(entry: { factory?: ServiceFactory<InterfaceId<any, any>>; instance?: any }): any {
+    function resolveEntry(entry: { factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>; instance?: any }): any {
         if (!entry.instance) {
             if (!entry.factory) {
                 return null;
             }
-            entry.instance = entry.factory.load();
+            entry.instance = entry.factory.load(container);
         }
         return entry.instance;
     }

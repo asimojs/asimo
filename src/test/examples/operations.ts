@@ -3,7 +3,7 @@ export function addNumbers(a: number, b: number) {
     return a + b;
 }
 
-export function substractNumbers(a: number, b: number) {
+export function subtractNumbers(a: number, b: number) {
     return a - b;
 }
 
