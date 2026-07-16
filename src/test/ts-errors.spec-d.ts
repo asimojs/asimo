@@ -207,6 +207,5 @@ describe("TS Errors", () => {
 
         // @ts-expect-error - SUBTRACTOR is not part of the bundle provide
         c.fetch(SUBTRACTOR);
-
     });
 });

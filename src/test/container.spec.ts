@@ -464,6 +464,45 @@ describe("IoC Container", () => {
             expect(loadCount).toBe(1);
         });
 
+        it("should not trigger multiple loads when the same bundle is fetched concurrently", async () => {
+            let loadCount = 0;
+            const c = createContainer({
+                name: "concurrent-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        load: async () => {
+                            loadCount++;
+                            // Simulate a realistic async load (e.g. dynamic import)
+                            await new Promise((r) => setTimeout(r, 10));
+                            return createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    factory({
+                                        provide: SUBTRACTOR,
+                                        load: async () => subtractNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            const [add, subtract] = await Promise.all([
+                c.fetch(ADDER),
+                c.fetch(SUBTRACTOR),
+            ]);
+
+            expect(add(2, 3)).toBe(5);
+            expect(subtract(5, 3)).toBe(2);
+            expect(loadCount).toBe(1);
+        });
+
         it("should throw on circular bundle loading", async () => {
             const c = createContainer({
                 name: "circular-bundle",
