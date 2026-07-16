@@ -38,7 +38,8 @@
         "test:watch": "vitest",
         "test": "vitest run",
         "coverage": "vitest run --coverage --coverage.extension=.ts",
-        "prepublish": "pnpm build && vitest run"
+        "prepublish": "pnpm build && vitest run",
+        "pretty": "prettier"
     },
     "devDependencies": {
         "@vitest/coverage-v8": "4.1.10",

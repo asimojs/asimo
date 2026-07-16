@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createIocContainer } from "../asimo";
-import {
-    addNumbers,
-    multiplyNumbers,
-    divideNumbers,
-    subtractNumbers,
-} from "./examples/operations";
+import { createIocContainer, factory } from "../asimo";
+import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
 
@@ -24,10 +19,10 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "adder-container",
                 services: [
-                    {
-                        interface: ADDER,
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
+                    }),
                 ],
             });
             expect(context.name).toBe("adder-container");
@@ -39,10 +34,10 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "multiplier-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
             expect(context.name).toBe("multiplier-container");
@@ -54,14 +49,14 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "math-container",
                 services: [
-                    {
-                        interface: ADDER,
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
-                    {
-                        interface: MULTIPLIER,
+                    }),
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
 
@@ -69,9 +64,6 @@ describe("IoC Container", () => {
             const multiply = context.get(MULTIPLIER);
             expect(add(2, 3)).toBe(5);
             expect(multiply(2, 3)).toBe(6);
-
-            // This generate a TS error because DIVIDER is not part of the container services
-            // const x = context.get(DIVIDER);
 
             // fetch allows to retrieve services with sync and async factories
             const multiply2 = await context.fetch(MULTIPLIER);
@@ -88,18 +80,18 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "math-container",
                 services: [
-                    {
-                        interface: ADDER,
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
-                    {
-                        interface: MULTIPLIER,
+                    }),
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
-                    {
-                        interface: DIVIDER,
+                    }),
+                    factory({
+                        provide: DIVIDER,
                         load: () => divideNumbers,
-                    },
+                    }),
                 ],
             });
 
@@ -117,10 +109,10 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "math-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
 
@@ -135,10 +127,10 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "math-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
 
@@ -162,10 +154,10 @@ describe("IoC Container", () => {
             const context = createIocContainer({
                 name: "math-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
 
@@ -179,31 +171,31 @@ describe("IoC Container", () => {
             );
         });
 
-it("should pass the container context to the service factory", async () => {
+        it("should pass the container context to the service factory", async () => {
             const c = createIocContainer({
                 name: "calculator-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
-                    {
-                        interface: DIVIDER,
+                    }),
+                    factory({
+                        provide: DIVIDER,
                         load: () => divideNumbers,
-                    },
-                    {
-                        interface: ADDER,
+                    }),
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
-                    {
-                        interface: SUBTRACTOR,
+                    }),
+                    factory({
+                        provide: SUBTRACTOR,
                         load: async () => subtractNumbers,
-                    },
-                    {
-                        interface: CALCULATOR,
+                    }),
+                    factory({
+                        provide: CALCULATOR,
                         dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
                         load: (c) => createCalculator(c),
-                    },
+                    }),
                 ],
             });
 
@@ -223,39 +215,39 @@ it("should pass the container context to the service factory", async () => {
             const c1 = createIocContainer({
                 name: "substraction",
                 services: [
-                    {
-                        interface: SUBTRACTOR,
+                    factory({
+                        provide: SUBTRACTOR,
                         load: async () => subtractNumbers,
-                    },
+                    }),
                 ],
             });
             const c2 = createIocContainer({
                 name: "addition",
                 extends: [c1],
                 services: [
-                    {
-                        interface: ADDER,
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
+                    }),
                 ],
             });
             const c3 = createIocContainer({
                 name: "division",
                 services: [
-                    {
-                        interface: DIVIDER,
+                    factory({
+                        provide: DIVIDER,
                         load: () => divideNumbers,
-                    },
+                    }),
                 ],
             });
             const c4 = createIocContainer({
                 name: "multiplier",
                 extends: [c2, c3],
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
+                    }),
                 ],
             });
             return c4;
@@ -325,11 +317,11 @@ it("should pass the container context to the service factory", async () => {
                 name: "calculator",
                 extends: [c4],
                 services: [
-                    {
-                        interface: CALCULATOR,
+                    factory({
+                        provide: CALCULATOR,
                         dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
                         load: (c) => createCalculator(c),
-                    },
+                    }),
                 ],
             });
 
@@ -344,25 +336,25 @@ it("should pass the container context to the service factory", async () => {
             const c = createIocContainer({
                 name: "calculator-container",
                 services: [
-                    {
-                        interface: MULTIPLIER,
+                    factory({
+                        provide: MULTIPLIER,
                         load: () => multiplyNumbers,
-                    },
-                    {
-                        interface: DIVIDER,
+                    }),
+                    factory({
+                        provide: DIVIDER,
                         load: () => divideNumbers,
-                    },
-                    {
-                        interface: ADDER,
+                    }),
+                    factory({
+                        provide: ADDER,
                         load: async () => addNumbers,
-                    },
-                    {
-                        interface: CALCULATOR,
-                        // SUBTRACTOR is not registered — this passes typecheck
-                        // because we bypass it with `as any`, but throws at runtime
+                    }),
+                    // SUBTRACTOR is not registered — this passes typecheck
+                    // because we bypass it with `as any`, but throws at runtime
+                    factory({
+                        provide: CALCULATOR,
                         dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR] as any,
                         load: (ctx: any) => createCalculator(ctx),
-                    },
+                    }) as any,
                 ],
             });
 

@@ -39,16 +39,28 @@ export type InterfaceId<T, NS extends string = string> = SyncIID<T, NS> | AsyncI
 export type ServiceDeps = InterfaceId<any, any>[];
 
 /**
+ * Unique symbol brand marking objects produced by the `factory()` helper.
+ * `createIocContainer` only accepts services carrying this brand — inline object
+ * literals (missing the brand) are rejected at compile time.
+ */
+export const __asimoServiceFactory: unique symbol = Symbol("asimo.serviceFactory");
+
+/**
  * Factory interface for creating services — called when a service is requested for the first time.
  *
  * `Deps` is inferred from the optional `dependencies` array literal. When present, `load`
  * receives an `IoCContainer` typed with exactly those IIDs. When omitted, `Deps` defaults
  * to `[]` and `load` receives `IoCContainer<never>` (no service accessible).
+ *
+ * The `__asimoServiceFactory` brand ensures only objects originating from the `factory()`
+ * helper can be used as services in `createIocContainer`.
  */
 export interface ServiceFactory<
     IID extends InterfaceId<any, any>,
     Deps extends ServiceDeps = []
 > {
+    /** Brand — ensures this object was produced by `factory()`. */
+    readonly [__asimoServiceFactory]: true;
     interface: IID;
     /** Optional list of interface IDs this service depends on — used to type the load context. */
     dependencies?: Deps;
@@ -66,7 +78,8 @@ export interface ServiceDependencyNotRegistered<MissingNS extends string = strin
 }
 
 /**
- * Maps a service element to its typed ServiceFactory:
+ * Maps a service element (from `factory()`) to its typed ServiceFactory:
+ * - Preserves the `__asimoServiceFactory` brand so `createIocContainer` accepts it.
  * - If the service declares `dependencies`, each listed dependency must be registered
  *   in the container (or its parents) — otherwise resolves to
  *   `ServiceDependencyNotRegistered<...>` (compile-time error with a descriptive message).
@@ -74,8 +87,9 @@ export interface ServiceDependencyNotRegistered<MissingNS extends string = strin
  * - If no `dependencies` are declared, the `load` context is typed as the full
  *   `IoCContainer<AllIIDs>`.
  *
- * Matching is structural (`{ interface; dependencies? }`) so mismatched `load` return types
- * are caught by the reconstructed `ServiceFactory` rather than causing the extension to fail.
+ * Matching is structural (`{ __asimoServiceFactory; interface; dependencies? }`) so mismatches
+ * in `load` return types are caught by the reconstructed `ServiceFactory` rather than causing
+ * the extension to fail.
  */
 export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
     S extends { interface: infer IID extends InterfaceId<any, any>; dependencies?: infer Deps }
