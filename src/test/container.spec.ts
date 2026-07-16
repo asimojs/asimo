@@ -503,6 +503,121 @@ describe("IoC Container", () => {
             expect(loadCount).toBe(1);
         });
 
+        it("should not eagerly invoke sub-factories when a bundle is loaded", async () => {
+            let adderLoadCount = 0;
+            let subtractorLoadCount = 0;
+            const c = createContainer({
+                name: "lazy-factory-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        load: async () => {
+                            await new Promise((r) => setTimeout(r, 5));
+                            return createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => {
+                                            adderLoadCount++;
+                                            return addNumbers;
+                                        },
+                                    }),
+                                    factory({
+                                        provide: SUBTRACTOR,
+                                        load: async () => {
+                                            subtractorLoadCount++;
+                                            return subtractNumbers;
+                                        },
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            expect(adderLoadCount).toBe(0);
+            expect(subtractorLoadCount).toBe(0);
+
+            // Fetch only ADDER — SUBTRACTOR factory should NOT be called
+            const add = await c.fetch(ADDER);
+            expect(add(2, 3)).toBe(5);
+            expect(adderLoadCount).toBe(1);
+            expect(subtractorLoadCount).toBe(0);
+
+            // Fetch SUBTRACTOR later — now its factory is invoked
+            const subtract = await c.fetch(SUBTRACTOR);
+            expect(subtract(5, 3)).toBe(2);
+            expect(subtractorLoadCount).toBe(1);
+
+            // Second fetch of ADDER reuses cached instance, no new factory call
+            const add2 = await c.fetch(ADDER);
+            expect(add2(3, 4)).toBe(7);
+            expect(adderLoadCount).toBe(1);
+            expect(subtractorLoadCount).toBe(1);
+        });
+
+        it("should not eagerly load nested bundles", async () => {
+            let innerBundleLoadCount = 0, outerBundleLoadCount = 0;
+            const c = createContainer({
+                name: "lazy-bundle-test",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        load: async () => {
+                            outerBundleLoadCount++;
+                            await new Promise((r) => setTimeout(r, 5));
+                            return createContainer({
+                                name: "outer-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    bundle({
+                                        provide: [SUBTRACTOR],
+                                        load: async () => {
+                                            innerBundleLoadCount++;
+                                            await new Promise((r) => setTimeout(r, 5));
+                                            return createContainer({
+                                                name: "inner-sub",
+                                                services: [
+                                                    factory({
+                                                        provide: SUBTRACTOR,
+                                                        load: async () => subtractNumbers,
+                                                    }),
+                                                ],
+                                            });
+                                        },
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+            expect(outerBundleLoadCount).toBe(0);
+
+            // Fetch ADDER — outer bundle loads, inner bundle is registered but NOT loaded
+            const add = await c.fetch(ADDER);
+            expect(add(2, 3)).toBe(5);
+            expect(innerBundleLoadCount).toBe(0);
+            expect(outerBundleLoadCount).toBe(1);
+
+            // Fetch SUBTRACTOR — now the inner bundle is loaded on-demand
+            const subtract = await c.fetch(SUBTRACTOR);
+            expect(subtract(5, 3)).toBe(2);
+            expect(innerBundleLoadCount).toBe(1);
+
+            // Second fetch of SUBTRACTOR reuses cached instance, inner bundle not reloaded
+            const subtract2 = await c.fetch(SUBTRACTOR);
+            expect(subtract2(10, 4)).toBe(6);
+            expect(innerBundleLoadCount).toBe(1);
+
+            expect(outerBundleLoadCount).toBe(1);
+        });
+
         it("should throw on circular bundle loading", async () => {
             const c = createContainer({
                 name: "circular-bundle",
