@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createIocContainer, factory } from "../asimo";
+import { bundle, createIocContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -366,6 +366,225 @@ describe("IoC Container", () => {
             await expect(calculator.subtract(2, 3)).rejects.toThrow(
                 "[Asimo] Service not found: asimo.src.test.Subtractor",
             );
+        });
+    });
+
+    describe("Bundle loading", () => {
+        it("should load a bundle on-demand and resolve the requested service", async () => {
+            const c = createIocContainer({
+                name: "bundle-test",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        load: async () => createIocContainer({
+                            name: "bundle-sub",
+                            services: [
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                                factory({
+                                    provide: SUBTRACTOR,
+                                    load: async () => subtractNumbers,
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+
+            const add = await c.fetch(ADDER);
+            expect(add(2, 3)).toBe(5);
+
+            const subtract = await c.fetch(SUBTRACTOR);
+            expect(subtract(5, 3)).toBe(2);
+        });
+
+        it("should load a bundle via get() since async IIDs return Promise<T>", async () => {
+            const c = createIocContainer({
+                name: "bundle-get-test",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        dependencies: [],
+                        load: async () => createIocContainer({
+                            name: "bundle-sub",
+                            services: [
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                                factory({
+                                    provide: SUBTRACTOR,
+                                    load: async () => subtractNumbers,
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+
+            const addPromise = c.get(ADDER);
+            const subtractPromise = c.get(SUBTRACTOR);
+            const add = await addPromise;
+            const subtract = await subtractPromise;
+            expect(add(10, 5)).toBe(15);
+            expect(subtract(10, 5)).toBe(5);
+        });
+
+        it("should load a bundle only once (subsequent requests use cached instance)", async () => {
+            let loadCount = 0;
+            const c = createIocContainer({
+                name: "bundle-once-test",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () => {
+                            loadCount++;
+                            return createIocContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            const add1 = await c.fetch(ADDER);
+            expect(add1(1, 2)).toBe(3);
+            expect(loadCount).toBe(1);
+
+            const add2 = await c.fetch(ADDER);
+            expect(add2(3, 4)).toBe(7);
+            expect(loadCount).toBe(1);
+        });
+
+        it("should throw on circular bundle loading", async () => {
+            const c = createIocContainer({
+                name: "circular-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        dependencies: [],
+                        load: async (ctx: any) => {
+                            await ctx.fetch(ADDER);
+                            return createIocContainer({
+                                name: "bundle-sub",
+                                services: [],
+                            });
+                        },
+                    } as any),
+                ],
+            });
+
+            await expect(c.fetch(ADDER as any)).rejects.toThrow(
+                "Circular bundle loading detected",
+            );
+        });
+
+        it("should support nested bundles (bundle returning sub-bundles)", async () => {
+            const c = createIocContainer({
+                name: "nested-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        dependencies: [],
+                        load: async () => createIocContainer({
+                            name: "bundle-sub",
+                            services: [
+                                bundle({
+                                    provide: [SUBTRACTOR],
+                                    dependencies: [],
+                                    load: async () => createIocContainer({
+                                        name: "inner-sub",
+                                        services: [
+                                            factory({
+                                                provide: SUBTRACTOR,
+                                                load: async () => subtractNumbers,
+                                            }),
+                                        ],
+                                    }),
+                                }),
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+
+            const add = await c.fetch(ADDER);
+            expect(add(2, 3)).toBe(5);
+
+            const subtract = await c.fetch(SUBTRACTOR);
+            expect(subtract(5, 3)).toBe(2);
+        });
+
+        it("should not expose sub-container IIDs not in the bundle's provide at runtime", async () => {
+            const c = createIocContainer({
+                name: "bundle-scope-test",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () => createIocContainer({
+                            name: "sub",
+                            services: [
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                                // SUBTRACTOR is NOT in the outer bundle's provide
+                                factory({
+                                    provide: SUBTRACTOR,
+                                    load: async () => subtractNumbers,
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+
+            // ADDER is in provide — accessible
+            const add = await c.fetch(ADDER);
+            expect(add(2, 3)).toBe(5);
+
+            // SUBTRACTOR is NOT in provide — should throw at runtime
+            await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
+                "[Asimo] Service not found: asimo.src.test.Subtractor",
+            );
+        });
+
+        it("should throw if a bundle doesn't fully provide its declared services", async () => {
+            const c = createIocContainer({
+                name: "nested-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        dependencies: [],
+                        load: async () => createIocContainer({
+                            name: "bundle-sub",
+                            services: [
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
+                "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor",
+            );
+
         });
     });
 });

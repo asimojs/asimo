@@ -46,6 +46,11 @@ export type ServiceDeps = InterfaceId<any, any>[];
 export const __asimoServiceFactory: unique symbol = Symbol("asimo.serviceFactory");
 
 /**
+ * Unique symbol brand marking objects produced by the `bundle()` helper.
+ */
+export const __asimoServiceBundle: unique symbol = Symbol("asimo.serviceBundle");
+
+/**
  * Factory interface for creating services — called when a service is requested for the first time.
  *
  * `Deps` is inferred from the optional `dependencies` array literal. When present, `load`
@@ -65,6 +70,34 @@ export interface ServiceFactory<
     /** Optional list of interface IDs this service depends on — used to type the load context. */
     dependencies?: Deps;
     load(context: IoCContainer<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+}
+
+/**
+ * Bundle interface for lazily loading a group of related services.
+ *
+ * A bundle declares one or more `AsyncIID`s it provides via `provide`.
+ * When one of those IIDs is fetched, the bundle's `load()` is called (once),
+ * which returns an `IoCContainer` with the bundle's sub-factories and sub-bundles
+ * already registered. The parent container then extracts and merges those entries.
+ *
+ * Bundles support optional `dependencies` to type the `load` context.
+ * Bundles cannot be used with `SyncIID`s — only `AsyncIID`s.
+ */
+export interface ServiceBundle<
+    IID extends AsyncIID<any, any> = AsyncIID<any, any>,
+    Deps extends ServiceDeps = []
+> {
+    readonly [__asimoServiceBundle]: true;
+    /** IIDs this bundle provides — all must be `AsyncIID`. */
+    provide: IID[];
+    /** Optional dependencies used to type the `load` context. */
+    dependencies?: Deps;
+    /**
+     * Async factory invoked on first access to any provided IID.
+     * Returns an `IoCContainer` with the sub-factories and sub-bundles registered.
+     * Typically implemented as `createIocContainer({ name, services: [...] })`.
+     */
+    load(context: IoCContainer<Deps[number]>): Promise<IoCContainer<any>>;
 }
 
 /**
@@ -92,7 +125,7 @@ export interface ServiceDependencyNotRegistered<MissingNS extends string = strin
  * the extension to fail.
  */
 export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
-    S extends { interface: infer IID extends InterfaceId<any, any>; dependencies?: infer Deps }
+    S extends { readonly [__asimoServiceFactory]: true; interface: infer IID extends InterfaceId<any, any>; dependencies?: infer Deps }
         ? Deps extends ServiceDeps
             ? [Deps[number]] extends [AllIIDs]
                 ? ServiceFactory<IID, Deps>
@@ -100,7 +133,15 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
                     Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string
                 >
             : ServiceFactory<IID, [AllIIDs]>
-        : S;
+        : S extends { readonly [__asimoServiceBundle]: true; provide: infer IIDs extends AsyncIID<any, any>[]; dependencies?: infer Deps }
+            ? Deps extends ServiceDeps
+                ? [Deps[number]] extends [AllIIDs]
+                    ? ServiceBundle<IIDs[number], Deps>
+                    : ServiceDependencyNotRegistered<
+                        Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string
+                    >
+                : ServiceBundle<IIDs[number], []>
+            : S;
 
 /**
  * Asimo IoC Container that stores retrievable dependencies.

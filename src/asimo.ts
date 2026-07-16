@@ -3,16 +3,20 @@ import {
     InterfaceId,
     InterfaceNamespace,
     IoCContainer,
+    ServiceBundle,
     ServiceDeps,
     ServiceFactory,
     SyncIID,
     ValidService,
+    __asimoServiceBundle,
     __asimoServiceFactory,
 } from "./asimo.types";
 
 interface InternalContainer extends IoCContainer<any> {
     getOptional(...iids: InterfaceId<any>[]): any;
     fetchOptional(...iids: InterfaceId<any>[]): any;
+    /** Internal service map — used by bundles to copy sub-container entries into the parent. */
+    _serviceMap: Map<InterfaceNamespace, InternalEntry>;
 }
 
 /**
@@ -68,21 +72,78 @@ export function factory<
     } as any;
 }
 
+/**
+ * Helper for declaring a lazy-loading bundle of services. Similar to `factory()` but:
+ * - `provide` is an array of `AsyncIID`s (bundles cannot provide `SyncIID`s)
+ * - `load` is async and returns sub-factories and sub-bundles
+ * - The bundle is loaded on-demand when one of its provided IIDs is fetched
+ *
+ * @example
+ * bundle({
+ *     provide: [MULTIPLIER, DIVIDER],
+ *     load: async () => {
+ *         const mod = await import("./math-services");
+ *         return [mod.multiplierFactory, mod.dividerFactory];
+ *     },
+ * })
+ */
+export function bundle<
+    const IIDs extends AsyncIID<any, any>[],
+    const Deps extends ServiceDeps = [],
+>(params: {
+    /** Interface IDs provided by this bundle — all must be `AsyncIID`. */
+    provide: IIDs;
+    /** Optional dependencies used to type the `load` context. */
+    dependencies?: Deps;
+    /** Async factory invoked on first access to any provided IID. Returns an `IoCContainer` with sub-services registered. */
+    load(context: IoCContainer<Deps[number]>): Promise<IoCContainer<any>>;
+}): ServiceBundle<IIDs[number], Deps> {
+    return {
+        [__asimoServiceBundle]: true as const,
+        provide: params.provide,
+        dependencies: params.dependencies,
+        load: params.load,
+    } as any;
+}
+
+type ServiceEntry =
+    | { readonly [__asimoServiceFactory]: true; interface: InterfaceId<any, any>; dependencies?: ServiceDeps }
+    | { readonly [__asimoServiceBundle]: true; provide: AsyncIID<any, any>[]; dependencies?: ServiceDeps };
+
+type ServiceIID<S> =
+    S extends { readonly [__asimoServiceFactory]: true; interface: infer IID extends InterfaceId<any, any> } ? IID :
+    S extends { readonly [__asimoServiceBundle]: true; provide: infer IIDs extends InterfaceId<any, any>[] } ? IIDs[number] :
+    never;
+
+interface InternalEntry {
+    factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
+    bundle?: ServiceBundle;
+    instance?: any;
+}
+
 export function createIocContainer<
-    const Services extends readonly { readonly [__asimoServiceFactory]: true; interface: InterfaceId<any, any>; dependencies?: ServiceDeps }[],
+    const Services extends readonly ServiceEntry[],
     const Parents extends readonly IoCContainer<any>[] | null | undefined = undefined,
 >(params: {
     name: string;
     extends?: Parents;
-    services: [...{ [K in keyof Services]: ValidService<Services[K], Services[number]['interface'] | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
-}): IoCContainer<Services[number]['interface'] | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
+    services: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
+}): IoCContainer<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const parents = params.extends ?? null;
-    const serviceMap = new Map<
-        InterfaceNamespace,
-{ factory?: { load: (ctx: IoCContainer<any>) => any; interface: InterfaceId<any, any>; readonly [__asimoServiceFactory]: true }; instance?: any }
-    >();
+    const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
+    const loadingBundles = new Set<InterfaceNamespace>();
+    const bundleLoadPromises = new Map<InterfaceNamespace, Promise<void>>();
+
     for (const service of params.services) {
-        serviceMap.set((service as ServiceFactory<InterfaceId<any, any>, any>).interface.ns, { factory: service as any });
+        if (__asimoServiceFactory in service) {
+            const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
+            serviceMap.set(sf.interface.ns, { factory: sf });
+        } else if (__asimoServiceBundle in service) {
+            const sb = service as any as ServiceBundle;
+            for (const iid of sb.provide) {
+                serviceMap.set(iid.ns, { bundle: sb });
+            }
+        }
     }
 
     const path = `${(parents?.[0] as IoCContainer<any>)?.path || ""}/${params.name}`;
@@ -90,6 +151,7 @@ export function createIocContainer<
     const container: InternalContainer = {
         name: params.name,
         path,
+        _serviceMap: serviceMap,
         get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
                 return loadService(iids[0]);
@@ -118,14 +180,15 @@ export function createIocContainer<
 
     return container as any;
 
-    function resolveEntry(entry: { factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>; instance?: any }): any {
-        if (!entry.instance) {
-            if (!entry.factory) {
-                return null;
-            }
-            entry.instance = entry.factory.load(container);
+    function resolveEntry(entry: InternalEntry): any {
+        if (entry.instance) {
+            return entry.instance;
         }
-        return entry.instance;
+        if (entry.factory) {
+            entry.instance = entry.factory.load(container);
+            return entry.instance;
+        }
+        return null;
     }
 
     function loadService<T>(iid: InterfaceId<any>): any {
@@ -138,12 +201,86 @@ export function createIocContainer<
             }
             throw new Error(`[Asimo] Service not found: ${iid.ns}`);
         }
+
+        if (entry.bundle && !entry.instance && !entry.factory) {
+            return loadBundleAndResolve(entry, iid);
+        }
+
         return resolveEntry(entry)!;
+    }
+
+    async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
+        const bundle = entry.bundle!;
+        const bundleKey = bundle.provide[0]?.ns;
+
+        // If this bundle is already being loaded (concurrent access), wait and re-resolve
+        if (bundleKey && bundleLoadPromises.has(bundleKey)) {
+            const existingLoad = bundleLoadPromises.get(bundleKey)!;
+            await existingLoad;
+            const updatedEntry = serviceMap.get(iid.ns);
+            if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
+                throw new Error(
+                    `[Asimo] Bundle did not provide service: ${iid.ns}`,
+                );
+            }
+            return resolveEntry(updatedEntry)!;
+        }
+
+        // Check for circular: bundle's own load triggers re-entry
+        for (const providedIid of bundle.provide) {
+            if (loadingBundles.has(providedIid.ns)) {
+                throw new Error(
+                    `[Asimo] Circular bundle loading detected for: ${providedIid.ns}`,
+                );
+            }
+        }
+
+        for (const providedIid of bundle.provide) {
+            loadingBundles.add(providedIid.ns);
+        }
+
+        const loadPromise = (async () => {
+            const subContainer = await bundle.load(container as any);
+            const subMap = (subContainer as InternalContainer)._serviceMap;
+            const provideNs = new Set(bundle.provide.map(iid => iid.ns));
+            if (subMap) {
+                for (const [ns, subEntry] of subMap) {
+                    if (provideNs.has(ns)) {
+                        serviceMap.set(ns, subEntry);
+                    }
+                }
+            }
+        })();
+
+        if (bundleKey) {
+            bundleLoadPromises.set(bundleKey, loadPromise);
+        }
+
+        try {
+            await loadPromise;
+            const updatedEntry = serviceMap.get(iid.ns);
+            if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
+                throw new Error(
+                    `[Asimo] Bundle did not provide service: ${iid.ns}`,
+                );
+            }
+            return resolveEntry(updatedEntry)!;
+        } finally {
+            for (const providedIid of bundle.provide) {
+                loadingBundles.delete(providedIid.ns);
+            }
+            if (bundleKey) {
+                bundleLoadPromises.delete(bundleKey);
+            }
+        }
     }
 
     function getOptionalService<T>(iid: InterfaceId<any>): any {
         const entry = serviceMap.get(iid.ns);
         if (entry) {
+            if (entry.bundle && !entry.instance && !entry.factory) {
+                return null;
+            }
             return resolveEntry(entry);
         }
         return getParentService(iid);

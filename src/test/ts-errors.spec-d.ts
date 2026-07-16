@@ -1,7 +1,7 @@
 import { describe, it } from "vitest";
-import { createIocContainer, factory } from "../asimo";
+import { bundle, createIocContainer, factory } from "../asimo";
 import { addNumbers, divideNumbers, multiplyNumbers, subtractNumbers } from "./examples/operations";
-import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR } from "./examples/types";
+import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
 
 /**
@@ -133,5 +133,80 @@ describe("TS Errors", () => {
                 },
             ],
         });
+    });
+
+    it("should not allow a bundle with a SyncIID in provide", () => {
+        createIocContainer({
+            name: "test",
+            services: [
+                bundle({
+                    // @ts-expect-error - MULTIPLIER is SyncIID, bundle only accepts AsyncIID
+                    provide: [MULTIPLIER],
+                    load: async () => ({}) as any,
+                }),
+            ],
+        });
+    });
+
+    it("should not allow a bundle with unregistered dependencies", () => {
+        createIocContainer({
+            name: "test",
+            services: [
+                factory({
+                    provide: ADDER,
+                    load: async () => addNumbers,
+                }),
+                // @ts-expect-error - UNKNOWN is declared as a dependency but is not registered
+                bundle({
+                    provide: [ADDER],
+                    dependencies: [UNKNOWN],
+                    load: async (ctx) => ({}) as any,
+                }),
+            ],
+        });
+    });
+
+    it("should not allow fetching services not defined int the bundle provide", () => {
+        const c = createIocContainer({
+            name: "nested-bundle",
+            services: [
+                factory({
+                    provide: MULTIPLIER,
+                    load: () => multiplyNumbers,
+                }),
+                bundle({
+                    provide: [ADDER],
+                    dependencies: [],
+                    load: async () =>
+                        createIocContainer({
+                            name: "bundle-sub",
+                            services: [
+                                bundle({
+                                    provide: [SUBTRACTOR],
+                                    dependencies: [],
+                                    load: async () =>
+                                        createIocContainer({
+                                            name: "inner-sub",
+                                            services: [
+                                                factory({
+                                                    provide: SUBTRACTOR,
+                                                    load: async () => subtractNumbers,
+                                                }),
+                                            ],
+                                        }),
+                                }),
+                                factory({
+                                    provide: ADDER,
+                                    load: async () => addNumbers,
+                                }),
+                            ],
+                        }),
+                }),
+            ],
+        });
+
+        // @ts-expect-error - SUBTRACTOR is not part of the bundle provide
+        c.fetch(SUBTRACTOR);
+
     });
 });
