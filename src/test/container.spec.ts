@@ -968,4 +968,187 @@ describe("IoC Container", () => {
             expect(info.path).toBe("/parent/child");
         });
     });
+
+    describe("Dump", () => {
+        it("should return a string with service path, ns, and status", () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const output = c.dump();
+            expect(output).toBe("Asimo IoC Container: /test\n  /test: asimo.src.test.Multiplier - uninitialized");
+        });
+
+        it("should show loaded status after get()", () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            const output = c.dump();
+            expect(output).toContain("loaded");
+            expect(output).not.toContain("uninitialized");
+        });
+
+        it("should show bundle services as pending before fetch", async () => {
+            const c = createContainer({
+                name: "bundle-dump",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            const output = c.dump();
+            expect(output).toContain("pending");
+            expect(output).not.toContain("loaded");
+        });
+
+        it("should show bundle services as loaded after fetch", async () => {
+            const c = createContainer({
+                name: "bundle-dump",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            const output = c.dump();
+            expect(output).toContain("loaded");
+            expect(output).not.toContain("pending");
+        });
+
+        it("should include parent services with their path", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            expect(child.dump()).toEqual(`\
+Asimo IoC Container: /parent/child
+  /parent/child: asimo.src.test.Divider - uninitialized
+  /parent: asimo.src.test.Multiplier - uninitialized\
+`);
+            
+        });
+
+        it("should not include parent services shadowed by child", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const output = child.dump();
+            const lines = output.split('\n').filter(l => l.includes(MULTIPLIER.ns));
+            // Only one line for MULTIPLIER — the child's
+            expect(lines).toHaveLength(1);
+            expect(lines[0]).toContain("/parent/child");
+        });
+
+        it("should include grandparent services", () => {
+            const grandparent = createContainer({
+                name: "gp",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const parent = createContainer({
+                name: "p",
+                extends: [grandparent],
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "c",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => addNumbers,
+                    }),
+                ],
+            });
+
+            const output = child.dump();
+            expect(output).toContain("/gp: " + MULTIPLIER.ns);
+            expect(output).toContain("/gp/p: " + DIVIDER.ns);
+            expect(output).toContain("/gp/p/c: " + ADDER.ns);
+        });
+    });
 });

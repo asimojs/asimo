@@ -168,9 +168,10 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
      */
     readonly name: string;
     /**
-     * The parent container where dependencies will be retrieved if not found in the current container
+     * The parent containers where dependencies will be retrieved if not found in the current container.
+     * `null` for root containers.
      */
-    // readonly parents: IoCContainer<any>[] | null;
+    readonly parents: readonly IoCContainer<any>[] | null;
     /**
      * A unique path identifier created by concatenating the 'first parent' container's path 
      * with the current container's name. This allows to identify a container in a hierarchy of containers.
@@ -245,16 +246,12 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
      */
     inspect(): ServiceInspectInfo[];
     /**
-     * Define where logs should go - default = console
+     * Returns a human-readable string describing all services in this container
+     * and its ancestors, their locations, and their load status.
+     * @example
+     * console.log(container.dump());
      */
-    // logger: Logger | null;
-}
-
-/**
- * Object that will receive the logs (default: console)
- */
-export interface Logger {
-    log(message: string,...data: any[]): void;
+    dump(): string;
 }
 
 /**
