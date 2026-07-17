@@ -161,10 +161,10 @@ export function createContainer<
             return inspectAll();
         },
         dump(): string {
-            const entries = collectDumpEntries();
+            const all = inspectAll();
             const lines = [`Asimo IoC Container: ${container.path}`];
-            for (const e of entries) {
-                lines.push(`  ${e.path}: ${e.ns} - ${e.status}`);
+            for (const info of all) {
+                lines.push(`  ${info.path}: ${info.ns} - ${info.status}`);
             }
             return lines.join('\n');
         },
@@ -231,7 +231,7 @@ export function createContainer<
             return {
                 ns: iid.ns,
                 path: container.path,
-                loaded: !!entry.instance,
+                status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
             };
         }
         if (parents) {
@@ -251,7 +251,7 @@ export function createContainer<
             results.push({
                 ns,
                 path: container.path,
-                loaded: !!entry.instance,
+                status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
             });
         }
         if (parents) {
@@ -267,50 +267,6 @@ export function createContainer<
             }
         }
         return results;
-    }
-
-    interface DumpEntry {
-        ns: string;
-        path: string;
-        status: 'loaded' | 'uninitialized' | 'pending';
-    }
-
-    function dumpStatus(entry: InternalEntry): DumpEntry['status'] {
-        if (entry.instance) return 'loaded';
-        if (entry.bundle) return 'pending';
-        return 'uninitialized';
-    }
-
-    function addDumpEntries(
-        entries: DumpEntry[], seen: Set<string>,
-        map: Map<InterfaceNamespace, InternalEntry>, path: string,
-    ): void {
-        for (const [ns, entry] of map) {
-            if (!seen.has(ns)) {
-                seen.add(ns);
-                entries.push({ ns, path, status: dumpStatus(entry) });
-            }
-        }
-    }
-
-    function collectDumpEntries(): DumpEntry[] {
-        const result: DumpEntry[] = [];
-        const seen = new Set<string>();
-
-        addDumpEntries(result, seen, serviceMap, container.path);
-
-        // Walk parent chain to include non-shadowed services
-        function walkParents(parentsList: readonly IoCContainer<any>[] | null): void {
-            if (!parentsList) return;
-            for (const p of parentsList) {
-                const pc = p as InternalContainer;
-                addDumpEntries(result, seen, pc._serviceMap, p.path);
-                walkParents(p.parents);
-            }
-        }
-        walkParents(parents);
-
-        return result;
     }
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {

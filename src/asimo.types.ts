@@ -151,8 +151,8 @@ export interface ServiceInspectInfo {
     ns: InterfaceNamespace;
     /** The container path where this service is defined */
     path: string;
-    /** Whether the service instance has been created (factory already called) */
-    loaded: boolean;
+    /** The load status: 'loaded' = factory called, 'registered' = factory registered but not called, 'pending' = bundle not yet loaded */
+    status: 'loaded' | 'registered' | 'pending';
 }
 
 /**

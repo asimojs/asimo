@@ -767,7 +767,7 @@ describe("IoC Container", () => {
             expect(info).not.toBeNull();
             expect(info!.ns).toBe(MULTIPLIER.ns);
             expect(info!.path).toBe("/test");
-            expect(info!.loaded).toBe(false);
+            expect(info!.status).toBe('registered');
         });
 
         it("should mark a service as loaded after get()", () => {
@@ -781,9 +781,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            expect(c.inspect(MULTIPLIER)!.loaded).toBe(false);
+            expect(c.inspect(MULTIPLIER)!.status).toBe('registered');
             c.get(MULTIPLIER);
-            expect(c.inspect(MULTIPLIER)!.loaded).toBe(true);
+            expect(c.inspect(MULTIPLIER)!.status).toBe('loaded');
         });
 
         it("should mark an async service as loaded after fetch()", async () => {
@@ -797,9 +797,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            expect(c.inspect(ADDER)!.loaded).toBe(false);
+            expect(c.inspect(ADDER)!.status).toBe('registered');
             await c.fetch(ADDER);
-            expect(c.inspect(ADDER)!.loaded).toBe(true);
+            expect(c.inspect(ADDER)!.status).toBe('loaded');
         });
 
         it("should list all services via inspect()", () => {
@@ -819,8 +819,8 @@ describe("IoC Container", () => {
 
             const all = c.inspect();
             expect(all).toHaveLength(2);
-            expect(all.find((i) => i.ns === MULTIPLIER.ns)!.loaded).toBe(false);
-            expect(all.find((i) => i.ns === DIVIDER.ns)!.loaded).toBe(false);
+            expect(all.find((i) => i.ns === MULTIPLIER.ns)!.status).toBe('registered');
+            expect(all.find((i) => i.ns === DIVIDER.ns)!.status).toBe('registered');
         });
 
         it("should show a bundle-provided service as not loaded before fetch", async () => {
@@ -843,11 +843,11 @@ describe("IoC Container", () => {
                 ],
             });
 
-            // Before fetching, the service is still a bundle stub — not loaded
+            // Before fetching, the service is still a bundle stub — pending
             expect(c.inspect(ADDER)).toEqual({
                 ns: "asimo.src.test.Adder",
                 path: "/bundle-inspect",
-                loaded: false,
+                status: 'pending',
             });
         });
 
@@ -875,7 +875,7 @@ describe("IoC Container", () => {
             expect(c.inspect(ADDER)).toEqual({
                 ns: "asimo.src.test.Adder",
                 path: "/bundle-inspect-loaded",
-                loaded: true,
+                status: 'loaded',
             });
         });
 
@@ -982,7 +982,7 @@ describe("IoC Container", () => {
             });
 
             const output = c.dump();
-            expect(output).toBe("Asimo IoC Container: /test\n  /test: asimo.src.test.Multiplier - uninitialized");
+            expect(output).toBe("Asimo IoC Container: /test\n  /test: asimo.src.test.Multiplier - registered");
         });
 
         it("should show loaded status after get()", () => {
@@ -999,7 +999,7 @@ describe("IoC Container", () => {
             c.get(MULTIPLIER);
             const output = c.dump();
             expect(output).toContain("loaded");
-            expect(output).not.toContain("uninitialized");
+            expect(output).not.toContain("registered");
         });
 
         it("should show bundle services as pending before fetch", async () => {
@@ -1077,8 +1077,8 @@ describe("IoC Container", () => {
 
             expect(child.dump()).toEqual(`\
 Asimo IoC Container: /parent/child
-  /parent/child: asimo.src.test.Divider - uninitialized
-  /parent: asimo.src.test.Multiplier - uninitialized\
+  /parent/child: asimo.src.test.Divider - registered
+  /parent: asimo.src.test.Multiplier - registered\
 `);
             
         });
