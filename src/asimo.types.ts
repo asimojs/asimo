@@ -144,6 +144,18 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
             : S;
 
 /**
+ * Info returned by `container.inspect()` / `container.inspect(iid)`.
+ */
+export interface ServiceInspectInfo {
+    /** The IID namespace */
+    ns: InterfaceNamespace;
+    /** The container path where this service is defined */
+    path: string;
+    /** Whether the service instance has been created (factory already called) */
+    loaded: boolean;
+}
+
+/**
  * Asimo IoC Container that stores retrievable dependencies.
  *
  * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
@@ -223,6 +235,15 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
     fetchOptional<Args extends InterfaceId<any, any>[]>(
         ...iids: Args
     ): Promise<{ [K in keyof Args]: Args[K] extends InterfaceId<infer T, any> ? T : never | null }>;
+    /**
+     * Inspect a specific service — returns info about where it is defined and whether it is loaded.
+     * Returns `null` if the service is not found in this container or any ancestor.
+     */
+    inspect(iid: InterfaceId<any>): ServiceInspectInfo | null;
+    /**
+     * List all services defined in this container and its ancestors with their status.
+     */
+    inspect(): ServiceInspectInfo[];
     /**
      * Define where logs should go - default = console
      */

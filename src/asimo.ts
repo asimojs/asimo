@@ -6,6 +6,7 @@ import {
     ServiceBundle,
     ServiceDeps,
     ServiceFactory,
+    ServiceInspectInfo,
     SyncIID,
     ValidService,
     __asimoServiceBundle,
@@ -152,6 +153,12 @@ export function createContainer<
         name: params.name,
         path,
         _serviceMap: serviceMap,
+        inspect(iid?: InterfaceId<any>): any {
+            if (iid) {
+                return inspectService(iid);
+            }
+            return inspectAll();
+        },
         get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
                 return loadService(iids[0]);
@@ -207,6 +214,50 @@ export function createContainer<
         }
 
         return resolveEntry(entry)!;
+    }
+
+    function inspectService(iid: InterfaceId<any>): ServiceInspectInfo | null {
+        const entry = serviceMap.get(iid.ns);
+        if (entry) {
+            return {
+                ns: iid.ns,
+                path: container.path,
+                loaded: !!entry.instance,
+            };
+        }
+        if (parents) {
+            for (const parent of parents) {
+                const result = (parent as InternalContainer).inspect(iid);
+                if (result) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    function inspectAll(): ServiceInspectInfo[] {
+        const results: ServiceInspectInfo[] = [];
+        for (const [ns, entry] of serviceMap) {
+            results.push({
+                ns,
+                path: container.path,
+                loaded: !!entry.instance,
+            });
+        }
+        if (parents) {
+            const seen = new Set(serviceMap.keys());
+            for (const parent of parents) {
+                const parentResults = (parent as InternalContainer).inspect() as ServiceInspectInfo[];
+                for (const pr of parentResults) {
+                    if (!seen.has(pr.ns)) {
+                        results.push(pr);
+                        seen.add(pr.ns);
+                    }
+                }
+            }
+        }
+        return results;
     }
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {

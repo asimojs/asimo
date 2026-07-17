@@ -376,19 +376,20 @@ describe("IoC Container", () => {
                 services: [
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
-                        load: async () => createContainer({
-                            name: "bundle-sub",
-                            services: [
-                                factory({
-                                    provide: ADDER,
-                                    load: async () => addNumbers,
-                                }),
-                                factory({
-                                    provide: SUBTRACTOR,
-                                    load: async () => subtractNumbers,
-                                }),
-                            ],
-                        }),
+                        load: async () =>
+                            createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    factory({
+                                        provide: SUBTRACTOR,
+                                        load: async () => subtractNumbers,
+                                    }),
+                                ],
+                            }),
                     }),
                 ],
             });
@@ -407,19 +408,20 @@ describe("IoC Container", () => {
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createContainer({
-                            name: "bundle-sub",
-                            services: [
-                                factory({
-                                    provide: ADDER,
-                                    load: async () => addNumbers,
-                                }),
-                                factory({
-                                    provide: SUBTRACTOR,
-                                    load: async () => subtractNumbers,
-                                }),
-                            ],
-                        }),
+                        load: async () =>
+                            createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    factory({
+                                        provide: SUBTRACTOR,
+                                        load: async () => subtractNumbers,
+                                    }),
+                                ],
+                            }),
                     }),
                 ],
             });
@@ -493,10 +495,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const [add, subtract] = await Promise.all([
-                c.fetch(ADDER),
-                c.fetch(SUBTRACTOR),
-            ]);
+            const [add, subtract] = await Promise.all([c.fetch(ADDER), c.fetch(SUBTRACTOR)]);
 
             expect(add(2, 3)).toBe(5);
             expect(subtract(5, 3)).toBe(2);
@@ -559,7 +558,8 @@ describe("IoC Container", () => {
         });
 
         it("should not eagerly load nested bundles", async () => {
-            let innerBundleLoadCount = 0, outerBundleLoadCount = 0;
+            let innerBundleLoadCount = 0,
+                outerBundleLoadCount = 0;
             const c = createContainer({
                 name: "lazy-bundle-test",
                 services: [
@@ -636,9 +636,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            await expect(c.fetch(ADDER as any)).rejects.toThrow(
-                "Circular bundle loading detected",
-            );
+            await expect(c.fetch(ADDER as any)).rejects.toThrow("Circular bundle loading detected");
         });
 
         it("should support nested bundles (bundle returning sub-bundles)", async () => {
@@ -648,28 +646,30 @@ describe("IoC Container", () => {
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createContainer({
-                            name: "bundle-sub",
-                            services: [
-                                bundle({
-                                    provide: [SUBTRACTOR],
-                                    dependencies: [],
-                                    load: async () => createContainer({
-                                        name: "inner-sub",
-                                        services: [
-                                            factory({
-                                                provide: SUBTRACTOR,
-                                                load: async () => subtractNumbers,
+                        load: async () =>
+                            createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    bundle({
+                                        provide: [SUBTRACTOR],
+                                        dependencies: [],
+                                        load: async () =>
+                                            createContainer({
+                                                name: "inner-sub",
+                                                services: [
+                                                    factory({
+                                                        provide: SUBTRACTOR,
+                                                        load: async () => subtractNumbers,
+                                                    }),
+                                                ],
                                             }),
-                                        ],
                                     }),
-                                }),
-                                factory({
-                                    provide: ADDER,
-                                    load: async () => addNumbers,
-                                }),
-                            ],
-                        }),
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
                     }),
                 ],
             });
@@ -687,20 +687,21 @@ describe("IoC Container", () => {
                 services: [
                     bundle({
                         provide: [ADDER],
-                        load: async () => createContainer({
-                            name: "sub",
-                            services: [
-                                factory({
-                                    provide: ADDER,
-                                    load: async () => addNumbers,
-                                }),
-                                // SUBTRACTOR is NOT in the outer bundle's provide
-                                factory({
-                                    provide: SUBTRACTOR,
-                                    load: async () => subtractNumbers,
-                                }),
-                            ],
-                        }),
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    // SUBTRACTOR is NOT in the outer bundle's provide
+                                    factory({
+                                        provide: SUBTRACTOR,
+                                        load: async () => subtractNumbers,
+                                    }),
+                                ],
+                            }),
                     }),
                 ],
             });
@@ -722,15 +723,16 @@ describe("IoC Container", () => {
                     bundle({
                         provide: [ADDER, SUBTRACTOR],
                         dependencies: [],
-                        load: async () => createContainer({
-                            name: "bundle-sub",
-                            services: [
-                                factory({
-                                    provide: ADDER,
-                                    load: async () => addNumbers,
-                                }),
-                            ],
-                        }),
+                        load: async () =>
+                            createContainer({
+                                name: "bundle-sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
                     }),
                 ],
             });
@@ -738,7 +740,232 @@ describe("IoC Container", () => {
             await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
                 "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor",
             );
+        });
+    });
 
+    describe("Inspect", () => {
+        it("should return null for an unknown service", () => {
+            const c = createContainer({
+                name: "test",
+                services: [],
+            });
+            expect(c.inspect(MULTIPLIER)).toBeNull();
+        });
+
+        it("should return info for a registered service before loading", () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const info = c.inspect(MULTIPLIER);
+            expect(info).not.toBeNull();
+            expect(info!.ns).toBe(MULTIPLIER.ns);
+            expect(info!.path).toBe("/test");
+            expect(info!.loaded).toBe(false);
+        });
+
+        it("should mark a service as loaded after get()", () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            expect(c.inspect(MULTIPLIER)!.loaded).toBe(false);
+            c.get(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.loaded).toBe(true);
+        });
+
+        it("should mark an async service as loaded after fetch()", async () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => addNumbers,
+                    }),
+                ],
+            });
+
+            expect(c.inspect(ADDER)!.loaded).toBe(false);
+            await c.fetch(ADDER);
+            expect(c.inspect(ADDER)!.loaded).toBe(true);
+        });
+
+        it("should list all services via inspect()", () => {
+            const c = createContainer({
+                name: "test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            const all = c.inspect();
+            expect(all).toHaveLength(2);
+            expect(all.find((i) => i.ns === MULTIPLIER.ns)!.loaded).toBe(false);
+            expect(all.find((i) => i.ns === DIVIDER.ns)!.loaded).toBe(false);
+        });
+
+        it("should show a bundle-provided service as not loaded before fetch", async () => {
+            const c = createContainer({
+                name: "bundle-inspect",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            // Before fetching, the service is still a bundle stub — not loaded
+            expect(c.inspect(ADDER)).toEqual({
+                ns: "asimo.src.test.Adder",
+                path: "/bundle-inspect",
+                loaded: false,
+            });
+        });
+
+        it("should show a bundle-provided service as loaded after fetch", async () => {
+            const c = createContainer({
+                name: "bundle-inspect-loaded",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            expect(c.inspect(ADDER)).toEqual({
+                ns: "asimo.src.test.Adder",
+                path: "/bundle-inspect-loaded",
+                loaded: true,
+            });
+        });
+
+        it("should find services defined in parent containers", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            // Service defined in child
+            const dividerInfo = child.inspect(DIVIDER)!;
+            expect(dividerInfo.ns).toBe(DIVIDER.ns);
+            expect(dividerInfo.path).toBe("/parent/child");
+
+            // Service defined in parent — visible from child via parent traversal
+            const multiplierInfo = child.inspect(MULTIPLIER)!;
+            expect(multiplierInfo.ns).toBe(MULTIPLIER.ns);
+            expect(multiplierInfo.path).toBe("/parent");
+        });
+
+        it("should list all services including parent services via inspect()", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            const all = child.inspect();
+            const nsList = all.map((i) => i.ns);
+            expect(all).toHaveLength(2);
+            expect(nsList).toContain(MULTIPLIER.ns);
+            expect(nsList).toContain(DIVIDER.ns);
+        });
+
+        it("should prefer child service over parent when names overlap", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const info = child.inspect(MULTIPLIER)!;
+            // Child shadows parent — should show child's path
+            expect(info.path).toBe("/parent/child");
         });
     });
 });
