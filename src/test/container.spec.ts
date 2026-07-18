@@ -164,10 +164,10 @@ describe("IoC Container", () => {
             // Bypass type safety intentionally: runtime verifies the throw, typecheck
             // verification is covered by ts-errors.spec-d.ts
             expect(() => context.get(DIVIDER as any)).toThrow(
-                "[Asimo] Service not found: asimo.src.test.Divider",
+                "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
             );
             await expect(context.fetch(DIVIDER as any)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Divider",
+                "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
             );
         });
 
@@ -364,7 +364,7 @@ describe("IoC Container", () => {
             await expect(calculator.add(2, 3)).resolves.toBe(5);
             // SUBTRACTOR is missing — subtract() should throw at runtime
             await expect(calculator.subtract(2, 3)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Subtractor",
+                "[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container",
             );
         });
     });
@@ -636,7 +636,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            await expect(c.fetch(ADDER as any)).rejects.toThrow("Circular bundle loading detected");
+            await expect(c.fetch(ADDER as any)).rejects.toThrow(
+                "[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /circular-bundle",
+            );
         });
 
         it("should support nested bundles (bundle returning sub-bundles)", async () => {
@@ -712,7 +714,7 @@ describe("IoC Container", () => {
 
             // SUBTRACTOR is NOT in provide — should throw at runtime
             await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Subtractor",
+                "[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test",
             );
         });
 
@@ -738,7 +740,7 @@ describe("IoC Container", () => {
             });
 
             await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
-                "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor",
+                "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle",
             );
         });
     });

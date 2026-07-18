@@ -215,7 +215,7 @@ export function createContainer<
                 serviceMap.set(iid.ns, { instance: value });
                 return value;
             }
-            throw new Error(`[Asimo] Service not found: ${iid.ns}`);
+            throwError(`Service not found: ${iid.ns}`);
         }
 
         if (entry.bundle && !entry.instance && !entry.factory) {
@@ -269,6 +269,10 @@ export function createContainer<
         return results;
     }
 
+    function throwError(message: string): never {
+        throw new Error(`[Asimo] ${message} at ${container.path}`);
+    }
+
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         const bundle = entry.bundle!;
         const bundleKey = bundle.provide[0]?.ns;
@@ -279,9 +283,7 @@ export function createContainer<
             await existingLoad;
             const updatedEntry = serviceMap.get(iid.ns);
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
-                throw new Error(
-                    `[Asimo] Bundle did not provide service: ${iid.ns}`,
-                );
+                throwError(`Bundle did not provide service: ${iid.ns}`);
             }
             return resolveEntry(updatedEntry)!;
         }
@@ -289,9 +291,7 @@ export function createContainer<
         // Check for circular: bundle's own load triggers re-entry
         for (const providedIid of bundle.provide) {
             if (loadingBundles.has(providedIid.ns)) {
-                throw new Error(
-                    `[Asimo] Circular bundle loading detected for: ${providedIid.ns}`,
-                );
+                throwError(`Circular bundle loading detected for: ${providedIid.ns}`);
             }
         }
 
@@ -320,9 +320,7 @@ export function createContainer<
             await loadPromise;
             const updatedEntry = serviceMap.get(iid.ns);
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
-                throw new Error(
-                    `[Asimo] Bundle did not provide service: ${iid.ns}`,
-                );
+                throwError(`Bundle did not provide service: ${iid.ns}`);
             }
             return resolveEntry(updatedEntry)!;
         } finally {
