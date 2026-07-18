@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bundle, createContainer, factory } from "../asimo";
+import type { IoCContainer } from "../asimo.types";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -330,6 +331,107 @@ describe("IoC Container", () => {
             expect(calculator.divide(12, 4)).toBe(3);
             expect(await calculator.add(2, 3)).toBe(5);
             expect(await calculator.subtract(2, 3)).toBe(-1);
+        });
+
+        it("should expose null parents for a root container", () => {
+            const c = createContainer({
+                name: "root",
+                services: [],
+            });
+            expect(c.parents).toBeNull();
+        });
+
+        it("should expose the parent container when extends is used", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+            const child = createContainer({
+                name: "child",
+                extends: [parent as any],
+                services: [],
+            });
+            expect(child.parents).toHaveLength(1);
+            expect(child.parents![0].name).toBe("parent");
+        });
+
+        it("should expose multiple parents when extends has multiple containers", () => {
+            const p1 = createContainer({
+                name: "p1",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+            const p2 = createContainer({
+                name: "p2",
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+            const child = createContainer({
+                name: "child",
+                extends: [p1 as any, p2 as any],
+                services: [],
+            });
+            expect(child.parents).toHaveLength(2);
+            expect(child.parents![0].name).toBe("p1");
+            expect(child.parents![1].name).toBe("p2");
+        });
+
+        it("should expose only the immediate parent, not the grandparent", () => {
+            const grandparent = createContainer({
+                name: "gp",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+            const parent = createContainer({
+                name: "p",
+                extends: [grandparent as any],
+                services: [],
+            });
+            const child = createContainer({
+                name: "c",
+                extends: [parent as any],
+                services: [],
+            });
+            expect(child.parents).toHaveLength(1);
+            expect(child.parents![0].name).toBe("p");
+            expect(child.parents![0].parents![0].name).toBe("gp");
+        });
+
+        it("should be the same parents array reference passed to extends", () => {
+            const arr: IoCContainer<any>[] = [];
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+            arr.push(parent as any);
+            const child = createContainer({
+                name: "child",
+                extends: arr,
+                services: [],
+            });
+            expect(child.parents).toBe(arr);
         });
 
         it("should throw at runtime when a dependency listed in dependencies is not registered", async () => {
