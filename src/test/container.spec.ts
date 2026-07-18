@@ -845,6 +845,64 @@ describe("IoC Container", () => {
                 "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle",
             );
         });
+
+        it("should return null from getOptional for a bundle-provided service before loading", () => {
+            const c = createContainer({
+                name: "bundle-get-optional",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            expect(c.getOptional(ADDER)).toBeNull();
+        });
+
+        it("should throw when concurrent accesses to a bundle that doesn't fully provide its services", async () => {
+            const c = createContainer({
+                name: "concurrent-bundle-missing",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTOR],
+                        load: async () => {
+                            await new Promise((r) => setTimeout(r, 10));
+                            return createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            const [r1, r2] = await Promise.allSettled([
+                c.fetch(ADDER),
+                c.fetch(SUBTRACTOR as any),
+            ]);
+            expect(r1.status).toBe("fulfilled");
+            expect(r2.status).toBe("rejected");
+            if (r2.status === "rejected") {
+                expect(r2.reason.message).toContain(
+                    "Bundle did not provide service: asimo.src.test.Subtractor",
+                );
+            }
+        });
     });
 
     describe("Inspect", () => {
