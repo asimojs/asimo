@@ -160,7 +160,7 @@ describe("TS Errors", () => {
                 bundle({
                     provide: [ADDER],
                     dependencies: [UNKNOWN],
-                    load: async (ctx) => ({}) as any,
+                    load: async (_ctx) => ({}) as any,
                 }),
             ],
         });

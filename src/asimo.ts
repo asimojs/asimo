@@ -207,7 +207,7 @@ export function createContainer<
         return null;
     }
 
-    function loadService<T>(iid: InterfaceId<any>): any {
+    function loadService(iid: InterfaceId<any>): any {
         const entry = serviceMap.get(iid.ns);
         if (!entry) {
             const value = getParentService(iid);
@@ -333,7 +333,7 @@ export function createContainer<
         }
     }
 
-    function getOptionalService<T>(iid: InterfaceId<any>): any {
+    function getOptionalService(iid: InterfaceId<any>): any {
         const entry = serviceMap.get(iid.ns);
         if (entry) {
             if (entry.bundle && !entry.instance && !entry.factory) {
@@ -344,11 +344,11 @@ export function createContainer<
         return getParentService(iid);
     }
 
-    async function fetchOptionalService<T>(iid: InterfaceId<any>): Promise<any> {
+    async function fetchOptionalService(iid: InterfaceId<any>): Promise<any> {
         return getOptionalService(iid);
     }
 
-    function getParentService<T>(iid: InterfaceId<any>): any {
+    function getParentService(iid: InterfaceId<any>): any {
         if (parents) {
             for (const parent of parents) {
                 const parentEntry = (parent as InternalContainer).getOptional(iid);
