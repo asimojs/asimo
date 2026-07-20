@@ -45,6 +45,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@rolldown/binding-darwin-arm64": "1.1.5",
         "@vitest/coverage-v8": "4.1.10",
         "eslint": "^10.7.0",
         "rimraf": "6.1.3",
