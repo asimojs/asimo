@@ -7,7 +7,6 @@
     "typings": "dist/asimo.d.ts",
     "type": "module",
     "files": [
-        "src",
         "dist"
     ],
     "author": "Bertrand Laporte",
@@ -34,14 +33,15 @@
     ],
     "scripts": {
         "clean": "rimraf dist lib",
-        "build": "pnpm clean && tsc && vite build && cp -R lib/*.d.ts dist",
+        "build": "pnpm clean && vite build && tsc --emitDeclarationOnly && cp -R lib/*.d.ts dist",
         "test:watch": "vitest",
         "test": "vitest run",
         "coverage": "vitest run --coverage --coverage.extension=.ts",
         "lint": "eslint 'src/**/*.ts'",
         "lint:fix": "eslint 'src/**/*.ts' --fix",
         "prepublish": "pnpm lint && pnpm build && vitest run",
-        "pretty": "prettier"
+        "pretty": "prettier --check .",
+        "pretty:fix": "prettier --write ."
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
