@@ -26,7 +26,9 @@ interface InternalContainer extends IoCContainer<any> {
  * @returns
  */
 export function syncIID<T>(): <NS extends string>(ns: NS) => SyncIID<T, NS> {
-    return (ns) => ({ ns, sync: true } as any);
+    return function <NS extends string>(ns: NS): SyncIID<T, NS> {
+        return { ns, sync: true } as unknown as SyncIID<T, NS>;
+    };
 }
 
 /**
@@ -35,7 +37,9 @@ export function syncIID<T>(): <NS extends string>(ns: NS) => SyncIID<T, NS> {
  * @returns
  */
 export function asyncIID<T>(): <NS extends string>(ns: NS) => AsyncIID<T, NS> {
-    return (ns) => ({ ns, sync: false } as any);
+    return function <NS extends string>(ns: NS): AsyncIID<T, NS> {
+        return { ns, sync: false } as unknown as AsyncIID<T, NS>;
+    };
 }
 
 type ContainerIIDs<C> = C extends IoCContainer<infer IIDs> ? IIDs : never;
@@ -70,7 +74,7 @@ export function factory<
         interface: params.provide,
         dependencies: params.dependencies,
         load: params.load,
-    } as any;
+    } as ServiceFactory<IID, Deps>;
 }
 
 /**
@@ -104,7 +108,7 @@ export function bundle<
         provide: params.provide,
         dependencies: params.dependencies,
         load: params.load,
-    } as any;
+    } as ServiceBundle<IIDs[number], Deps>;
 }
 
 type ServiceEntry =
@@ -140,7 +144,7 @@ export function createContainer<
             const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
             serviceMap.set(sf.interface.ns, { factory: sf });
         } else if (__asimoServiceBundle in service) {
-            const sb = service as any as ServiceBundle;
+            const sb = service as unknown as ServiceBundle;
             for (const iid of sb.provide) {
                 serviceMap.set(iid.ns, { bundle: sb });
             }
@@ -194,7 +198,9 @@ export function createContainer<
         },
     };
 
-    return container as any;
+    return container as unknown as IoCContainer<
+        ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+    >;
 
     function resolveEntry(entry: InternalEntry): any {
         if (entry.instance) {
