@@ -20,6 +20,18 @@ interface InternalContainer extends IoCContainer<any> {
     _serviceMap: Map<InterfaceNamespace, InternalEntry>;
 }
 
+export class AsimoError extends Error {
+    readonly container: string;
+    readonly messagePrefix: string;
+
+    constructor(message: string, container: string) {
+        super(`[Asimo] ${message} at ${container}`);
+        this.container = container;
+        this.name = "AsimoError";
+        this.messagePrefix = "[Asimo] ";
+    }
+}
+
 /**
  * Create an interface token for values that can be retrieved synchronously
  * @param ns the interface namespace, e.g. "myapplication.services.Configuration"
@@ -276,7 +288,7 @@ export function createContainer<
     }
 
     function throwError(message: string): never {
-        throw new Error(`[Asimo] ${message} at ${container.path}`);
+        throw new AsimoError(message, container.path);
     }
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {

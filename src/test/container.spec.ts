@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bundle, createContainer, factory } from "../asimo";
+import { AsimoError, bundle, createContainer, factory } from "../asimo";
 import type { IoCContainer } from "../asimo.types";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
@@ -164,12 +164,20 @@ describe("IoC Container", () => {
 
             // Bypass type safety intentionally: runtime verifies the throw, typecheck
             // verification is covered by ts-errors.spec-d.ts
-            expect(() => context.get(DIVIDER as any)).toThrow(
-                "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
-            );
-            await expect(context.fetch(DIVIDER as any)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
-            );
+            {
+                let error: unknown;
+                try { context.get(DIVIDER as any); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/math-container");
+                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Divider at /math-container");
+            }
+            {
+                let error: unknown;
+                try { await context.fetch(DIVIDER as any); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/math-container");
+                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Divider at /math-container");
+            }
         });
 
         it("should pass the container context to the service factory", async () => {
@@ -465,9 +473,13 @@ describe("IoC Container", () => {
             expect(calculator.divide(12, 4)).toBe(3);
             await expect(calculator.add(2, 3)).resolves.toBe(5);
             // SUBTRACTOR is missing — subtract() should throw at runtime
-            await expect(calculator.subtract(2, 3)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container",
-            );
+            {
+                let error: unknown;
+                try { await calculator.subtract(2, 3); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/calculator-container");
+                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container");
+            }
         });
     });
 
@@ -738,9 +750,14 @@ describe("IoC Container", () => {
                 ],
             });
 
-            await expect(c.fetch(ADDER as any)).rejects.toThrow(
-                "[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /circular-bundle",
-            );
+            {
+                let error: unknown;
+                try { await c.fetch(ADDER as any); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/circular-bundle");
+                expect((error as AsimoError).messagePrefix).toBe("[Asimo] ");
+                expect((error as Error).message).toBe("[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /circular-bundle");
+            }
         });
 
         it("should support nested bundles (bundle returning sub-bundles)", async () => {
@@ -815,9 +832,13 @@ describe("IoC Container", () => {
             expect(add(2, 3)).toBe(5);
 
             // SUBTRACTOR is NOT in provide — should throw at runtime
-            await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
-                "[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test",
-            );
+            {
+                let error: unknown;
+                try { await c.fetch(SUBTRACTOR as any); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/bundle-scope-test");
+                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test");
+            }
         });
 
         it("should throw if a bundle doesn't fully provide its declared services", async () => {
@@ -841,9 +862,13 @@ describe("IoC Container", () => {
                 ],
             });
 
-            await expect(c.fetch(SUBTRACTOR as any)).rejects.toThrow(
-                "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle",
-            );
+            {
+                let error: unknown;
+                try { await c.fetch(SUBTRACTOR as any); } catch (e) { error = e; }
+                expect(error).toBeInstanceOf(AsimoError);
+                expect((error as AsimoError).container).toBe("/nested-bundle");
+                expect((error as Error).message).toBe("[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle");
+            }
         });
 
         it("should return null from getOptional for a bundle-provided service before loading", () => {
@@ -898,6 +923,8 @@ describe("IoC Container", () => {
             expect(r1.status).toBe("fulfilled");
             expect(r2.status).toBe("rejected");
             if (r2.status === "rejected") {
+                expect(r2.reason).toBeInstanceOf(AsimoError);
+                expect((r2.reason as AsimoError).container).toBe("/concurrent-bundle-missing");
                 expect(r2.reason.message).toContain(
                     "Bundle did not provide service: asimo.src.test.Subtractor",
                 );
