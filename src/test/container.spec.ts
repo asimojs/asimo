@@ -10,7 +10,6 @@ describe("IoC Container", () => {
         it("should create an empty container with a name and services", () => {
             const context = createContainer({
                 name: "mycontainer",
-                services: [],
             });
 
             expect(context.name).toBe("mycontainer");
@@ -164,17 +163,29 @@ describe("IoC Container", () => {
             // verification is covered by ts-errors.spec-d.ts
             {
                 let error: unknown;
-                try { context.get(DIVIDER as any); } catch (e) { error = e; }
+                try {
+                    context.get(DIVIDER as any);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/math-container");
-                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Divider at /math-container");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
+                );
             }
             {
                 let error: unknown;
-                try { await context.fetch(DIVIDER as any); } catch (e) { error = e; }
+                try {
+                    await context.fetch(DIVIDER as any);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/math-container");
-                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Divider at /math-container");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Service not found: asimo.src.test.Divider at /math-container",
+                );
             }
         });
 
@@ -265,6 +276,38 @@ describe("IoC Container", () => {
 
             // c4 -> c2 -> c1, c3 (path follows the first parent chain: c1/c2/c4)
             expect(c.path).toBe("/substraction/addition/multiplier");
+        });
+
+        it("should allow a container to be defined with no services", async () => {
+            // c3 -> c1
+            //    -> c2
+
+            const c1 = createContainer({
+                name: "substraction",
+                services: [
+                    factory({
+                        provide: SUBTRACTOR,
+                        load: async () => subtractNumbers,
+                    }),
+                ],
+            });
+            const c2 = createContainer({
+                name: "addition",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => addNumbers,
+                    }),
+                ],
+            });
+            const c3 = createContainer({
+                name: "group",
+                extends: [c1, c2],
+            });
+
+            const [add, substract] = await c3.fetch(ADDER, SUBTRACTOR);
+            expect(add(2, 3)).toBe(5);
+            expect(substract(2, 3)).toBe(-1);
         });
 
         it("should retrieve all dependencies", async () => {
@@ -473,10 +516,16 @@ describe("IoC Container", () => {
             // SUBTRACTOR is missing — subtract() should throw at runtime
             {
                 let error: unknown;
-                try { await calculator.subtract(2, 3); } catch (e) { error = e; }
+                try {
+                    await calculator.subtract(2, 3);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/calculator-container");
-                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container",
+                );
             }
         });
     });
@@ -747,11 +796,17 @@ describe("IoC Container", () => {
 
             {
                 let error: unknown;
-                try { await c.fetch(ADDER as any); } catch (e) { error = e; }
+                try {
+                    await c.fetch(ADDER as any);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/circular-bundle");
                 expect((error as AsimoError).messagePrefix).toBe("[Asimo] ");
-                expect((error as Error).message).toBe("[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /circular-bundle");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /circular-bundle",
+                );
             }
         });
 
@@ -829,10 +884,16 @@ describe("IoC Container", () => {
             // SUBTRACTOR is NOT in provide — should throw at runtime
             {
                 let error: unknown;
-                try { await c.fetch(SUBTRACTOR as any); } catch (e) { error = e; }
+                try {
+                    await c.fetch(SUBTRACTOR as any);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/bundle-scope-test");
-                expect((error as Error).message).toBe("[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test",
+                );
             }
         });
 
@@ -859,10 +920,16 @@ describe("IoC Container", () => {
 
             {
                 let error: unknown;
-                try { await c.fetch(SUBTRACTOR as any); } catch (e) { error = e; }
+                try {
+                    await c.fetch(SUBTRACTOR as any);
+                } catch (e) {
+                    error = e;
+                }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/nested-bundle");
-                expect((error as Error).message).toBe("[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle");
+                expect((error as Error).message).toBe(
+                    "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle",
+                );
             }
         });
 
@@ -911,10 +978,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const [r1, r2] = await Promise.allSettled([
-                c.fetch(ADDER),
-                c.fetch(SUBTRACTOR as any),
-            ]);
+            const [r1, r2] = await Promise.allSettled([c.fetch(ADDER), c.fetch(SUBTRACTOR as any)]);
             expect(r1.status).toBe("fulfilled");
             expect(r2.status).toBe("rejected");
             if (r2.status === "rejected") {
@@ -951,7 +1015,7 @@ describe("IoC Container", () => {
             expect(info).not.toBeNull();
             expect(info!.ns).toBe(MULTIPLIER.ns);
             expect(info!.path).toBe("/test");
-            expect(info!.status).toBe('registered');
+            expect(info!.status).toBe("registered");
         });
 
         it("should mark a service as loaded after get()", () => {
@@ -965,9 +1029,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            expect(c.inspect(MULTIPLIER)!.status).toBe('registered');
+            expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
             c.get(MULTIPLIER);
-            expect(c.inspect(MULTIPLIER)!.status).toBe('loaded');
+            expect(c.inspect(MULTIPLIER)!.status).toBe("loaded");
         });
 
         it("should mark an async service as loaded after fetch()", async () => {
@@ -981,9 +1045,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            expect(c.inspect(ADDER)!.status).toBe('registered');
+            expect(c.inspect(ADDER)!.status).toBe("registered");
             await c.fetch(ADDER);
-            expect(c.inspect(ADDER)!.status).toBe('loaded');
+            expect(c.inspect(ADDER)!.status).toBe("loaded");
         });
 
         it("should list all services via inspect()", () => {
@@ -1003,8 +1067,8 @@ describe("IoC Container", () => {
 
             const all = c.inspect();
             expect(all).toHaveLength(2);
-            expect(all.find((i) => i.ns === MULTIPLIER.ns)!.status).toBe('registered');
-            expect(all.find((i) => i.ns === DIVIDER.ns)!.status).toBe('registered');
+            expect(all.find((i) => i.ns === MULTIPLIER.ns)!.status).toBe("registered");
+            expect(all.find((i) => i.ns === DIVIDER.ns)!.status).toBe("registered");
         });
 
         it("should show a bundle-provided service as not loaded before fetch", async () => {
@@ -1031,7 +1095,7 @@ describe("IoC Container", () => {
             expect(c.inspect(ADDER)).toEqual({
                 ns: "asimo.src.test.Adder",
                 path: "/bundle-inspect",
-                status: 'pending',
+                status: "pending",
             });
         });
 
@@ -1059,7 +1123,7 @@ describe("IoC Container", () => {
             expect(c.inspect(ADDER)).toEqual({
                 ns: "asimo.src.test.Adder",
                 path: "/bundle-inspect-loaded",
-                status: 'loaded',
+                status: "loaded",
             });
         });
 
@@ -1166,7 +1230,9 @@ describe("IoC Container", () => {
             });
 
             const output = c.dump();
-            expect(output).toBe("Asimo IoC Container: /test\n  /test: asimo.src.test.Multiplier - registered");
+            expect(output).toBe(
+                "Asimo IoC Container: /test\n  /test: asimo.src.test.Multiplier - registered",
+            );
         });
 
         it("should show loaded status after get()", () => {
@@ -1264,7 +1330,6 @@ Asimo IoC Container: /parent/child
   /parent/child: asimo.src.test.Divider - registered
   /parent: asimo.src.test.Multiplier - registered\
 `);
-            
         });
 
         it("should not include parent services shadowed by child", () => {
@@ -1290,7 +1355,7 @@ Asimo IoC Container: /parent/child
             });
 
             const output = child.dump();
-            const lines = output.split('\n').filter(l => l.includes(MULTIPLIER.ns));
+            const lines = output.split("\n").filter((l) => l.includes(MULTIPLIER.ns));
             // Only one line for MULTIPLIER — the child's
             expect(lines).toHaveLength(1);
             expect(lines[0]).toContain("/parent/child");

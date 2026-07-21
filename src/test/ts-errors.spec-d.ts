@@ -62,23 +62,47 @@ describe("TS Errors", () => {
     });
 
     it("should not allow retrieving AsyncIID services through get", async () => {
-            const context = createContainer({
-                name: "math-container",
-                services: [
-                    factory({
-                        provide: ADDER,
-                        load: async () => addNumbers,
-                    }),
-                    factory({
-                        provide: MULTIPLIER,
-                        load: () => multiplyNumbers,
-                    }),
-                ],
-            });
-
-            // @ts-expect-error - ADDER is an AsyncIID and cannot be retrieved through get()
-            const addPromise = context.get(ADDER);
+        const context = createContainer({
+            name: "math-container",
+            services: [
+                factory({
+                    provide: ADDER,
+                    load: async () => addNumbers,
+                }),
+                factory({
+                    provide: MULTIPLIER,
+                    load: () => multiplyNumbers,
+                }),
+            ],
         });
+
+        // @ts-expect-error - ADDER is an AsyncIID and cannot be retrieved through get()
+        const addPromise = context.get(ADDER);
+    });
+
+    it("should not allow retrieving unspecified factory dependencies", async () => {
+        const context = createContainer({
+            name: "math-container",
+            services: [
+                factory({
+                    provide: DIVIDER,
+                    load: () => divideNumbers,
+                }),
+                factory({
+                    provide: MULTIPLIER,
+                    load: (c) => {
+                         // @ts-expect-error - DIVIDER is not listed as a dependency of MULTIPLIER, so it cannot be retrieved through get()
+                        c.get(DIVIDER);
+                        return multiplyNumbers;
+                    },
+                }),
+            ],
+        });
+
+        // @ts-expect-error - ADDER is an AsyncIID and cannot be retrieved through get()
+        const addPromise = context.get(ADDER);
+    });
+
 
     it("should not allow a service to declare dependencies that are not registered in the container", () => {
         createContainer({

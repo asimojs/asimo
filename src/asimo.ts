@@ -144,14 +144,15 @@ export function createContainer<
 >(params: {
     name: string;
     extends?: Parents;
-    services: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
+    services?: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
 }): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const parents = params.extends ?? null;
+    const services = params.services ?? [];
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
     const loadingBundles = new Set<InterfaceNamespace>();
     const bundleLoadPromises = new Map<InterfaceNamespace, Promise<void>>();
 
-    for (const service of params.services) {
+    for (const service of services) {
         if (__asimoServiceFactory in service) {
             const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
             serviceMap.set(sf.interface.ns, { factory: sf });
