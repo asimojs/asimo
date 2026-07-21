@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AsimoError, bundle, createContainer, factory } from "../asimo";
-import type { IoCContainer } from "../asimo.types";
+import type { Container } from "../asimo.types";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -421,7 +421,7 @@ describe("IoC Container", () => {
         });
 
         it("should be the same parents array reference passed to extends", () => {
-            const arr: IoCContainer<any>[] = [];
+            const arr: Container<any>[] = [];
             const parent = createContainer({
                 name: "parent",
                 services: [

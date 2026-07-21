@@ -54,8 +54,8 @@ export const __asimoServiceBundle: unique symbol = Symbol("asimo.serviceBundle")
  * Factory interface for creating services — called when a service is requested for the first time.
  *
  * `Deps` is inferred from the optional `dependencies` array literal. When present, `load`
- * receives an `IoCContainer` typed with exactly those IIDs. When omitted, `Deps` defaults
- * to `[]` and `load` receives `IoCContainer<never>` (no service accessible).
+ * receives an `Container` typed with exactly those IIDs. When omitted, `Deps` defaults
+ * to `[]` and `load` receives `Container<never>` (no service accessible).
  *
  * The `__asimoServiceFactory` brand ensures only objects originating from the `factory()`
  * helper can be used as services in `createIocContainer`.
@@ -69,7 +69,7 @@ export interface ServiceFactory<
     interface: IID;
     /** Optional list of interface IDs this service depends on — used to type the load context. */
     dependencies?: Deps;
-    load(context: IoCContainer<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
 }
 
 /**
@@ -77,7 +77,7 @@ export interface ServiceFactory<
  *
  * A bundle declares one or more `AsyncIID`s it provides via `provide`.
  * When one of those IIDs is fetched, the bundle's `load()` is called (once),
- * which returns an `IoCContainer` with the bundle's sub-factories and sub-bundles
+ * which returns an `Container` with the bundle's sub-factories and sub-bundles
  * already registered. The parent container then extracts and merges those entries.
  *
  * Bundles support optional `dependencies` to type the `load` context.
@@ -94,10 +94,10 @@ export interface ServiceBundle<
     dependencies?: Deps;
     /**
      * Async factory invoked on first access to any provided IID.
-     * Returns an `IoCContainer` with the sub-factories and sub-bundles registered.
+     * Returns an `Container` with the sub-factories and sub-bundles registered.
      * Typically implemented as `createIocContainer({ name, services: [...] })`.
      */
-    load(context: IoCContainer<Deps[number]>): Promise<IoCContainer<any>>;
+    load(context: Container<Deps[number]>): Promise<Container<any>>;
 }
 
 /**
@@ -116,9 +116,9 @@ export interface ServiceDependencyNotRegistered<MissingNS extends string = strin
  * - If the service declares `dependencies`, each listed dependency must be registered
  *   in the container (or its parents) — otherwise resolves to
  *   `ServiceDependencyNotRegistered<...>` (compile-time error with a descriptive message).
- *   The `load` context is typed as `IoCContainer<Deps[number]>` (only the listed IIDs).
+ *   The `load` context is typed as `Container<Deps[number]>` (only the listed IIDs).
  * - If no `dependencies` are declared, the `load` context is typed as the full
- *   `IoCContainer<AllIIDs>`.
+ *   `Container<AllIIDs>`.
  *
  * Matching is structural (`{ __asimoServiceFactory; interface; dependencies? }`) so mismatches
  * in `load` return types are caught by the reconstructed `ServiceFactory` rather than causing
@@ -160,7 +160,7 @@ export interface ServiceInspectInfo {
  *
  * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
  */
-export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<any, any>> {
+export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any, any>> {
     /** Phantom field to make IIDs invariant (both co- and contravariant positions) */
     readonly _iids?: (x: IIDs) => IIDs;
     /**
@@ -171,7 +171,7 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
      * The parent containers where dependencies will be retrieved if not found in the current container.
      * `null` for root containers.
      */
-    readonly parents: readonly IoCContainer<any>[] | null;
+    readonly parents: readonly Container<any>[] | null;
     /**
      * A unique path identifier created by concatenating the 'first parent' container's path 
      * with the current container's name. This allows to identify a container in a hierarchy of containers.
@@ -253,10 +253,4 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
     dump(): string;
 }
 
-/**
- * Shorthand for `IoCContainer<typeof A | typeof B | ...>` where A, B, ... are InterfaceIds.
- * @example
- * // equivalent to IoCContainer<typeof MULTIPLIER | typeof DIVIDER>
- * type C = Container<[typeof MULTIPLIER, typeof DIVIDER]>;
- */
-export type Container<IIDs extends InterfaceId<any, any>[]> = IoCContainer<IIDs[number]>;
+

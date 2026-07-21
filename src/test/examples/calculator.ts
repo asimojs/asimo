@@ -2,7 +2,7 @@ import { Container } from "../../asimo.types";
 import { ADDER, DIVIDER, MULTIPLIER, SUBTRACTOR } from "./types";
 
 export function createCalculator(
-    context: Container<[typeof MULTIPLIER, typeof DIVIDER, typeof ADDER, typeof SUBTRACTOR]>,
+    context: Container<typeof MULTIPLIER | typeof DIVIDER | typeof ADDER | typeof SUBTRACTOR>,
 ) {
     const [multiplier, divider] = context.get(MULTIPLIER, DIVIDER);
 

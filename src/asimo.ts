@@ -2,7 +2,7 @@ import {
     AsyncIID,
     InterfaceId,
     InterfaceNamespace,
-    IoCContainer,
+    Container,
     ServiceBundle,
     ServiceDeps,
     ServiceFactory,
@@ -13,7 +13,7 @@ import {
     __asimoServiceFactory,
 } from "./asimo.types";
 
-interface InternalContainer extends IoCContainer<any> {
+interface InternalContainer extends Container<any> {
     getOptional(...iids: InterfaceId<any>[]): any;
     fetchOptional(...iids: InterfaceId<any>[]): any;
     /** Internal service map — used by bundles to copy sub-container entries into the parent. */
@@ -54,20 +54,20 @@ export function asyncIID<T>(): <NS extends string>(ns: NS) => AsyncIID<T, NS> {
     };
 }
 
-type ContainerIIDs<C> = C extends IoCContainer<infer IIDs> ? IIDs : never;
+type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
 
 /**
  * Helper for declaring a service with explicit dependencies. Inference flows directly
  * from `dependencies` to `load`'s context, so the latter receives an
- * `IoCContainer<Deps[number]>` typed with exactly the listed IIDs (no `any` widening).
- * The invariant phantom on `IoCContainer` then catches mismatches between the declared
+ * `Container<Deps[number]>` typed with exactly the listed IIDs (no `any` widening).
+ * The invariant phantom on `Container` then catches mismatches between the declared
  * dependencies and what `load` actually uses — at compile time, with no manual annotation.
  *
  * @example
  * factory({
  *     provide: CALCULATOR,
  *     dependencies: [MULTIPLIER, ADDER, SUBTRACTOR],
- *     load: (c) => createCalculator(c), // 'c' is IoCContainer<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTOR>
+ *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTOR>
  * })
  */
 export function factory<
@@ -76,10 +76,10 @@ export function factory<
 >(params: {
     /** Interface identifier provided by this service. */
     provide: IID;
-    /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `IoCContainer<never>` (no accessible services). */
+    /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `Container<never>` (no accessible services). */
     dependencies?: Deps;
     /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
-    load(context: IoCContainer<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
 }): ServiceFactory<IID, Deps> {
     return {
         [__asimoServiceFactory]: true as const,
@@ -112,8 +112,8 @@ export function bundle<
     provide: IIDs;
     /** Optional dependencies used to type the `load` context. */
     dependencies?: Deps;
-    /** Async factory invoked on first access to any provided IID. Returns an `IoCContainer` with sub-services registered. */
-    load(context: IoCContainer<Deps[number]>): Promise<IoCContainer<any>>;
+    /** Async factory invoked on first access to any provided IID. Returns an `Container` with sub-services registered. */
+    load(context: Container<Deps[number]>): Promise<Container<any>>;
 }): ServiceBundle<IIDs[number], Deps> {
     return {
         [__asimoServiceBundle]: true as const,
@@ -140,12 +140,12 @@ interface InternalEntry {
 
 export function createContainer<
     const Services extends readonly ServiceEntry[],
-    const Parents extends readonly IoCContainer<any>[] | null | undefined = undefined,
+    const Parents extends readonly Container<any>[] | null | undefined = undefined,
 >(params: {
     name: string;
     extends?: Parents;
     services: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
-}): IoCContainer<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
+}): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const parents = params.extends ?? null;
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
     const loadingBundles = new Set<InterfaceNamespace>();
@@ -163,12 +163,12 @@ export function createContainer<
         }
     }
 
-    const path = `${(parents?.[0] as IoCContainer<any>)?.path || ""}/${params.name}`;
+    const path = `${(parents?.[0] as Container<any>)?.path || ""}/${params.name}`;
 
     const container: InternalContainer = {
         name: params.name,
         path,
-        parents: parents as readonly IoCContainer<any>[] | null,
+        parents: parents as readonly Container<any>[] | null,
         _serviceMap: serviceMap,
         inspect(iid?: InterfaceId<any>): any {
             if (iid) {
@@ -210,7 +210,7 @@ export function createContainer<
         },
     };
 
-    return container as unknown as IoCContainer<
+    return container as unknown as Container<
         ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
     >;
 
