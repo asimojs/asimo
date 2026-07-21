@@ -117,8 +117,8 @@ export interface ServiceDependencyNotRegistered<MissingNS extends string = strin
  *   in the container (or its parents) — otherwise resolves to
  *   `ServiceDependencyNotRegistered<...>` (compile-time error with a descriptive message).
  *   The `load` context is typed as `Container<Deps[number]>` (only the listed IIDs).
- * - If no `dependencies` are declared, the `load` context is typed as the full
- *   `Container<AllIIDs>`.
+ * - If no `dependencies` are declared, the `load` context is typed as
+ *   `Container<never>` (no services accessible — dependencies must be listed explicitly).
  *
  * Matching is structural (`{ __asimoServiceFactory; interface; dependencies? }`) so mismatches
  * in `load` return types are caught by the reconstructed `ServiceFactory` rather than causing
@@ -132,7 +132,7 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
                 : ServiceDependencyNotRegistered<
                     Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string
                 >
-            : ServiceFactory<IID, [AllIIDs]>
+            : ServiceFactory<IID, []>
         : S extends { readonly [__asimoServiceBundle]: true; provide: infer IIDs extends AsyncIID<any, any>[]; dependencies?: infer Deps }
             ? Deps extends ServiceDeps
                 ? [Deps[number]] extends [AllIIDs]

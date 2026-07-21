@@ -58,9 +58,11 @@ type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
 
 /**
  * Helper for declaring a service with explicit dependencies. Inference flows directly
- * from `dependencies` to `load`'s context, so the latter receives an
- * `Container<Deps[number]>` typed with exactly the listed IIDs (no `any` widening).
- * The invariant phantom on `Container` then catches mismatches between the declared
+ * from `dependencies` to `load`'s context, so the latter receives a
+ * `Container<Deps[number]>` typed with exactly the listed IIDs.
+ * When `dependencies` is omitted, the load context is `Container<never>` — no services
+ * are accessible unless explicitly listed as dependencies.
+ * The invariant phantom on `Container` catches mismatches between the declared
  * dependencies and what `load` actually uses — at compile time, with no manual annotation.
  *
  * @example
