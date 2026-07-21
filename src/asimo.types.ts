@@ -190,10 +190,9 @@ export interface IoCContainer<IIDs extends InterfaceId<any, any> = InterfaceId<a
      * @see fetch()
      */
     get<IID extends Extract<IIDs, SyncIID<any, any>>>(iid: IID): IID extends SyncIID<infer T, any> ? T : never;
-    get<IID extends Extract<IIDs, AsyncIID<any, any>>>(iid: IID): IID extends AsyncIID<infer T, any> ? Promise<T> : never;
-    get<Args extends IIDs[]>(
+    get<Args extends Extract<IIDs, SyncIID<any, any>>[]>(
         ...iids: Args
-    ): { [K in keyof Args]: Args[K] extends SyncIID<infer T, any> ? T : Args[K] extends AsyncIID<infer T, any> ? Promise<T> : never };
+    ): { [K in keyof Args]: Args[K] extends SyncIID<infer T, any> ? T : never };
     /**
      * Retrieve one or multiple values from the IoC container asynchronously. Will recursively search
      * for the values in the parent containers if not found.

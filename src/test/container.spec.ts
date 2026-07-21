@@ -70,10 +70,8 @@ describe("IoC Container", () => {
             const multiply2 = await context.fetch(MULTIPLIER);
             expect(multiply2(3, 4)).toBe(12);
 
-            // get allows to retrieve services with sync and async factories
-            const addPromise = context.get(ADDER);
-            expect(addPromise).toBeInstanceOf(Promise);
-            const add2 = await addPromise;
+            // fetch retrieves services with sync and async factories
+            const add2 = await context.fetch(ADDER);
             expect(add2(3, 4)).toBe(7);
         });
 
@@ -515,7 +513,7 @@ describe("IoC Container", () => {
             expect(subtract(5, 3)).toBe(2);
         });
 
-        it("should load a bundle via get() since async IIDs return Promise<T>", async () => {
+        it("should load a bundle via fetch()", async () => {
             const c = createContainer({
                 name: "bundle-get-test",
                 services: [
@@ -540,10 +538,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const addPromise = c.get(ADDER);
-            const subtractPromise = c.get(SUBTRACTOR);
-            const add = await addPromise;
-            const subtract = await subtractPromise;
+            const [add, subtract] = await c.fetch(ADDER, SUBTRACTOR);
             expect(add(10, 5)).toBe(15);
             expect(subtract(10, 5)).toBe(5);
         });
