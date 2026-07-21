@@ -362,6 +362,7 @@ export function createContainer<
         return getParentService(iid);
     }
 
+    /** Same as `getOptionalService` but systematically returns a promise */
     async function fetchOptionalService(iid: InterfaceId<any>): Promise<any> {
         return getOptionalService(iid);
     }

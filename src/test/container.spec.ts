@@ -217,7 +217,7 @@ describe("IoC Container", () => {
     });
 
     describe("Container with parents", () => {
-        function createTestContaier() {
+        function createTestContainer() {
             // c4 -> c2 -> c1
             //    -> c3
 
@@ -263,14 +263,14 @@ describe("IoC Container", () => {
         }
 
         it("should expose a path built from the first parent's path and its own name", () => {
-            const c = createTestContaier();
+            const c = createTestContainer();
 
             // c4 -> c2 -> c1, c3 (path follows the first parent chain: c1/c2/c4)
             expect(c.path).toBe("/substraction/addition/multiplier");
         });
 
         it("should retrieve all dependencies", async () => {
-            const c = createTestContaier();
+            const c = createTestContainer();
 
             const [multiply, divide] = c.get(MULTIPLIER, DIVIDER);
             expect(multiply(3, 4)).toBe(12);
@@ -289,7 +289,7 @@ describe("IoC Container", () => {
         });
 
         it("should allow to get optional services that are not necessarily defined on the container", () => {
-            const c = createTestContaier();
+            const c = createTestContainer();
 
             // services defined in the container or its parents
             const multiply = c.getOptional(MULTIPLIER);
@@ -306,7 +306,7 @@ describe("IoC Container", () => {
         });
 
         it("should allow to fetch optional services that are not necessarily defined on the container", async () => {
-            const c = createTestContaier();
+            const c = createTestContainer();
 
             const multiply = await c.fetchOptional(MULTIPLIER);
             expect(multiply!(3, 4)).toBe(12);
@@ -321,7 +321,7 @@ describe("IoC Container", () => {
         });
 
         it("should pass the container context to the service factory", async () => {
-            const c4 = createTestContaier();
+            const c4 = createTestContainer();
             const c5 = createContainer({
                 name: "calculator",
                 extends: [c4],
