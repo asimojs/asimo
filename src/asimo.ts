@@ -92,8 +92,8 @@ type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
  * @example
  * factory({
  *     provide: CALCULATOR,
- *     dependencies: [MULTIPLIER, ADDER, SUBTRACTOR],
- *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTOR>
+ *     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
+ *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTER>
  * })
  */
 export function factory<

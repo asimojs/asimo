@@ -1,7 +1,7 @@
 import { describe, it } from "vitest";
 import { bundle, createContainer, factory } from "../asimo";
 import { addNumbers, divideNumbers, multiplyNumbers, subtractNumbers } from "./examples/operations";
-import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
+import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
 
 /**
@@ -121,10 +121,10 @@ describe("TS Errors", () => {
                     provide: ADDER,
                     load: async () => addNumbers,
                 }),
-                // @ts-expect-error - SUBTRACTOR is declared as a dependency but is not registered in the container
+                // @ts-expect-error - SUBTRACTER is declared as a dependency but is not registered in the container
                 factory({
                     provide: CALCULATOR,
-                    dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
+                    dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
                     load: (c) => createCalculator(c),
                 }),
             ],
@@ -151,13 +151,13 @@ describe("TS Errors", () => {
                     load: async () => addNumbers,
                 }),
                 factory({
-                    provide: SUBTRACTOR,
+                    provide: SUBTRACTER,
                     dependencies: [],
                     load: async () => subtractNumbers,
                 }),
                 factory({
                     provide: CALCULATOR,
-                    dependencies: [MULTIPLIER, ADDER, SUBTRACTOR],
+                    dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
                     // @ts-expect-error - DIVIDER is required by createCalculator but not listed in dependencies
                     load: (c) => createCalculator(c),
                 }),
@@ -225,14 +225,14 @@ describe("TS Errors", () => {
                             name: "bundle-sub",
                             services: [
                                 bundle({
-                                    provide: [SUBTRACTOR],
+                                    provide: [SUBTRACTER],
                                     dependencies: [],
                                     load: async () =>
                                         createContainer({
                                             name: "inner-sub",
                                             services: [
                                                 factory({
-                                                    provide: SUBTRACTOR,
+                                                    provide: SUBTRACTER,
                                                     load: async () => subtractNumbers,
                                                 }),
                                             ],
@@ -248,8 +248,8 @@ describe("TS Errors", () => {
             ],
         });
 
-        // @ts-expect-error - SUBTRACTOR is not part of the bundle provide
-        c.fetch(SUBTRACTOR);
+        // @ts-expect-error - SUBTRACTER is not part of the bundle provide
+        c.fetch(SUBTRACTER);
     });
 
     it("should not allow maxRetries on a sync IID factory", () => {

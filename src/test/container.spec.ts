@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { AsimoError, AsimoLoadError, asimoConfig, bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
-import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
+import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
 
 describe("IoC Container", () => {
@@ -220,7 +220,7 @@ describe("IoC Container", () => {
                 name: "substraction",
                 services: [
                     factory({
-                        provide: SUBTRACTOR,
+                        provide: SUBTRACTER,
                         load: async () => subtractNumbers,
                     }),
                 ],
@@ -272,7 +272,7 @@ describe("IoC Container", () => {
                 name: "substraction",
                 services: [
                     factory({
-                        provide: SUBTRACTOR,
+                        provide: SUBTRACTER,
                         load: async () => subtractNumbers,
                     }),
                 ],
@@ -291,7 +291,7 @@ describe("IoC Container", () => {
                 extends: [c1, c2],
             });
 
-            const [add, substract] = await c3.fetch(ADDER, SUBTRACTOR);
+            const [add, substract] = await c3.fetch(ADDER, SUBTRACTER);
             expect(add(2, 3)).toBe(5);
             expect(substract(2, 3)).toBe(-1);
         });
@@ -305,7 +305,7 @@ describe("IoC Container", () => {
 
             const [add2, substract2, multiply2, divide2] = await c.fetch(
                 ADDER,
-                SUBTRACTOR,
+                SUBTRACTER,
                 MULTIPLIER,
                 DIVIDER,
             );
@@ -355,7 +355,7 @@ describe("IoC Container", () => {
                 services: [
                     factory({
                         provide: CALCULATOR,
-                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
+                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
                         load: (c) => createCalculator(c),
                     }),
                 ],
@@ -496,11 +496,11 @@ describe("IoC Container", () => {
                         provide: ADDER,
                         load: async () => addNumbers,
                     }),
-                    // SUBTRACTOR is not registered — this passes typecheck
+                    // SUBTRACTER is not registered — this passes typecheck
                     // because we bypass it with `as any`, but throws at runtime
                     factory({
                         provide: CALCULATOR,
-                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR] as any,
+                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER] as any,
                         load: (ctx: any) => createCalculator(ctx),
                     }) as any,
                 ],
@@ -510,7 +510,7 @@ describe("IoC Container", () => {
             expect(calculator.multiply(3, 4)).toBe(12);
             expect(calculator.divide(12, 4)).toBe(3);
             await expect(calculator.add(2, 3)).resolves.toBe(5);
-            // SUBTRACTOR is missing — subtract() should throw at runtime
+            // SUBTRACTER is missing — subtract() should throw at runtime
             {
                 let error: unknown;
                 try {
@@ -521,7 +521,7 @@ describe("IoC Container", () => {
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/calculator-container");
                 expect((error as Error).message).toBe(
-                    "[Asimo] Service not found: asimo.src.test.Subtractor at /calculator-container",
+                    "[Asimo] Service not found: asimo.src.test.Subtracter at /calculator-container",
                 );
             }
         });
@@ -533,7 +533,7 @@ describe("IoC Container", () => {
                 name: "bundle-test",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         load: async () =>
                             createContainer({
                                 name: "bundle-sub",
@@ -543,7 +543,7 @@ describe("IoC Container", () => {
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTOR,
+                                        provide: SUBTRACTER,
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -555,7 +555,7 @@ describe("IoC Container", () => {
             const add = await c.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
 
-            const subtract = await c.fetch(SUBTRACTOR);
+            const subtract = await c.fetch(SUBTRACTER);
             expect(subtract(5, 3)).toBe(2);
         });
 
@@ -564,7 +564,7 @@ describe("IoC Container", () => {
                 name: "bundle-get-test",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         dependencies: [],
                         load: async () =>
                             createContainer({
@@ -575,7 +575,7 @@ describe("IoC Container", () => {
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTOR,
+                                        provide: SUBTRACTER,
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -584,7 +584,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const [add, subtract] = await c.fetch(ADDER, SUBTRACTOR);
+            const [add, subtract] = await c.fetch(ADDER, SUBTRACTER);
             expect(add(10, 5)).toBe(15);
             expect(subtract(10, 5)).toBe(5);
         });
@@ -627,7 +627,7 @@ describe("IoC Container", () => {
                 name: "concurrent-bundle",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         load: async () => {
                             loadCount++;
                             // Simulate a realistic async load (e.g. dynamic import)
@@ -640,7 +640,7 @@ describe("IoC Container", () => {
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTOR,
+                                        provide: SUBTRACTER,
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -650,7 +650,7 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const [add, subtract] = await Promise.all([c.fetch(ADDER), c.fetch(SUBTRACTOR)]);
+            const [add, subtract] = await Promise.all([c.fetch(ADDER), c.fetch(SUBTRACTER)]);
 
             expect(add(2, 3)).toBe(5);
             expect(subtract(5, 3)).toBe(2);
@@ -659,12 +659,12 @@ describe("IoC Container", () => {
 
         it("should not eagerly invoke sub-factories when a bundle is loaded", async () => {
             let adderLoadCount = 0;
-            let subtractorLoadCount = 0;
+            let subtracterLoadCount = 0;
             const c = createContainer({
                 name: "lazy-factory-bundle",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         load: async () => {
                             await new Promise((r) => setTimeout(r, 5));
                             return createContainer({
@@ -678,9 +678,9 @@ describe("IoC Container", () => {
                                         },
                                     }),
                                     factory({
-                                        provide: SUBTRACTOR,
+                                        provide: SUBTRACTER,
                                         load: async () => {
-                                            subtractorLoadCount++;
+                                            subtracterLoadCount++;
                                             return subtractNumbers;
                                         },
                                     }),
@@ -692,24 +692,24 @@ describe("IoC Container", () => {
             });
 
             expect(adderLoadCount).toBe(0);
-            expect(subtractorLoadCount).toBe(0);
+            expect(subtracterLoadCount).toBe(0);
 
-            // Fetch only ADDER — SUBTRACTOR factory should NOT be called
+            // Fetch only ADDER — SUBTRACTER factory should NOT be called
             const add = await c.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
             expect(adderLoadCount).toBe(1);
-            expect(subtractorLoadCount).toBe(0);
+            expect(subtracterLoadCount).toBe(0);
 
-            // Fetch SUBTRACTOR later — now its factory is invoked
-            const subtract = await c.fetch(SUBTRACTOR);
+            // Fetch SUBTRACTER later — now its factory is invoked
+            const subtract = await c.fetch(SUBTRACTER);
             expect(subtract(5, 3)).toBe(2);
-            expect(subtractorLoadCount).toBe(1);
+            expect(subtracterLoadCount).toBe(1);
 
             // Second fetch of ADDER reuses cached instance, no new factory call
             const add2 = await c.fetch(ADDER);
             expect(add2(3, 4)).toBe(7);
             expect(adderLoadCount).toBe(1);
-            expect(subtractorLoadCount).toBe(1);
+            expect(subtracterLoadCount).toBe(1);
         });
 
         it("should not eagerly load nested bundles", async () => {
@@ -719,7 +719,7 @@ describe("IoC Container", () => {
                 name: "lazy-bundle-test",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         load: async () => {
                             outerBundleLoadCount++;
                             await new Promise((r) => setTimeout(r, 5));
@@ -731,7 +731,7 @@ describe("IoC Container", () => {
                                         load: async () => addNumbers,
                                     }),
                                     bundle({
-                                        provide: [SUBTRACTOR],
+                                        provide: [SUBTRACTER],
                                         load: async () => {
                                             innerBundleLoadCount++;
                                             await new Promise((r) => setTimeout(r, 5));
@@ -739,7 +739,7 @@ describe("IoC Container", () => {
                                                 name: "inner-sub",
                                                 services: [
                                                     factory({
-                                                        provide: SUBTRACTOR,
+                                                        provide: SUBTRACTER,
                                                         load: async () => subtractNumbers,
                                                     }),
                                                 ],
@@ -760,13 +760,13 @@ describe("IoC Container", () => {
             expect(innerBundleLoadCount).toBe(0);
             expect(outerBundleLoadCount).toBe(1);
 
-            // Fetch SUBTRACTOR — now the inner bundle is loaded on-demand
-            const subtract = await c.fetch(SUBTRACTOR);
+            // Fetch SUBTRACTER — now the inner bundle is loaded on-demand
+            const subtract = await c.fetch(SUBTRACTER);
             expect(subtract(5, 3)).toBe(2);
             expect(innerBundleLoadCount).toBe(1);
 
-            // Second fetch of SUBTRACTOR reuses cached instance, inner bundle not reloaded
-            const subtract2 = await c.fetch(SUBTRACTOR);
+            // Second fetch of SUBTRACTER reuses cached instance, inner bundle not reloaded
+            const subtract2 = await c.fetch(SUBTRACTER);
             expect(subtract2(10, 4)).toBe(6);
             expect(innerBundleLoadCount).toBe(1);
 
@@ -812,21 +812,21 @@ describe("IoC Container", () => {
                 name: "nested-bundle",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         dependencies: [],
                         load: async () =>
                             createContainer({
                                 name: "bundle-sub",
                                 services: [
                                     bundle({
-                                        provide: [SUBTRACTOR],
+                                        provide: [SUBTRACTER],
                                         dependencies: [],
                                         load: async () =>
                                             createContainer({
                                                 name: "inner-sub",
                                                 services: [
                                                     factory({
-                                                        provide: SUBTRACTOR,
+                                                        provide: SUBTRACTER,
                                                         load: async () => subtractNumbers,
                                                     }),
                                                 ],
@@ -845,7 +845,7 @@ describe("IoC Container", () => {
             const add = await c.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
 
-            const subtract = await c.fetch(SUBTRACTOR);
+            const subtract = await c.fetch(SUBTRACTER);
             expect(subtract(5, 3)).toBe(2);
         });
 
@@ -863,9 +863,9 @@ describe("IoC Container", () => {
                                         provide: ADDER,
                                         load: async () => addNumbers,
                                     }),
-                                    // SUBTRACTOR is NOT in the outer bundle's provide
+                                    // SUBTRACTER is NOT in the outer bundle's provide
                                     factory({
-                                        provide: SUBTRACTOR,
+                                        provide: SUBTRACTER,
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -878,18 +878,18 @@ describe("IoC Container", () => {
             const add = await c.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
 
-            // SUBTRACTOR is NOT in provide — should throw at runtime
+            // SUBTRACTER is NOT in provide — should throw at runtime
             {
                 let error: unknown;
                 try {
-                    await c.fetch(SUBTRACTOR as any);
+                    await c.fetch(SUBTRACTER as any);
                 } catch (e) {
                     error = e;
                 }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/bundle-scope-test");
                 expect((error as Error).message).toBe(
-                    "[Asimo] Service not found: asimo.src.test.Subtractor at /bundle-scope-test",
+                    "[Asimo] Service not found: asimo.src.test.Subtracter at /bundle-scope-test",
                 );
             }
         });
@@ -899,7 +899,7 @@ describe("IoC Container", () => {
                 name: "nested-bundle",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         dependencies: [],
                         load: async () =>
                             createContainer({
@@ -918,14 +918,14 @@ describe("IoC Container", () => {
             {
                 let error: unknown;
                 try {
-                    await c.fetch(SUBTRACTOR as any);
+                    await c.fetch(SUBTRACTER as any);
                 } catch (e) {
                     error = e;
                 }
                 expect(error).toBeInstanceOf(AsimoError);
                 expect((error as AsimoError).container).toBe("/nested-bundle");
                 expect((error as Error).message).toBe(
-                    "[Asimo] Bundle did not provide service: asimo.src.test.Subtractor at /nested-bundle",
+                    "[Asimo] Bundle did not provide service: asimo.src.test.Subtracter at /nested-bundle",
                 );
             }
         });
@@ -958,7 +958,7 @@ describe("IoC Container", () => {
                 name: "concurrent-bundle-missing",
                 services: [
                     bundle({
-                        provide: [ADDER, SUBTRACTOR],
+                        provide: [ADDER, SUBTRACTER],
                         load: async () => {
                             await new Promise((r) => setTimeout(r, 10));
                             return createContainer({
@@ -975,14 +975,14 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const [r1, r2] = await Promise.allSettled([c.fetch(ADDER), c.fetch(SUBTRACTOR as any)]);
+            const [r1, r2] = await Promise.allSettled([c.fetch(ADDER), c.fetch(SUBTRACTER as any)]);
             expect(r1.status).toBe("fulfilled");
             expect(r2.status).toBe("rejected");
             if (r2.status === "rejected") {
                 expect(r2.reason).toBeInstanceOf(AsimoError);
                 expect((r2.reason as AsimoError).container).toBe("/concurrent-bundle-missing");
                 expect(r2.reason.message).toContain(
-                    "Bundle did not provide service: asimo.src.test.Subtractor",
+                    "Bundle did not provide service: asimo.src.test.Subtracter",
                 );
             }
         });

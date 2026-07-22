@@ -1,8 +1,8 @@
 import { Container } from "../../asimo.types";
-import { ADDER, DIVIDER, MULTIPLIER, SUBTRACTOR } from "./types";
+import { ADDER, DIVIDER, MULTIPLIER, SUBTRACTER } from "./types";
 
 export function createCalculator(
-    context: Container<typeof MULTIPLIER | typeof DIVIDER | typeof ADDER | typeof SUBTRACTOR>,
+    context: Container<typeof MULTIPLIER | typeof DIVIDER | typeof ADDER | typeof SUBTRACTER>,
 ) {
     const [multiplier, divider] = context.get(MULTIPLIER, DIVIDER);
 
@@ -14,7 +14,7 @@ export function createCalculator(
             return add(a, b);
         },
         async subtract(a: number, b: number) {
-            const subtract = await context.fetch(SUBTRACTOR);
+            const subtract = await context.fetch(SUBTRACTER);
             return subtract(a, b);
         },
     };

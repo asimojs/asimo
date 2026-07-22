@@ -5,10 +5,10 @@ export interface Adder {
 }
 export const ADDER = asyncIID<Adder>()("asimo.src.test.Adder");
 
-export interface Substracter {
+export interface Subtracter {
     (a: number, b: number): number;
 }
-export const SUBTRACTOR = asyncIID<Substracter>()("asimo.src.test.Subtractor");
+export const SUBTRACTER = asyncIID<Subtracter>()("asimo.src.test.Subtracter");
 export interface Multiplier {
     (a: number, b: number): number;
 }
