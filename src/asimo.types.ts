@@ -70,6 +70,10 @@ export interface ServiceFactory<
     /** Optional list of interface IDs this service depends on — used to type the load context. */
     dependencies?: Deps;
     load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+    /** Max number of retries on load failure for async IIDs (default: 2). Ignored for sync IIDs. */
+    maxRetries?: number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). Ignored for sync IIDs. */
+    retryDelayMs?: number;
 }
 
 /**
@@ -98,6 +102,10 @@ export interface ServiceBundle<
      * Typically implemented as `createIocContainer({ name, services: [...] })`.
      */
     load(context: Container<Deps[number]>): Promise<Container<any>>;
+    /** Max number of retries on load failure (default: 2). */
+    maxRetries?: number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs?: number;
 }
 
 /**
@@ -108,6 +116,15 @@ export interface ServiceBundle<
  */
 export interface ServiceDependencyNotRegistered<MissingNS extends string = string> {
     readonly __asimoErrorDependencyNotRegistered: `Declared dependency not registered in this container or its parents: "${MissingNS}"`;
+}
+
+/**
+ * Branded error type shown in TS error messages when `maxRetries` or `retryDelayMs`
+ * are passed to a `factory()` whose IID is a `SyncIID`. Retry is only meaningful
+ * for `AsyncIID`.
+ */
+export interface RetryNotSupportedForSyncIID {
+    readonly __asimoErrorRetryNotSupportedForSync: "Retry parameters (maxRetries, retryDelayMs) are not supported for SyncIID factories";
 }
 
 /**

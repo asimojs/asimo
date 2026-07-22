@@ -251,4 +251,22 @@ describe("TS Errors", () => {
         // @ts-expect-error - SUBTRACTOR is not part of the bundle provide
         c.fetch(SUBTRACTOR);
     });
+
+    it("should not allow maxRetries on a sync IID factory", () => {
+        factory({
+            provide: MULTIPLIER,
+            // @ts-expect-error - retry parameters are not supported for SyncIID
+            maxRetries: 2,
+            load: () => multiplyNumbers,
+        });
+    });
+
+    it("should not allow retryDelayMs on a sync IID factory", () => {
+        factory({
+            provide: MULTIPLIER,
+            // @ts-expect-error - retry parameters are not supported for SyncIID
+            retryDelayMs: 500,
+            load: () => multiplyNumbers,
+        });
+    });
 });

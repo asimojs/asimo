@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AsimoError, bundle, createContainer, factory } from "../asimo";
+import { AsimoError, AsimoLoadError, bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -977,6 +977,248 @@ describe("IoC Container", () => {
                     "Bundle did not provide service: asimo.src.test.Subtractor",
                 );
             }
+        });
+    });
+
+    describe("Retry with exponential backoff", () => {
+        it("should retry an async factory with default maxRetries (2) and eventually succeed", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-factory",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 3) throw new Error("fail");
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            const start = Date.now();
+            const add = await c.fetch(ADDER);
+            const elapsed = Date.now() - start;
+
+            expect(callCount).toBe(3);
+            expect(add(2, 3)).toBe(5);
+            // retryDelayMs defaults to 1000ms: first retry at 1000ms, second at 2000ms
+            expect(elapsed).toBeGreaterThanOrEqual(2900);
+        });
+
+        it("should retry a bundle with default maxRetries (2) and eventually succeed", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-bundle",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 3) throw new Error("fail");
+                            return createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            const start = Date.now();
+            const add = await c.fetch(ADDER);
+            const elapsed = Date.now() - start;
+
+            expect(callCount).toBe(3);
+            expect(add(2, 3)).toBe(5);
+            expect(elapsed).toBeGreaterThanOrEqual(2900);
+        });
+
+        it("should throw AsimoLoadError when all retries are exhausted for a factory", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-exhausted",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        maxRetries: 0,
+                        load: async () => {
+                            callCount++;
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+            expect(callCount).toBe(1);
+        });
+
+        it("should throw AsimoLoadError when all retries are exhausted for a bundle", async () => {
+            const c = createContainer({
+                name: "retry-bundle-exhausted",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        maxRetries: 0,
+                        load: async () => {
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+        });
+
+        it("should allow re-fetching an IID after a previous load exhausted retries", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-refetch",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        maxRetries: 0,
+                        load: async () => {
+                            callCount++;
+                            if (callCount === 1) throw new Error("fail");
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            // First fetch fails
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+            expect(callCount).toBe(1);
+
+            // Second fetch succeeds since instance was cleared on failure
+            const add = await c.fetch(ADDER);
+            expect(callCount).toBe(2);
+            expect(add(2, 3)).toBe(5);
+        });
+
+        it("should allow re-fetching a bundle after a previous load exhausted retries", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-bundle-refetch",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        maxRetries: 0,
+                        load: async () => {
+                            callCount++;
+                            if (callCount === 1) throw new Error("fail");
+                            return createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+            expect(callCount).toBe(1);
+
+            const add = await c.fetch(ADDER);
+            expect(callCount).toBe(2);
+            expect(add(2, 3)).toBe(5);
+        });
+
+        it("should use custom retry params (maxRetries + retryDelayMs)", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-custom",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        maxRetries: 1,
+                        retryDelayMs: 50,
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 2) throw new Error("fail");
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            const start = Date.now();
+            const add = await c.fetch(ADDER);
+            const elapsed = Date.now() - start;
+
+            expect(callCount).toBe(2);
+            expect(add(2, 3)).toBe(5);
+            // 1 retry at 50ms
+            expect(elapsed).toBeGreaterThanOrEqual(45);
+            expect(elapsed).toBeLessThan(500);
+        });
+
+        it("should use custom retry params for bundles", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-bundle-custom",
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        maxRetries: 1,
+                        retryDelayMs: 50,
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 2) throw new Error("fail");
+                            return createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                ],
+                            });
+                        },
+                    }),
+                ],
+            });
+
+            const start = Date.now();
+            const add = await c.fetch(ADDER);
+            const elapsed = Date.now() - start;
+
+            expect(callCount).toBe(2);
+            expect(add(2, 3)).toBe(5);
+            expect(elapsed).toBeGreaterThanOrEqual(45);
+            expect(elapsed).toBeLessThan(500);
+        });
+
+        it("should not retry sync IID factories", () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "retry-sync",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => {
+                            callCount++;
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            expect(() => c.get(MULTIPLIER)).toThrow("fail");
+            expect(callCount).toBe(1);
         });
     });
 

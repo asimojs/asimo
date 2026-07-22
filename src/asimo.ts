@@ -3,6 +3,7 @@ import {
     InterfaceId,
     InterfaceNamespace,
     Container,
+    RetryNotSupportedForSyncIID,
     ServiceBundle,
     ServiceDeps,
     ServiceFactory,
@@ -29,6 +30,16 @@ export class AsimoError extends Error {
         this.container = container;
         this.name = "AsimoError";
         this.messagePrefix = "[Asimo] ";
+    }
+}
+
+export class AsimoLoadError extends AsimoError {
+    readonly cause: unknown;
+
+    constructor(message: string, container: string, cause?: unknown) {
+        super(message, container);
+        this.name = "AsimoLoadError";
+        this.cause = cause;
     }
 }
 
@@ -82,12 +93,18 @@ export function factory<
     dependencies?: Deps;
     /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
     load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+    /** Max number of retries on load failure for async IIDs (default: 2). */
+    maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
 }): ServiceFactory<IID, Deps> {
     return {
         [__asimoServiceFactory]: true as const,
         interface: params.provide,
         dependencies: params.dependencies,
         load: params.load,
+        maxRetries: params.maxRetries,
+        retryDelayMs: params.retryDelayMs,
     } as ServiceFactory<IID, Deps>;
 }
 
@@ -116,12 +133,18 @@ export function bundle<
     dependencies?: Deps;
     /** Async factory invoked on first access to any provided IID. Returns an `Container` with sub-services registered. */
     load(context: Container<Deps[number]>): Promise<Container<any>>;
+    /** Max number of retries on load failure (default: 2). */
+    maxRetries?: number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs?: number;
 }): ServiceBundle<IIDs[number], Deps> {
     return {
         [__asimoServiceBundle]: true as const,
         provide: params.provide,
         dependencies: params.dependencies,
         load: params.load,
+        maxRetries: params.maxRetries,
+        retryDelayMs: params.retryDelayMs,
     } as ServiceBundle<IIDs[number], Deps>;
 }
 
@@ -138,6 +161,8 @@ interface InternalEntry {
     factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
     bundle?: ServiceBundle;
     instance?: any;
+    maxRetries?: number;
+    retryDelayMs?: number;
 }
 
 export function createContainer<
@@ -163,11 +188,11 @@ export function createContainer<
     for (const service of services) {
         if (__asimoServiceFactory in service) {
             const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
-            serviceMap.set(sf.interface.ns, { factory: sf });
+            serviceMap.set(sf.interface.ns, { factory: sf, maxRetries: sf.maxRetries, retryDelayMs: sf.retryDelayMs });
         } else if (__asimoServiceBundle in service) {
             const sb = service as unknown as ServiceBundle;
             for (const iid of sb.provide) {
-                serviceMap.set(iid.ns, { bundle: sb });
+                serviceMap.set(iid.ns, { bundle: sb, maxRetries: sb.maxRetries, retryDelayMs: sb.retryDelayMs });
             }
         }
     }
@@ -223,17 +248,6 @@ export function createContainer<
         ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
     >;
 
-    function resolveEntry(entry: InternalEntry): any {
-        if (entry.instance) {
-            return entry.instance;
-        }
-        if (entry.factory) {
-            entry.instance = entry.factory.load(container);
-            return entry.instance;
-        }
-        return null;
-    }
-
     function loadService(iid: InterfaceId<any>): any {
         const entry = serviceMap.get(iid.ns);
         if (!entry) {
@@ -245,11 +259,60 @@ export function createContainer<
             throwError(`Service not found: ${iid.ns}`);
         }
 
-        if (entry.bundle && !entry.instance && !entry.factory) {
+        if (entry.instance) return entry.instance;
+
+        if (entry.bundle && !entry.factory) {
             return loadBundleAndResolve(entry, iid);
         }
 
-        return resolveEntry(entry)!;
+        if (entry.factory) {
+            if (entry.factory.interface.sync) {
+                return resolveEntry(entry)!;
+            }
+            return loadAsyncWithRetry(entry);
+        }
+
+        return null;
+    }
+
+    function resolveEntry(entry: InternalEntry): any {
+        if (entry.instance) return entry.instance;
+        if (entry.factory) {
+            entry.instance = entry.factory.load(container);
+            return entry.instance;
+        }
+        return null;
+    }
+
+    async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
+        const maxRetries = entry.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? 1000;
+        let lastError: unknown;
+
+        entry.instance = (async () => {
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = entry.factory!.load(container);
+                    const value = await result;
+                    entry.instance = value;
+                    return value;
+                } catch (err) {
+                    if (err instanceof AsimoError) throw err;
+                    lastError = err;
+                    if (attempt < maxRetries) {
+                        await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
+                    }
+                }
+            }
+            entry.instance = undefined;
+            throw new AsimoLoadError(
+                `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
+                container.path,
+                lastError,
+            );
+        })();
+
+        return entry.instance;
     }
 
     function inspectService(iid: InterfaceId<any>): ServiceInspectInfo | null {
@@ -300,8 +363,19 @@ export function createContainer<
         throw new AsimoError(message, container.path);
     }
 
+    async function resolveOrRetry(entry: InternalEntry): Promise<any> {
+        if (entry.instance) return entry.instance;
+        if (entry.factory) {
+            if (entry.factory.interface.sync) return resolveEntry(entry)!;
+            return loadAsyncWithRetry(entry);
+        }
+        return null;
+    }
+
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         const bundle = entry.bundle!;
+        const maxRetries = entry.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? 1000;
 
         // If this bundle is already being loaded (concurrent access), wait and re-resolve
         if (bundleLoadPromises.has(bundle)) {
@@ -311,7 +385,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveEntry(updatedEntry)!;
+            return resolveOrRetry(updatedEntry);
         }
 
         // Check for circular: bundle's own load triggers re-entry
@@ -326,16 +400,33 @@ export function createContainer<
         }
 
         const loadPromise = (async () => {
-            const subContainer = await bundle.load(container as any);
-            const subMap = (subContainer as InternalContainer)._serviceMap;
+            let lastError: unknown;
             const provideNs = new Set(bundle.provide.map(iid => iid.ns));
-            if (subMap) {
-                for (const [ns, subEntry] of subMap) {
-                    if (provideNs.has(ns)) {
-                        serviceMap.set(ns, subEntry);
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const subContainer = await bundle.load(container as any);
+                    const subMap = (subContainer as InternalContainer)._serviceMap;
+                    if (subMap) {
+                        for (const [ns, subEntry] of subMap) {
+                            if (provideNs.has(ns)) {
+                                serviceMap.set(ns, subEntry);
+                            }
+                        }
+                    }
+                    return;
+                } catch (err) {
+                    if (err instanceof AsimoError) throw err;
+                    lastError = err;
+                    if (attempt < maxRetries) {
+                        await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
                     }
                 }
             }
+            throw new AsimoLoadError(
+                `Bundle load failed for "${iid.ns}" after ${maxRetries + 1} attempts`,
+                container.path,
+                lastError,
+            );
         })();
 
         bundleLoadPromises.set(bundle, loadPromise);
@@ -346,7 +437,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveEntry(updatedEntry)!;
+            return resolveOrRetry(updatedEntry);
         } finally {
             for (const providedIid of bundle.provide) {
                 loadingBundles.delete(providedIid.ns);
@@ -360,6 +451,9 @@ export function createContainer<
         if (entry) {
             if (entry.bundle && !entry.instance && !entry.factory) {
                 return null;
+            }
+            if (entry.factory && !entry.factory.interface.sync) {
+                return resolveOrRetry(entry);
             }
             return resolveEntry(entry);
         }
