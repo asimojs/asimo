@@ -388,7 +388,7 @@ describe("IoC Container", () => {
             });
             const child = createContainer({
                 name: "child",
-                extends: [parent as any],
+                extends: [parent],
                 services: [],
             });
             expect(child.parents).toHaveLength(1);
@@ -416,7 +416,7 @@ describe("IoC Container", () => {
             });
             const child = createContainer({
                 name: "child",
-                extends: [p1 as any, p2 as any],
+                extends: [p1, p2],
                 services: [],
             });
             expect(child.parents).toHaveLength(2);
@@ -436,12 +436,12 @@ describe("IoC Container", () => {
             });
             const parent = createContainer({
                 name: "p",
-                extends: [grandparent as any],
+                extends: [grandparent],
                 services: [],
             });
             const child = createContainer({
                 name: "c",
-                extends: [parent as any],
+                extends: [parent],
                 services: [],
             });
             expect(child.parents).toHaveLength(1);
@@ -460,13 +460,21 @@ describe("IoC Container", () => {
                 ],
             });
 
-            const parents = [parent as any];
+            const parents = [parent];
             const child = createContainer({
                 name: "child",
                 extends: parents,
                 services: [],
             });
-            parents.push(createContainer({ name: "another-parent", services: [] }) as any);
+            parents.push(createContainer({
+                name: "another-parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            }));
             expect(Object.isFrozen(child.parents)).toBe(true);
             expect(child.parents).toHaveLength(1);
             expect(child.parents![0].name).toBe("parent");
