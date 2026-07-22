@@ -152,7 +152,7 @@ export function createContainer<
     const services = params.services ?? [];
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
     const loadingBundles = new Set<InterfaceNamespace>();
-    const bundleLoadPromises = new Map<InterfaceNamespace, Promise<void>>();
+    const bundleLoadPromises = new Map<object, Promise<void>>();
 
     for (const service of services) {
         if (__asimoServiceFactory in service) {
@@ -296,11 +296,10 @@ export function createContainer<
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         const bundle = entry.bundle!;
-        const bundleKey = bundle.provide[0]?.ns;
 
         // If this bundle is already being loaded (concurrent access), wait and re-resolve
-        if (bundleKey && bundleLoadPromises.has(bundleKey)) {
-            const existingLoad = bundleLoadPromises.get(bundleKey)!;
+        if (bundleLoadPromises.has(bundle)) {
+            const existingLoad = bundleLoadPromises.get(bundle)!;
             await existingLoad;
             const updatedEntry = serviceMap.get(iid.ns);
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
@@ -333,9 +332,7 @@ export function createContainer<
             }
         })();
 
-        if (bundleKey) {
-            bundleLoadPromises.set(bundleKey, loadPromise);
-        }
+        bundleLoadPromises.set(bundle, loadPromise);
 
         try {
             await loadPromise;
@@ -348,9 +345,7 @@ export function createContainer<
             for (const providedIid of bundle.provide) {
                 loadingBundles.delete(providedIid.ns);
             }
-            if (bundleKey) {
-                bundleLoadPromises.delete(bundleKey);
-            }
+            bundleLoadPromises.delete(bundle);
         }
     }
 

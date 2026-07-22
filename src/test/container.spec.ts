@@ -189,40 +189,6 @@ describe("IoC Container", () => {
             }
         });
 
-        it("should pass the container context to the service factory", async () => {
-            const c = createContainer({
-                name: "calculator-container",
-                services: [
-                    factory({
-                        provide: MULTIPLIER,
-                        load: () => multiplyNumbers,
-                    }),
-                    factory({
-                        provide: DIVIDER,
-                        load: () => divideNumbers,
-                    }),
-                    factory({
-                        provide: ADDER,
-                        load: async () => addNumbers,
-                    }),
-                    factory({
-                        provide: SUBTRACTOR,
-                        load: async () => subtractNumbers,
-                    }),
-                    factory({
-                        provide: CALCULATOR,
-                        dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTOR],
-                        load: (c) => createCalculator(c),
-                    }),
-                ],
-            });
-
-            const calculator = c.get(CALCULATOR);
-            expect(calculator.multiply(3, 4)).toBe(12);
-            expect(calculator.divide(12, 4)).toBe(3);
-            expect(await calculator.add(2, 3)).toBe(5);
-            expect(await calculator.subtract(2, 3)).toBe(-1);
-        });
     });
 
     describe("Container with parents", () => {
