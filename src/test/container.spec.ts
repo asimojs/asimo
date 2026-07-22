@@ -198,6 +198,18 @@ describe("IoC Container", () => {
             ).toThrow('[Asimo] Container name must not contain forward slashes: "bad/name"');
         });
 
+        it("should throw when services is a single object instead of an array", () => {
+            expect(() =>
+                (createContainer as any)({
+                    name: "test",
+                    services: {
+                        provide: ADDER,
+                        load: async () => addNumbers,
+                    },
+                }),
+            ).toThrow("[Asimo] services must be an array");
+        });
+
     });
 
     describe("Container with parents", () => {

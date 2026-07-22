@@ -151,6 +151,9 @@ export function createContainer<
     if (params.name.includes('/')) {
         throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
     }
+    if (params.services !== undefined && !Array.isArray(params.services)) {
+        throw new Error('[Asimo] services must be an array');
+    }
     const parents = params.extends ?? null;
     const services = params.services ?? [];
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
