@@ -189,6 +189,15 @@ describe("IoC Container", () => {
             }
         });
 
+        it("should throw when creating a container with a forward slash in its name", () => {
+            expect(() =>
+                createContainer({
+                    name: "bad/name",
+                    services: [],
+                }),
+            ).toThrow('[Asimo] Container name must not contain forward slashes: "bad/name"');
+        });
+
     });
 
     describe("Container with parents", () => {

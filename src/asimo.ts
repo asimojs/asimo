@@ -148,6 +148,9 @@ export function createContainer<
     extends?: Parents;
     services?: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
 }): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
+    if (params.name.includes('/')) {
+        throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
+    }
     const parents = params.extends ?? null;
     const services = params.services ?? [];
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
