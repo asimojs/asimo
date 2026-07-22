@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { AsimoError, bundle, createContainer, factory } from "../asimo";
-import type { Container } from "../asimo.types";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -450,8 +449,7 @@ describe("IoC Container", () => {
             expect(child.parents![0].parents![0].name).toBe("gp");
         });
 
-        it("should be the same parents array reference passed to extends", () => {
-            const arr: Container<any>[] = [];
+        it("should freeze the parents array to prevent external mutation", () => {
             const parent = createContainer({
                 name: "parent",
                 services: [
@@ -461,13 +459,17 @@ describe("IoC Container", () => {
                     }),
                 ],
             });
-            arr.push(parent as any);
+
+            const parents = [parent as any];
             const child = createContainer({
                 name: "child",
-                extends: arr,
+                extends: parents,
                 services: [],
             });
-            expect(child.parents).toBe(arr);
+            parents.push(createContainer({ name: "another-parent", services: [] }) as any);
+            expect(Object.isFrozen(child.parents)).toBe(true);
+            expect(child.parents).toHaveLength(1);
+            expect(child.parents![0].name).toBe("parent");
         });
 
         it("should throw at runtime when a dependency listed in dependencies is not registered", async () => {

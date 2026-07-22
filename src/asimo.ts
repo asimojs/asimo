@@ -154,7 +154,7 @@ export function createContainer<
     if (params.services !== undefined && !Array.isArray(params.services)) {
         throw new Error('[Asimo] services must be an array');
     }
-    const parents = params.extends ?? null;
+    const parents = params.extends ? Object.freeze([...params.extends]) : null;
     const services = params.services ?? [];
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
     const loadingBundles = new Set<InterfaceNamespace>();
