@@ -1,4 +1,4 @@
-import { Container } from "../../asimo.types";
+import type { Container } from "../../asimo.types";
 import { ADDER, DIVIDER, MULTIPLIER, SUBTRACTER } from "./types";
 
 export function createCalculator(

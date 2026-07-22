@@ -1,9 +1,13 @@
 import {
+    __asimoServiceBundle,
+    __asimoServiceFactory,
+} from "./asimo.types";
+import type {
     AsimoConfig,
     AsyncIID,
+    Container,
     InterfaceId,
     InterfaceNamespace,
-    Container,
     RetryNotSupportedForSyncIID,
     ServiceBundle,
     ServiceDeps,
@@ -11,8 +15,6 @@ import {
     ServiceInspectInfo,
     SyncIID,
     ValidService,
-    __asimoServiceBundle,
-    __asimoServiceFactory,
 } from "./asimo.types";
 
 interface InternalContainer extends Container<any> {
