@@ -1,4 +1,5 @@
 import {
+    AsimoConfig,
     AsyncIID,
     InterfaceId,
     InterfaceNamespace,
@@ -20,6 +21,18 @@ interface InternalContainer extends Container<any> {
     /** Internal service map — used by bundles to copy sub-container entries into the parent. */
     _serviceMap: Map<InterfaceNamespace, InternalEntry>;
 }
+
+/**
+ * Global asimo configuration. Override default retry behavior for all containers.
+ *
+ * @example
+ * asimoConfig.maxRetries = 1;
+ * asimoConfig.retryDelayMs = 500;
+ */
+export const asimoConfig: AsimoConfig = {
+    maxRetries: 2,
+    retryDelayMs: 1000,
+};
 
 export class AsimoError extends Error {
     readonly container: string;
@@ -285,8 +298,8 @@ export function createContainer<
     }
 
     async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
-        const maxRetries = entry.maxRetries ?? 2;
-        const baseDelay = entry.retryDelayMs ?? 1000;
+        const maxRetries = entry.maxRetries ?? asimoConfig.maxRetries;
+        const baseDelay = entry.retryDelayMs ?? asimoConfig.retryDelayMs;
         let lastError: unknown;
 
         entry.instance = (async () => {
@@ -374,8 +387,8 @@ export function createContainer<
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         const bundle = entry.bundle!;
-        const maxRetries = entry.maxRetries ?? 2;
-        const baseDelay = entry.retryDelayMs ?? 1000;
+        const maxRetries = entry.maxRetries ?? asimoConfig.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? asimoConfig.retryDelayMs ?? 1000;
 
         // If this bundle is already being loaded (concurrent access), wait and re-resolve
         if (bundleLoadPromises.has(bundle)) {

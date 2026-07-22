@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { AsimoError, AsimoLoadError, bundle, createContainer, factory } from "../asimo";
+import { afterEach, describe, expect, it } from "vitest";
+import { AsimoError, AsimoLoadError, asimoConfig, bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTOR, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -981,6 +981,12 @@ describe("IoC Container", () => {
     });
 
     describe("Retry with exponential backoff", () => {
+        // Reset global config between tests to prevent leakage
+        afterEach(() => {
+            asimoConfig.maxRetries = 2; 
+            asimoConfig.retryDelayMs = 1000;
+        });
+
         it("should retry an async factory with default maxRetries (2) and eventually succeed", async () => {
             let callCount = 0;
             const c = createContainer({
@@ -1218,6 +1224,56 @@ describe("IoC Container", () => {
             });
 
             expect(() => c.get(MULTIPLIER)).toThrow("fail");
+            expect(callCount).toBe(1);
+        });
+
+        it("should use global asimoConfig defaults for retry", async () => {
+            let callCount = 0;
+            asimoConfig.maxRetries = 1;
+            asimoConfig.retryDelayMs = 30;
+            const c = createContainer({
+                name: "retry-global",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 2) throw new Error("fail");
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            const start = Date.now();
+            const add = await c.fetch(ADDER);
+            const elapsed = Date.now() - start;
+
+            expect(callCount).toBe(2);
+            expect(add(2, 3)).toBe(5);
+            expect(elapsed).toBeGreaterThanOrEqual(25);
+            expect(elapsed).toBeLessThan(500);
+        });
+
+        it("should let per-service params override global asimoConfig", async () => {
+            let callCount = 0;
+            asimoConfig.maxRetries = 2;
+            asimoConfig.retryDelayMs = 500;
+            const c = createContainer({
+                name: "retry-override",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        maxRetries: 0,
+                        load: async () => {
+                            callCount++;
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
             expect(callCount).toBe(1);
         });
     });

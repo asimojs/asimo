@@ -161,6 +161,16 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
             : S;
 
 /**
+ * Global configuration for asimo.
+ */
+export interface AsimoConfig {
+    /** Default max number of retries on load failure for async IIDs (default: 2). */
+    maxRetries: number;
+    /** Default base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs: number;
+}
+
+/**
  * Info returned by `container.inspect()` / `container.inspect(iid)`.
  */
 export interface ServiceInspectInfo {
