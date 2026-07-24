@@ -269,7 +269,7 @@ export function createContainer<
             return loadAsyncWithRetry(entry);
         }
 
-        return null;
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
 
     function resolveEntry(entry: InternalEntry): any {
@@ -279,7 +279,7 @@ export function createContainer<
             onLoad?.(entry.factory.interface, container);
             return entry.instance;
         }
-        return null;
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
 
     async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
@@ -372,7 +372,7 @@ export function createContainer<
             if (entry.factory.interface.sync) return resolveEntry(entry)!;
             return loadAsyncWithRetry(entry);
         }
-        return null;
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {

@@ -1488,6 +1488,42 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("Corrupt entry errors", () => {
+        it("should throw when loadService encounters a corrupt entry", () => {
+            const c = createContainer({
+                name: "corrupt",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            // Insert a corrupt entry into the service map
+            (c as any)._serviceMap.set("corrupt.ns", {});
+
+            expect(() => (c as any).get({ ns: "corrupt.ns" }))
+                .toThrow("Corrupt service entry in serviceMap");
+        });
+
+        it("should throw when resolveOrRetry encounters a corrupt entry", async () => {
+            const c = createContainer({
+                name: "corrupt",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            (c as any)._serviceMap.set("corrupt.ns", {});
+
+            await expect((c as any).fetch({ ns: "corrupt.ns" }))
+                .rejects.toThrow("Corrupt service entry in serviceMap");
+        });
+
+        it("should throw when getOptional encounters a corrupt entry", () => {
+            const c = createContainer({
+                name: "corrupt",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            (c as any)._serviceMap.set("corrupt.ns", {});
+
+            expect(() => (c as any).getOptional({ ns: "corrupt.ns" }))
+                .toThrow("Corrupt service entry in serviceMap");
+        });
+    });
+
     describe("Inspect", () => {
         it("should return null for an unknown service", () => {
             const c = createContainer({
