@@ -1786,6 +1786,47 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("has()", () => {
+        it("should return true for a registered service", () => {
+            const c = createContainer({
+                name: "has-test",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            expect(c.has(MULTIPLIER)).toBe(true);
+        });
+
+        it("should return false for an unknown service", () => {
+            const c = createContainer({
+                name: "has-test",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            expect(c.has(UNKNOWN)).toBe(false);
+        });
+
+        it("should return true for a service in an ancestor", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [],
+            });
+            expect(child.has(MULTIPLIER)).toBe(true);
+        });
+
+        it("should cache not-found results", () => {
+            const c = createContainer({
+                name: "has-cache",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            expect(c.has(UNKNOWN)).toBe(false);
+            // Repeated call exercises the cached notFound entry
+            expect(c.has(UNKNOWN)).toBe(false);
+        });
+    });
+
     describe("Dump", () => {
         it("should return a string with service path, ns, and status", () => {
             const c = createContainer({

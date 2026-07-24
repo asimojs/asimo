@@ -294,6 +294,10 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
      */
     inspect(): ServiceInspectInfo[];
     /**
+     * Returns true if the given IID is registered in this container or any ancestor.
+     */
+    has(iid: InterfaceId<any, any>): boolean;
+    /**
      * Returns an iterator over the service entries defined directly on this container
      * (excluding parents). Each entry exposes the IID namespace and load status.
      */

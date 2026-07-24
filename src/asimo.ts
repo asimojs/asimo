@@ -251,6 +251,9 @@ export function createContainer<
                 };
             }
         },
+        has(iid: InterfaceId<any>): boolean {
+            return this.inspect(iid) !== null;
+        },
         inspect(iid?: InterfaceId<any>): any {
             if (iid) {
                 return inspectService(iid);
