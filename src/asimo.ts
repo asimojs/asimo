@@ -167,7 +167,7 @@ type ServiceIID<S> = S extends {
 
 interface InternalEntry {
     factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
-    bundle?: ServiceBundle;
+    bundle?: { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
     instance?: any;
     maxRetries?: number;
     retryDelayMs?: number;
@@ -224,7 +224,7 @@ export function createContainer<
                 retryDelayMs: sf.retryDelayMs,
             });
         } else if (__asimoServiceBundle in service) {
-            const sb = service as unknown as ServiceBundle;
+            const sb = service as { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
             for (const iid of sb.provide) {
                 serviceMap.set(iid.ns, {
                     bundle: sb,
