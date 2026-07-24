@@ -1,7 +1,9 @@
 import {
+    AsimoError,
     __asimoServiceBundle,
     __asimoServiceFactory,
 } from "./asimo.types";
+export { AsimoError };
 import type {
     AsimoConfig,
     AsyncIID,
@@ -22,18 +24,6 @@ interface InternalContainer extends Container<any> {
     fetchOptional(...iids: InterfaceId<any>[]): any;
     /** Internal service map — used by bundles to copy sub-container entries into the parent. */
     _serviceMap: Map<InterfaceNamespace, InternalEntry>;
-}
-
-export class AsimoError extends Error {
-    readonly container: string;
-    readonly messagePrefix: string;
-
-    constructor(message: string, container: string) {
-        super(`[Asimo] ${message} at ${container}`);
-        this.container = container;
-        this.name = "AsimoError";
-        this.messagePrefix = "[Asimo] ";
-    }
 }
 
 export class AsimoLoadError extends AsimoError {
@@ -179,6 +169,7 @@ export function createContainer<
 }): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const cfg = params.config ?? ({} as AsimoConfig);
     const onLoad = cfg.onLoad;
+    const onError = cfg.onError;
     if (params.name.includes('/')) {
         throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
     }
@@ -313,11 +304,13 @@ export function createContainer<
                 }
             }
             entry.instance = undefined;
-            throw new AsimoLoadError(
+            const error = new AsimoLoadError(
                 `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
                 container.path,
                 lastError,
             );
+            onError?.(error, container);
+            throw error;
         })();
 
         return entry.instance;
@@ -368,7 +361,9 @@ export function createContainer<
     }
 
     function throwError(message: string): never {
-        throw new AsimoError(message, container.path);
+        const error = new AsimoError(message, container.path);
+        onError?.(error, container);
+        throw error;
     }
 
     async function resolveOrRetry(entry: InternalEntry): Promise<any> {
@@ -430,11 +425,13 @@ export function createContainer<
                     }
                 }
             }
-            throw new AsimoLoadError(
+            const error = new AsimoLoadError(
                 `Bundle load failed for "${iid.ns}" after ${maxRetries + 1} attempts`,
                 container.path,
                 lastError,
             );
+            onError?.(error, container);
+            throw error;
         })();
 
         bundleLoadPromises.set(bundle, loadPromise);

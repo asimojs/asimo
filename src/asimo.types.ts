@@ -160,8 +160,21 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
                 : ServiceBundle<IIDs[number], []>
             : S;
 
+export class AsimoError extends Error {
+    readonly container: string;
+    readonly messagePrefix: string;
+
+    constructor(message: string, container: string) {
+        super(`[Asimo] ${message} at ${container}`);
+        this.container = container;
+        this.name = "AsimoError";
+        this.messagePrefix = "[Asimo] ";
+    }
+}
+
 /**
- * Global configuration for asimo.
+ * Asimo container configuration. Allows to define default retry settings and hooks for load and error events.
+ * Typically created as a global config object and passed to each `createContainer()` as the `config` property.
  */
 export interface AsimoConfig {
     /** Default max number of retries on load failure for async IIDs (default: 2). */
@@ -173,6 +186,11 @@ export interface AsimoConfig {
      * Fires at most once per (iid, container) pair on successful load.
      */
     onLoad?: (iid: InterfaceId<any, any>, container: Container<any>) => void;
+    /**
+     * Called when an AsimoError occurs during service loading.
+     * Receives the error object and the container reference.
+     */
+    onError?: (error: AsimoError, container: Container<any>) => void;
 }
 
 /**
@@ -189,8 +207,6 @@ export interface ServiceInspectInfo {
 
 /**
  * Asimo IoC Container that stores retrievable dependencies.
- *
- * The root container (aka. context) is exposed through the asm global object. Sub-contexts can be created through createContainer()
  */
 export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any, any>> {
     /** Phantom field to make IIDs invariant (both co- and contravariant positions) */

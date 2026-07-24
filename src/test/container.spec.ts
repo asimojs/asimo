@@ -1408,6 +1408,86 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("onError callback", () => {
+        it("should fire on Service not found error", async () => {
+            const errors: AsimoError[] = [];
+            const c = createContainer({
+                name: "onerror-notfound",
+                config: {
+                    onError: (error) => errors.push(error),
+                },
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            try {
+                await c.fetch(ADDER as any);
+            } catch {
+                // expected
+            }
+            expect(errors).toHaveLength(1);
+            expect(errors[0]).toBeInstanceOf(AsimoError);
+            expect(errors[0].message).toContain("Service not found: asimo.src.test.Adder");
+            expect(errors[0].container).toBe("/onerror-notfound");
+        });
+
+        it("should fire on exhausted retries", async () => {
+            const errors: AsimoLoadError[] = [];
+            const c = createContainer({
+                name: "onerror-exhausted",
+                config: {
+                    maxRetries: 0,
+                    onError: (error) => errors.push(error as AsimoLoadError),
+                },
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+            expect(errors).toHaveLength(1);
+            expect(errors[0]).toBeInstanceOf(AsimoLoadError);
+            expect(errors[0].container).toBe("/onerror-exhausted");
+            expect(errors[0].cause).toBeInstanceOf(Error);
+        });
+
+        it("should fire on circular bundle loading", async () => {
+            const errors: AsimoError[] = [];
+            const c = createContainer({
+                name: "onerror-circular",
+                config: {
+                    onError: (error) => errors.push(error),
+                },
+                services: [
+                    bundle({
+                        provide: [ADDER],
+                        dependencies: [],
+                        load: async (ctx: any) => {
+                            await ctx.fetch(ADDER);
+                            return createContainer({ name: "sub", services: [] });
+                        },
+                    } as any),
+                ],
+            });
+
+            await expect(c.fetch(ADDER as any)).rejects.toThrow(
+                "[Asimo] Circular bundle loading detected for: asimo.src.test.Adder at /onerror-circular",
+            );
+            expect(errors).toHaveLength(1);
+            expect(errors[0]).toBeInstanceOf(AsimoError);
+            expect(errors[0].message).toContain("Circular bundle loading detected");
+        });
+    });
+
     describe("Inspect", () => {
         it("should return null for an unknown service", () => {
             const c = createContainer({
