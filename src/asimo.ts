@@ -1,8 +1,4 @@
-import {
-    AsimoError,
-    __asimoServiceBundle,
-    __asimoServiceFactory,
-} from "./asimo.types";
+import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
 export { AsimoError };
 import type {
     AsimoConfig,
@@ -83,7 +79,13 @@ export function factory<
     /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `Container<never>` (no accessible services). */
     dependencies?: Deps;
     /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
-    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
+    load(
+        context: Container<Deps[number]>,
+    ): IID extends SyncIID<infer T, any>
+        ? T
+        : IID extends AsyncIID<infer T, any>
+          ? Promise<T>
+          : never;
     /** Max number of retries on load failure for async IIDs (default: 2). */
     maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
     /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
@@ -140,13 +142,28 @@ export function bundle<
 }
 
 type ServiceEntry =
-    | { readonly [__asimoServiceFactory]: true; interface: InterfaceId<any, any>; dependencies?: ServiceDeps }
-    | { readonly [__asimoServiceBundle]: true; provide: AsyncIID<any, any>[]; dependencies?: ServiceDeps };
+    | {
+          readonly [__asimoServiceFactory]: true;
+          interface: InterfaceId<any, any>;
+          dependencies?: ServiceDeps;
+      }
+    | {
+          readonly [__asimoServiceBundle]: true;
+          provide: AsyncIID<any, any>[];
+          dependencies?: ServiceDeps;
+      };
 
-type ServiceIID<S> =
-    S extends { readonly [__asimoServiceFactory]: true; interface: infer IID extends InterfaceId<any, any> } ? IID :
-    S extends { readonly [__asimoServiceBundle]: true; provide: infer IIDs extends InterfaceId<any, any>[] } ? IIDs[number] :
-    never;
+type ServiceIID<S> = S extends {
+    readonly [__asimoServiceFactory]: true;
+    interface: infer IID extends InterfaceId<any, any>;
+}
+    ? IID
+    : S extends {
+            readonly [__asimoServiceBundle]: true;
+            provide: infer IIDs extends InterfaceId<any, any>[];
+        }
+      ? IIDs[number]
+      : never;
 
 interface InternalEntry {
     factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
@@ -166,16 +183,29 @@ export function createContainer<
     name: string;
     extends?: Parents;
     config?: AsimoConfig;
-    services?: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
-}): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
+    services?: [
+        ...{
+            [K in keyof Services]: ValidService<
+                Services[K],
+                | ServiceIID<Services[number]>
+                | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+            >;
+        },
+    ];
+}): Container<
+    | ServiceIID<Services[number]>
+    | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+> {
     const cfg = params.config ?? ({} as AsimoConfig);
     const onLoad = cfg.onLoad;
     const onError = cfg.onError;
-    if (params.name.includes('/')) {
-        throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
+    if (params.name.includes("/")) {
+        throw new Error(
+            `[Asimo] Container name must not contain forward slashes: "${params.name}"`,
+        );
     }
     if (params.services !== undefined && !Array.isArray(params.services)) {
-        throw new Error('[Asimo] services must be an array');
+        throw new Error("[Asimo] services must be an array");
     }
     const parents = params.extends ? Object.freeze([...params.extends]) : null;
     const services = params.services ?? [];
@@ -186,11 +216,19 @@ export function createContainer<
     for (const service of services) {
         if (__asimoServiceFactory in service) {
             const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
-            serviceMap.set(sf.interface.ns, { factory: sf, maxRetries: sf.maxRetries, retryDelayMs: sf.retryDelayMs });
+            serviceMap.set(sf.interface.ns, {
+                factory: sf,
+                maxRetries: sf.maxRetries,
+                retryDelayMs: sf.retryDelayMs,
+            });
         } else if (__asimoServiceBundle in service) {
             const sb = service as unknown as ServiceBundle;
             for (const iid of sb.provide) {
-                serviceMap.set(iid.ns, { bundle: sb, maxRetries: sb.maxRetries, retryDelayMs: sb.retryDelayMs });
+                serviceMap.set(iid.ns, {
+                    bundle: sb,
+                    maxRetries: sb.maxRetries,
+                    retryDelayMs: sb.retryDelayMs,
+                });
             }
         }
     }
@@ -206,7 +244,7 @@ export function createContainer<
                 yield {
                     ns,
                     path: container.path,
-                    status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
+                    status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
                 };
             }
         },
@@ -222,7 +260,7 @@ export function createContainer<
             for (const info of all) {
                 lines.push(`  ${info.path}: ${info.ns} - ${info.status}`);
             }
-            return lines.join('\n');
+            return lines.join("\n");
         },
         get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
@@ -253,7 +291,8 @@ export function createContainer<
     _serviceMaps.set(container, serviceMap);
 
     return container as unknown as Container<
-        ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+        | ServiceIID<Services[number]>
+        | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
     >;
 
     function loadService(iid: InterfaceId<any>): any {
@@ -325,7 +364,7 @@ export function createContainer<
                 if (err instanceof AsimoError) throw err;
                 lastError = err;
                 if (attempt < maxRetries) {
-                    await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
+                    await new Promise((r) => setTimeout(r, baseDelay * 2 ** attempt));
                 }
             }
         }
@@ -344,7 +383,7 @@ export function createContainer<
             return {
                 ns: iid.ns,
                 path: container.path,
-                status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
+                status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
             };
         }
         if (parents) {
@@ -364,13 +403,15 @@ export function createContainer<
             results.push({
                 ns,
                 path: container.path,
-                status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
+                status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
             });
         }
         if (parents) {
             const seen = new Set(serviceMap.keys());
             for (const parent of parents) {
-                const parentResults = (parent as InternalContainer).inspect() as ServiceInspectInfo[];
+                const parentResults = (
+                    parent as InternalContainer
+                ).inspect() as ServiceInspectInfo[];
                 for (const pr of parentResults) {
                     if (!seen.has(pr.ns)) {
                         results.push(pr);
@@ -426,7 +467,7 @@ export function createContainer<
 
         const loadPromise = (async () => {
             let lastError: unknown;
-            const provideNs = new Set(bundle.provide.map(iid => iid.ns));
+            const provideNs = new Set(bundle.provide.map((iid) => iid.ns));
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
                 try {
                     const subContainer = await bundle.load(container as any);
@@ -443,7 +484,7 @@ export function createContainer<
                     if (err instanceof AsimoError) throw err;
                     lastError = err;
                     if (attempt < maxRetries) {
-                        await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
+                        await new Promise((r) => setTimeout(r, baseDelay * 2 ** attempt));
                     }
                 }
             }
@@ -488,8 +529,9 @@ export function createContainer<
     }
 
     /** Same as `getOptionalService` but systematically returns a promise */
-    async function fetchOptionalService(iid: InterfaceId<any>): Promise<any> {
-        return getOptionalService(iid);
+    function fetchOptionalService(iid: InterfaceId<any>): Promise<any> {
+        const result = getOptionalService(iid);
+        return result instanceof Promise ? result : Promise.resolve(result);
     }
 
     function getParentService(iid: InterfaceId<any>): any {
