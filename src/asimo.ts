@@ -285,35 +285,46 @@ export function createContainer<
     async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
         const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
         const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
-        let lastError: unknown;
 
-        entry.instance = (async () => {
-            for (let attempt = 0; attempt <= maxRetries; attempt++) {
-                try {
-                    const result = entry.factory!.load(container);
-                    const value = await result;
-                    entry.instance = value;
-                    onLoad?.(entry.factory!.interface, container);
-                    return value;
-                } catch (err) {
-                    if (err instanceof AsimoError) throw err;
-                    lastError = err;
-                    if (attempt < maxRetries) {
-                        await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
-                    }
+        const loadPromise = retryAsyncFactoryLoad(entry, maxRetries, baseDelay);
+        entry.instance = loadPromise;
+
+        try {
+            const value = await loadPromise;
+            entry.instance = value;
+            onLoad?.(entry.factory!.interface, container);
+            return value;
+        } catch (err) {
+            entry.instance = undefined;
+            throw err;
+        }
+    }
+
+    async function retryAsyncFactoryLoad(
+        entry: InternalEntry,
+        maxRetries: number,
+        baseDelay: number,
+    ): Promise<any> {
+        let lastError: unknown;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                const result = entry.factory!.load(container);
+                return await result;
+            } catch (err) {
+                if (err instanceof AsimoError) throw err;
+                lastError = err;
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, baseDelay * 2 ** attempt));
                 }
             }
-            entry.instance = undefined;
-            const error = new AsimoLoadError(
-                `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
-                container.path,
-                lastError,
-            );
-            onError?.(error, container);
-            throw error;
-        })();
-
-        return entry.instance;
+        }
+        const error = new AsimoLoadError(
+            `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
+            container.path,
+            lastError,
+        );
+        onError?.(error, container);
+        throw error;
     }
 
     function inspectService(iid: InterfaceId<any>): ServiceInspectInfo | null {
