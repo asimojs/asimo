@@ -1488,42 +1488,6 @@ describe("IoC Container", () => {
         });
     });
 
-    describe("Corrupt entry errors", () => {
-        it("should throw when loadService encounters a corrupt entry", () => {
-            const c = createContainer({
-                name: "corrupt",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
-            });
-            // Insert a corrupt entry into the service map
-            (c as any)._serviceMap.set("corrupt.ns", {});
-
-            expect(() => (c as any).get({ ns: "corrupt.ns" }))
-                .toThrow("Corrupt service entry in serviceMap");
-        });
-
-        it("should throw when resolveOrRetry encounters a corrupt entry", async () => {
-            const c = createContainer({
-                name: "corrupt",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
-            });
-            (c as any)._serviceMap.set("corrupt.ns", {});
-
-            await expect((c as any).fetch({ ns: "corrupt.ns" }))
-                .rejects.toThrow("Corrupt service entry in serviceMap");
-        });
-
-        it("should throw when getOptional encounters a corrupt entry", () => {
-            const c = createContainer({
-                name: "corrupt",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
-            });
-            (c as any)._serviceMap.set("corrupt.ns", {});
-
-            expect(() => (c as any).getOptional({ ns: "corrupt.ns" }))
-                .toThrow("Corrupt service entry in serviceMap");
-        });
-    });
-
     describe("Inspect", () => {
         it("should return null for an unknown service", () => {
             const c = createContainer({
@@ -1747,6 +1711,78 @@ describe("IoC Container", () => {
             const info = child.inspect(MULTIPLIER)!;
             // Child shadows parent — should show child's path
             expect(info.path).toBe("/parent/child");
+        });
+    });
+
+    describe("entries()", () => {
+        it("should iterate over own services only", () => {
+            const c = createContainer({
+                name: "entries-test",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            const result = Array.from(c.entries());
+            expect(result).toHaveLength(2);
+            const nsList = result.map(e => e.ns);
+            expect(nsList).toContain(MULTIPLIER.ns);
+            expect(nsList).toContain(DIVIDER.ns);
+            for (const e of result) {
+                expect(e.path).toBe("/entries-test");
+            }
+        });
+
+        it("should not include parent services", () => {
+            const parent = createContainer({
+                name: "parent",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+            const child = createContainer({
+                name: "child",
+                extends: [parent],
+                services: [
+                    factory({
+                        provide: DIVIDER,
+                        load: () => divideNumbers,
+                    }),
+                ],
+            });
+
+            const result = Array.from(child.entries());
+            expect(result).toHaveLength(1);
+            expect(result[0].ns).toBe(DIVIDER.ns);
+        });
+
+        it("should show status for each entry", () => {
+            const c = createContainer({
+                name: "entries-status",
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            const before = Array.from(c.entries());
+            expect(before[0].status).toBe("registered");
+
+            c.get(MULTIPLIER);
+            const after = Array.from(c.entries());
+            expect(after[0].status).toBe("loaded");
         });
     });
 

@@ -223,7 +223,8 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
     /**
      * A unique path identifier created by concatenating the 'first parent' container's path 
      * with the current container's name. This allows to identify a container in a hierarchy of containers.
-     * e.g. "/asm/subContext1/subContext2"
+     * e.g. "/app/subContext1/subContext2"
+     * note: root containers have a path starting with a slash ("/") - e.g. "/app"
      */
     readonly path: string;
     /**
@@ -292,6 +293,11 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
      * List all services defined in this container and its ancestors with their status.
      */
     inspect(): ServiceInspectInfo[];
+    /**
+     * Returns an iterator over the service entries defined directly on this container
+     * (excluding parents). Each entry exposes the IID namespace and load status.
+     */
+    entries(): IterableIterator<ServiceInspectInfo>;
     /**
      * Returns a human-readable string describing all services in this container
      * and its ancestors, their locations, and their load status.

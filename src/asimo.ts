@@ -22,8 +22,6 @@ import type {
 interface InternalContainer extends Container<any> {
     getOptional(...iids: InterfaceId<any>[]): any;
     fetchOptional(...iids: InterfaceId<any>[]): any;
-    /** Internal service map — used by bundles to copy sub-container entries into the parent. */
-    _serviceMap: Map<InterfaceNamespace, InternalEntry>;
 }
 
 export class AsimoLoadError extends AsimoError {
@@ -158,6 +156,9 @@ interface InternalEntry {
     retryDelayMs?: number;
 }
 
+/** Internal service maps keyed by container */
+const _serviceMaps = new WeakMap<Container<any>, Map<InterfaceNamespace, InternalEntry>>();
+
 export function createContainer<
     const Services extends readonly ServiceEntry[],
     const Parents extends readonly Container<any>[] | null | undefined = undefined,
@@ -200,7 +201,15 @@ export function createContainer<
         name: params.name,
         path,
         parents: parents as readonly Container<any>[] | null,
-        _serviceMap: serviceMap,
+        *entries(): IterableIterator<ServiceInspectInfo> {
+            for (const [ns, entry] of serviceMap) {
+                yield {
+                    ns,
+                    path: container.path,
+                    status: entry.instance ? 'loaded' : entry.bundle ? 'pending' : 'registered',
+                };
+            }
+        },
         inspect(iid?: InterfaceId<any>): any {
             if (iid) {
                 return inspectService(iid);
@@ -240,6 +249,8 @@ export function createContainer<
             return Promise.all(iids.map((iid) => fetchOptionalService(iid)));
         },
     };
+
+    _serviceMaps.set(container, serviceMap);
 
     return container as unknown as Container<
         ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
@@ -419,7 +430,7 @@ export function createContainer<
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
                 try {
                     const subContainer = await bundle.load(container as any);
-                    const subMap = (subContainer as InternalContainer)._serviceMap;
+                    const subMap = _serviceMaps.get(subContainer as Container<any>);
                     if (subMap) {
                         for (const [ns, subEntry] of subMap) {
                             if (provideNs.has(ns)) {
