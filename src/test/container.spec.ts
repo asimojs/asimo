@@ -1278,6 +1278,136 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("onLoad callback", () => {
+        it("should fire for a sync factory", () => {
+            const calls: Array<{ iid: string; container: string }> = [];
+            const c = createContainer({
+                name: "onload-sync",
+                config: {
+                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                },
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            expect(calls).toEqual([
+                { iid: MULTIPLIER.ns, container: "/onload-sync" },
+            ]);
+        });
+
+        it("should fire once for an async factory after successful retry", async () => {
+            const calls: Array<{ iid: string; container: string }> = [];
+            let attempt = 0;
+            const c = createContainer({
+                name: "onload-async",
+                config: {
+                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                },
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            attempt++;
+                            if (attempt < 2) throw new Error("fail");
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            expect(calls).toEqual([
+                { iid: ADDER.ns, container: "/onload-async" },
+            ]);
+        });
+
+        it("should fire for each individual factory loaded from a bundle", async () => {
+            const calls: Array<{ iid: string; container: string }> = [];
+            const c = createContainer({
+                name: "onload-bundle",
+                config: {
+                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                },
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub",
+                                services: [
+                                    factory({
+                                        provide: ADDER,
+                                        load: async () => addNumbers,
+                                    }),
+                                    factory({
+                                        provide: SUBTRACTER,
+                                        load: async () => subtractNumbers,
+                                    }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            // Fetch both — each factory load fires onLoad independently
+            const [add, subtract] = await c.fetch(ADDER, SUBTRACTER);
+            expect(add(2, 3)).toBe(5);
+            expect(subtract(5, 3)).toBe(2);
+            expect(calls).toEqual([
+                { iid: ADDER.ns, container: "/onload-bundle" },
+                { iid: SUBTRACTER.ns, container: "/onload-bundle" },
+            ]);
+        });
+
+        it("should not fire on a failed load", async () => {
+            const calls: string[] = [];
+            const c = createContainer({
+                name: "onload-fail",
+                config: {
+                    maxRetries: 0,
+                    onLoad: (iid) => calls.push(iid.ns),
+                },
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+            expect(calls).toEqual([]);
+        });
+
+        it("should not fire when the service is already loaded", () => {
+            const calls: Array<{ iid: string; container: string }> = [];
+            const c = createContainer({
+                name: "onload-cached",
+                config: {
+                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                },
+                services: [
+                    factory({
+                        provide: MULTIPLIER,
+                        load: () => multiplyNumbers,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            c.get(MULTIPLIER); // second call — already loaded
+
+            expect(calls).toHaveLength(1);
+        });
+    });
+
     describe("Inspect", () => {
         it("should return null for an unknown service", () => {
             const c = createContainer({

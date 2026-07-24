@@ -165,9 +165,14 @@ export type ValidService<S, AllIIDs extends InterfaceId<any, any>> =
  */
 export interface AsimoConfig {
     /** Default max number of retries on load failure for async IIDs (default: 2). */
-    maxRetries: number;
+    maxRetries?: number;
     /** Default base delay in ms between retries, doubled after each attempt (default: 1000). */
-    retryDelayMs: number;
+    retryDelayMs?: number;
+    /**
+     * Called when a service factory is invoked for the first time.
+     * Fires at most once per (iid, container) pair on successful load.
+     */
+    onLoad?: (iid: InterfaceId<any, any>, container: Container<any>) => void;
 }
 
 /**

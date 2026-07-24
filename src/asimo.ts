@@ -178,6 +178,7 @@ export function createContainer<
     services?: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
 }): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
     const cfg = params.config ?? ({} as AsimoConfig);
+    const onLoad = cfg.onLoad;
     if (params.name.includes('/')) {
         throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
     }
@@ -284,6 +285,7 @@ export function createContainer<
         if (entry.instance) return entry.instance;
         if (entry.factory) {
             entry.instance = entry.factory.load(container);
+            onLoad?.(entry.factory.interface, container);
             return entry.instance;
         }
         return null;
@@ -300,6 +302,7 @@ export function createContainer<
                     const result = entry.factory!.load(container);
                     const value = await result;
                     entry.instance = value;
+                    onLoad?.(entry.factory!.interface, container);
                     return value;
                 } catch (err) {
                     if (err instanceof AsimoError) throw err;
