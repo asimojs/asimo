@@ -171,6 +171,8 @@ interface InternalEntry {
     instance?: any;
     maxRetries?: number;
     retryDelayMs?: number;
+    /** Marker set after a parent-chain traversal found no match — prevents repeated O(n) searches. */
+    notFound?: true;
 }
 
 /** Internal service maps keyed by container */
@@ -241,6 +243,7 @@ export function createContainer<
         parents: parents as readonly Container<any>[] | null,
         *entries(): IterableIterator<ServiceInspectInfo> {
             for (const [ns, entry] of serviceMap) {
+                if (entry.notFound) continue;
                 yield {
                     ns,
                     path: container.path,
@@ -305,6 +308,8 @@ export function createContainer<
             }
             throwError(`Service not found: ${iid.ns}`);
         }
+
+        if (entry.notFound) throwError(`Service not found: ${iid.ns}`);
 
         if (entry.instance) return entry.instance;
 
@@ -379,7 +384,7 @@ export function createContainer<
 
     function inspectService(iid: InterfaceId<any>): ServiceInspectInfo | null {
         const entry = serviceMap.get(iid.ns);
-        if (entry) {
+        if (entry && !entry.notFound) {
             return {
                 ns: iid.ns,
                 path: container.path,
@@ -400,6 +405,7 @@ export function createContainer<
     function inspectAll(): ServiceInspectInfo[] {
         const results: ServiceInspectInfo[] = [];
         for (const [ns, entry] of serviceMap) {
+            if (entry.notFound) continue;
             results.push({
                 ns,
                 path: container.path,
@@ -517,6 +523,7 @@ export function createContainer<
     function getOptionalService(iid: InterfaceId<any>): any {
         const entry = serviceMap.get(iid.ns);
         if (entry) {
+            if (entry.notFound) return null;
             if (entry.bundle && !entry.instance && !entry.factory) {
                 return null;
             }
@@ -543,6 +550,7 @@ export function createContainer<
                 }
             }
         }
+        serviceMap.set(iid.ns, { notFound: true });
         return null;
     }
 }
