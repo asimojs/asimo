@@ -24,18 +24,6 @@ interface InternalContainer extends Container<any> {
     _serviceMap: Map<InterfaceNamespace, InternalEntry>;
 }
 
-/**
- * Global asimo configuration. Override default retry behavior for all containers.
- *
- * @example
- * asimoConfig.maxRetries = 1;
- * asimoConfig.retryDelayMs = 500;
- */
-export const asimoConfig: AsimoConfig = {
-    maxRetries: 2,
-    retryDelayMs: 1000,
-};
-
 export class AsimoError extends Error {
     readonly container: string;
     readonly messagePrefix: string;
@@ -186,8 +174,10 @@ export function createContainer<
 >(params: {
     name: string;
     extends?: Parents;
+    config?: AsimoConfig;
     services?: [...{ [K in keyof Services]: ValidService<Services[K], ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> }];
 }): Container<ServiceIID<Services[number]> | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)> {
+    const cfg = params.config ?? ({} as AsimoConfig);
     if (params.name.includes('/')) {
         throw new Error(`[Asimo] Container name must not contain forward slashes: "${params.name}"`);
     }
@@ -300,8 +290,8 @@ export function createContainer<
     }
 
     async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
-        const maxRetries = entry.maxRetries ?? asimoConfig.maxRetries;
-        const baseDelay = entry.retryDelayMs ?? asimoConfig.retryDelayMs;
+        const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
         let lastError: unknown;
 
         entry.instance = (async () => {
@@ -389,8 +379,8 @@ export function createContainer<
 
     async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         const bundle = entry.bundle!;
-        const maxRetries = entry.maxRetries ?? asimoConfig.maxRetries ?? 2;
-        const baseDelay = entry.retryDelayMs ?? asimoConfig.retryDelayMs ?? 1000;
+        const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
 
         // If this bundle is already being loaded (concurrent access), wait and re-resolve
         if (bundleLoadPromises.has(bundle)) {

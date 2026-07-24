@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { AsimoError, AsimoLoadError, asimoConfig, bundle, createContainer, factory } from "../asimo";
+import { describe, expect, it } from "vitest";
+import { AsimoError, AsimoLoadError, bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
@@ -989,12 +989,6 @@ describe("IoC Container", () => {
     });
 
     describe("Retry with exponential backoff", () => {
-        // Reset global config between tests to prevent leakage
-        afterEach(() => {
-            asimoConfig.maxRetries = 2; 
-            asimoConfig.retryDelayMs = 1000;
-        });
-
         it("should retry an async factory with default maxRetries (2) and eventually succeed", async () => {
             let callCount = 0;
             const c = createContainer({
@@ -1235,12 +1229,11 @@ describe("IoC Container", () => {
             expect(callCount).toBe(1);
         });
 
-        it("should use global asimoConfig defaults for retry", async () => {
+        it("should use container config defaults for retry", async () => {
             let callCount = 0;
-            asimoConfig.maxRetries = 1;
-            asimoConfig.retryDelayMs = 30;
             const c = createContainer({
-                name: "retry-global",
+                name: "retry-container-config",
+                config: { maxRetries: 1, retryDelayMs: 30 },
                 services: [
                     factory({
                         provide: ADDER,
@@ -1263,12 +1256,11 @@ describe("IoC Container", () => {
             expect(elapsed).toBeLessThan(500);
         });
 
-        it("should let per-service params override global asimoConfig", async () => {
+        it("should let per-service params override container config", async () => {
             let callCount = 0;
-            asimoConfig.maxRetries = 2;
-            asimoConfig.retryDelayMs = 500;
             const c = createContainer({
                 name: "retry-override",
+                config: { maxRetries: 2, retryDelayMs: 500 },
                 services: [
                     factory({
                         provide: ADDER,
