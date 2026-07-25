@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AsimoError, AsimoLoadError, bundle, createContainer, factory } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
-import { createCalculator } from "./examples/calculator";
+import { createCalculator, Calculator } from "./examples/calculator";
 
 describe("IoC Container", () => {
     describe("Container with no parents", () => {
@@ -366,6 +366,63 @@ describe("IoC Container", () => {
             expect(calculator.divide(12, 4)).toBe(3);
             expect(await calculator.add(2, 3)).toBe(5);
             expect(await calculator.subtract(2, 3)).toBe(-1);
+        });
+
+        it("should instantiate Calculator class with container context", () => {
+            const c = createTestContainer();
+            const calc = new Calculator(c);
+
+            expect(calc.multiply(3, 4)).toBe(12);
+            expect(calc.divide(12, 4)).toBe(3);
+        });
+
+        it("should support async operations on Calculator class", async () => {
+            const c = createTestContainer();
+            const calc = new Calculator(c);
+
+            const sum = await calc.add(2, 3);
+            const diff = await calc.subtract(2, 3);
+
+            expect(sum).toBe(5);
+            expect(diff).toBe(-1);
+        });
+
+        it("should lazily load async dependencies on Calculator class", () => {
+            const c = createTestContainer();
+            const calc = new Calculator(c);
+
+            // Before any async call, ADDER and SUBTRACTER should be "registered" (not loaded)
+            expect(c.inspect(ADDER)?.status).toBe("registered");
+            expect(c.inspect(SUBTRACTER)?.status).toBe("registered");
+
+            // Sync services should already be loaded (accessed in constructor)
+            expect(c.inspect(MULTIPLIER)?.status).toBe("loaded");
+            expect(c.inspect(DIVIDER)?.status).toBe("loaded");
+        });
+
+        it("should load async dependencies on first access with Calculator class", async () => {
+            const c = createTestContainer();
+            const calc = new Calculator(c);
+
+            expect(c.inspect(ADDER)?.status).toBe("registered");
+
+            await calc.add(2, 3);
+
+            expect(c.inspect(ADDER)?.status).toBe("loaded");
+
+            // SUBTRACTER should still be unloaded (not yet accessed)
+            expect(c.inspect(SUBTRACTER)?.status).toBe("registered");
+        });
+
+        it("should load all async dependencies after calling both Calculator class methods", async () => {
+            const c = createTestContainer();
+            const calc = new Calculator(c);
+
+            await calc.add(2, 3);
+            await calc.subtract(5, 1);
+
+            expect(c.inspect(ADDER)?.status).toBe("loaded");
+            expect(c.inspect(SUBTRACTER)?.status).toBe("loaded");
         });
 
         it("should expose null parents for a root container", () => {

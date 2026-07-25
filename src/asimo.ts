@@ -1,9 +1,11 @@
 import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
 export { AsimoError };
+export type { InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
 import type {
     AsimoConfig,
     AsyncIID,
     Container,
+    InferType,
     InterfaceId,
     InterfaceNamespace,
     RetryNotSupportedForSyncIID,

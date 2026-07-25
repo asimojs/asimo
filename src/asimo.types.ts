@@ -35,6 +35,15 @@ export interface AsyncIID<T, NS extends string = string> {
  */
 export type InterfaceId<T, NS extends string = string> = SyncIID<T, NS> | AsyncIID<T, NS>;
 
+/**
+ * Extracts the interface type associated with an InterfaceId, SyncIID, or AsyncIID token.
+ *
+ * @example
+ * const LOGGER = syncIID<Logger>()("app.Logger");
+ * type LoggerType = InferType<typeof LOGGER>; // Logger
+ */
+export type InferType<T extends InterfaceId<any, any>> = NonNullable<T['_type']>;
+
 /** A readonly array of interface IDs used in the `dependencies` property of a ServiceFactory. */
 export type ServiceDeps = InterfaceId<any, any>[];
 
