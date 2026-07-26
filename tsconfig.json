@@ -20,7 +20,8 @@
     "node_modules",
     "**/*.spec.ts",
     "**/test",
-    "**/mock"
+    "**/mock",
+    "src/content"
   ],
   "include": [
     "src/**/*"

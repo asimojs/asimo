@@ -5,5 +5,5 @@
     "noEmit": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "lib"]
+  "exclude": ["node_modules", "dist", "lib", "src/content"]
 }

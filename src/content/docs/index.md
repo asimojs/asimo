@@ -46,7 +46,7 @@ asimo takes this further by making the container **type-safe at compile time** �
 
 > **Overall Assessment: Excellent**
 >
-> This is a well-engineered, production-quality TypeScript IoC container. ~3KB gzipped, zero dependencies, runs everywhere. The type system design is its standout feature — compile-time dependency validation using branded error types is genuinely impressive.
+> This is a well-engineered, production-quality TypeScript IoC container. ~2KB gzipped, zero dependencies, runs everywhere. The type system design is its standout feature — compile-time dependency validation using branded error types is genuinely impressive.
 >
 > — DeepSeek V4 Pro
 

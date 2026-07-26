@@ -1,7 +1,6 @@
 .DS_Store
 old
 coverage
-dist
 dist-bundles
 docs-dist
 lib

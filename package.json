@@ -1,6 +1,6 @@
 {
     "name": "@asimojs/asimo",
-    "version": "0.0.0",
+    "version": "6.0.0",
     "description": "Type-safe asynchronous IoC for browser and server runtimes",
     "main": "dist/asimo.js",
     "types": "dist/asimo.d.ts",
@@ -39,7 +39,7 @@
         "coverage": "vitest run --coverage --coverage.extension=.ts",
         "lint": "eslint 'src/**/*.ts'",
         "lint:fix": "eslint 'src/**/*.ts' --fix",
-        "prepublish": "pnpm lint && pnpm build && vitest run",
+        "prepublishOnly": "pnpm lint && pnpm build && vitest run && npm pack --dry-run",
         "pretty": "prettier --check .",
         "pretty:fix": "prettier --write .",
         "docs:dev": "astro dev",
