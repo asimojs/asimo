@@ -1,0 +1,34 @@
+:root {
+    /* Tokyo Night palette */
+    --sl-color-accent-low: #1a1b26;
+    --sl-color-accent: #7aa2f7;
+    --sl-color-accent-high: #c0caf5;
+    --sl-color-bg: #1a1b26;
+    --sl-color-bg-nav: #16161e;
+    --sl-color-bg-sidebar: #1a1b26;
+    --sl-color-bg-inline-code: #24283b;
+    --sl-color-text: #c0caf5;
+    --sl-color-text-accent: #7aa2f7;
+    --sl-color-text-invert: #1a1b26;
+    --sl-color-hairline: #292e42;
+    --sl-color-hairline-light: #24283b;
+    --sl-color-bg-accent: #7aa2f7;
+    --sl-color-bg-soft: #24283b;
+}
+
+:root[data-theme="dark"] {
+    --sl-color-accent-low: #1a1b26;
+    --sl-color-accent: #7aa2f7;
+    --sl-color-accent-high: #c0caf5;
+    --sl-color-bg: #1a1b26;
+    --sl-color-bg-nav: #16161e;
+    --sl-color-bg-sidebar: #1a1b26;
+    --sl-color-bg-inline-code: #24283b;
+    --sl-color-text: #c0caf5;
+    --sl-color-text-accent: #7aa2f7;
+    --sl-color-text-invert: #1a1b26;
+    --sl-color-hairline: #292e42;
+    --sl-color-hairline-light: #24283b;
+    --sl-color-bg-accent: #7aa2f7;
+    --sl-color-bg-soft: #24283b;
+}
