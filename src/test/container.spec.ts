@@ -389,7 +389,7 @@ describe("IoC Container", () => {
 
         it("should lazily load async dependencies on Calculator class", () => {
             const c = createTestContainer();
-            const calc = new Calculator(c);
+            const _calc = new Calculator(c);
 
             // Before any async call, ADDER and SUBTRACTER should be "registered" (not loaded)
             expect(c.inspect(ADDER)?.status).toBe("registered");

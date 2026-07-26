@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * String representing an interface namespace - e.g. "myapplication.services.Settings"
  * Must be unique within the scope of an application

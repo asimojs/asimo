@@ -77,7 +77,7 @@ describe("TS Errors", () => {
         });
 
         // @ts-expect-error - ADDER is an AsyncIID and cannot be retrieved through get()
-        const addPromise = context.get(ADDER);
+        const _addPromise = context.get(ADDER);
     });
 
     it("should not allow retrieving unspecified factory dependencies", async () => {
@@ -100,7 +100,7 @@ describe("TS Errors", () => {
         });
 
         // @ts-expect-error - ADDER is an AsyncIID and cannot be retrieved through get()
-        const addPromise = context.get(ADDER);
+        const _addPromise = context.get(ADDER);
     });
 
 
