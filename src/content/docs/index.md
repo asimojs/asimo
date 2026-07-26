@@ -42,6 +42,24 @@ This matters for three reasons:
 
 asimo takes this further by making the container **type-safe at compile time** — a missing or miswired dependency is a TypeScript error, not a runtime crash — and adding **asynchronous lazy loading** as a first-class concept via bundles.
 
+## AI assessments
+
+> **Overall Assessment: Excellent**
+>
+> This is a well-engineered, production-quality TypeScript IoC container. ~3KB gzipped, zero dependencies, runs everywhere. The type system design is its standout feature — compile-time dependency validation using branded error types is genuinely impressive.
+>
+> — DeepSeek V4 Pro
+
+> A focused, well-thought-out micro-IoC with a genuinely novel angle: pushing DI-correctness checks into the type system (sync/async split, dependency-registration branded errors, retry-only-on-async). Code quality is high and tests are serious — including type-level assertions, which most TS libraries neglect. Runtime logic is correct for the common paths; bundle de-duplication and parent-chain caching are handled carefully.
+>
+> — GLM-5.2
+
+> **Overall: A high-quality, well-engineered TypeScript IoC library**
+>
+> The type-safety story is the standout feature — it pushes what would normally be runtime errors into the compiler, which is exactly what an IoC container should do.
+>
+> — Minimax-M3
+
 ## Why asimo?
 
 ### Zero Dependencies
@@ -174,6 +192,7 @@ Works identically in the browser, Node.js, Bun, Deno, and Cloudflare Workers. Ze
 | **Type safety** | Full compile-time | Partial | Partial |
 | **Learning curve** | Low (3 concepts) | N/A | High (decorators, containers) |
 | **Framework agnostic** | Yes | Yes | Yes |
+
 
 ## Next Steps
 
