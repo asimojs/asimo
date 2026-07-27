@@ -1,5 +1,7 @@
 # asimo
 
+> [🚀 Full Documentation](https://asimojs.github.io/asimo) · [API Reference](https://asimojs.github.io/asimo/api-reference/createcontainer)
+
 A zero-dependency, fully type-safe Inversion of Control (IoC) container for TypeScript — browser and server.
 
 ```ts
@@ -24,7 +26,7 @@ logger.log("hello world");
 
 ## Why asimo?
 
-- **Zero dependencies** — ~3 KB gzipped, no decorators, no `reflect-metadata`
+- **Zero dependencies** — ~2 KB gzipped, no decorators, no `reflect-metadata`
 - **Full compile-time safety** — missing dependencies, wrong IID types, retry-on-sync are all TypeScript errors, not runtime crashes
 - **Automatic dependency inference** — `dependencies: [A, B]` types the `load` context as `Container<A | B>`
 - **Lazy bundles** — wrap `import()` in `bundle()` and services load only on first access
