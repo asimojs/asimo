@@ -79,5 +79,6 @@ export default defineConfig({
         }),
     ],
     outDir: "./docs-dist",
-    site: "https://asimojs.github.io/asimo",
+    site: "https://asimojs.github.io",
+    base: "/asimo",
 });
