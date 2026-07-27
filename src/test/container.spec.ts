@@ -1892,6 +1892,74 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("dispose()", () => {
+        it("should unload a loaded sync service", () => {
+            const c = createContainer({
+                name: "dispose-sync",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+
+            c.get(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.status).toBe("loaded");
+
+            c.dispose(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
+        });
+
+        it("should unload a loaded async service", async () => {
+            const c = createContainer({
+                name: "dispose-async",
+                services: [factory({ provide: ADDER, load: async () => addNumbers })],
+            });
+
+            await c.fetch(ADDER);
+            expect(c.inspect(ADDER)!.status).toBe("loaded");
+
+            c.dispose(ADDER);
+            expect(c.inspect(ADDER)!.status).toBe("registered");
+        });
+
+        it("should allow re-fetching after dispose", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "dispose-refetch",
+                services: [
+                    factory({
+                        provide: ADDER,
+                        load: async () => {
+                            callCount++;
+                            return addNumbers;
+                        },
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            expect(callCount).toBe(1);
+
+            c.dispose(ADDER);
+            await c.fetch(ADDER);
+            expect(callCount).toBe(2);
+        });
+
+        it("should not throw on unknown IID", () => {
+            const c = createContainer({
+                name: "dispose-unknown",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            expect(() => c.dispose(UNKNOWN)).not.toThrow();
+        });
+
+        it("should not throw on unloaded service", () => {
+            const c = createContainer({
+                name: "dispose-unloaded",
+                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+            });
+            expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
+            expect(() => c.dispose(MULTIPLIER)).not.toThrow();
+        });
+    });
+
     describe("Dump", () => {
         it("should return a string with service path, ns, and status", () => {
             const c = createContainer({

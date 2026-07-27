@@ -90,6 +90,10 @@ function l(i) {
 			for (let n of e) t.push(`  ${n.path}: ${n.ns} - ${n.status}`);
 			return t.join("\n");
 		},
+		dispose(e) {
+			let t = d.get(e.ns);
+			t && (t.instance = void 0);
+		},
 		get(...e) {
 			return e.length === 1 ? g(e[0]) : e.map((e) => g(e));
 		},

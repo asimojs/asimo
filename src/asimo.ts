@@ -273,6 +273,12 @@ export function createContainer<
             }
             return lines.join("\n");
         },
+        dispose(iid: InterfaceId<any>): void {
+            const entry = serviceMap.get(iid.ns);
+            if (entry) {
+                entry.instance = undefined;
+            }
+        },
         get(...iids: InterfaceId<any>[]): any {
             if (iids.length === 1) {
                 return loadService(iids[0]);

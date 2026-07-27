@@ -316,12 +316,17 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
      */
     entries(): IterableIterator<ServiceInspectInfo>;
     /**
-     * Returns a human-readable string describing all services in this container
-     * and its ancestors, their locations, and their load status.
+     * Returns human-readable string describing all services in this container
+     * and their ancestors, their locations, and their load status.
      * @example
      * console.log(container.dump());
      */
     dump(): string;
+    /**
+     * Removes a loaded service instance from the cache so it can be re-loaded
+     * on the next access. Does nothing if the service is not loaded or not registered.
+     */
+    dispose(iid: InterfaceId<any, any>): void;
 }
 
 

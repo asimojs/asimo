@@ -148,6 +148,20 @@ Asimo IoC Container: /app
   /app: app.services.Config - pending
 ```
 
+### `dispose()`
+
+```ts
+dispose(iid: InterfaceId<any, any>): void;
+```
+
+Clears the cached instance of a loaded service so it will be re-created on the next access. Does nothing if the service is not registered or not yet loaded.
+
+```ts
+container.get(LOGGER);         // factory called, cache populated
+container.dispose(LOGGER);     // clears cache
+container.get(LOGGER);         // factory called again
+```
+
 ## ServiceInspectInfo
 
 ```ts
