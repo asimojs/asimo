@@ -50,7 +50,6 @@
         "@astrojs/sitemap": "^3.4.0",
         "@astrojs/starlight": "~0.29.3",
         "@eslint/js": "^10.0.1",
-        "@rolldown/binding-darwin-arm64": "1.1.5",
         "@vitest/coverage-v8": "4.1.10",
         "astro": "^4.16.19",
         "eslint": "^10.7.0",

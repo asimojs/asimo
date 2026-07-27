@@ -30,6 +30,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs-dist

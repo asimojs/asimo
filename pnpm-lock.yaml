@@ -20,9 +20,6 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.7.0)
-      '@rolldown/binding-darwin-arm64':
-        specifier: 1.1.5
-        version: 1.1.5
       '@vitest/coverage-v8':
         specifier: 4.1.10
         version: 4.1.10(vitest@4.1.10)
@@ -3518,7 +3515,8 @@ snapshots:
   '@rolldown/binding-android-arm64@1.1.5':
     optional: true
 
-  '@rolldown/binding-darwin-arm64@1.1.5': {}
+  '@rolldown/binding-darwin-arm64@1.1.5':
+    optional: true
 
   '@rolldown/binding-darwin-x64@1.1.5':
     optional: true
