@@ -50,8 +50,10 @@ export declare function factory<const IID extends InterfaceId<any, any>, const D
 /**
  * Helper for declaring a lazy-loading bundle of services. Similar to `factory()` but:
  * - `provide` is an array of `AsyncIID`s (bundles cannot provide `SyncIID`s)
- * - `load` is async and returns sub-factories and sub-bundles
+ * - `load` is async and returns an `Container` with sub-factories and sub-bundles
  * - The bundle is loaded on-demand when one of its provided IIDs is fetched
+ * - Only services listed in `provide` are exposed to the parent — services in
+ *   the sub-container that are not in `provide` are silently ignored
  *
  * @example
  * bundle({

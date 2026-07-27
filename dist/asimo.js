@@ -193,7 +193,12 @@ function l(i) {
 			let e, a = new Set(i.provide.map((e) => e.ns));
 			for (let t = 0; t <= o; t++) try {
 				let e = await i.load(h), t = c.get(e);
-				if (t) for (let [e, n] of t) a.has(e) && d.set(e, n);
+				if (t) {
+					for (let [e, n] of t) if (a.has(e)) {
+						let t = d.get(e);
+						t && t.bundle !== i && S(`Bundle collision for "${e}": already registered by another bundle or factory`), d.set(e, n);
+					}
+				}
 				return;
 			} catch (r) {
 				if (r instanceof n) throw r;

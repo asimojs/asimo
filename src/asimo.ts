@@ -489,6 +489,12 @@ export function createContainer<
                     if (subMap) {
                         for (const [ns, subEntry] of subMap) {
                             if (provideNs.has(ns)) {
+                                const existing = serviceMap.get(ns);
+                                if (existing && existing.bundle !== bundle) {
+                                    throwError(
+                                        `Bundle collision for "${ns}": already registered by another bundle or factory`,
+                                    );
+                                }
                                 serviceMap.set(ns, subEntry);
                             }
                         }

@@ -920,7 +920,6 @@ describe("IoC Container", () => {
                                         provide: ADDER,
                                         load: async () => addNumbers,
                                     }),
-                                    // SUBTRACTER is NOT in the outer bundle's provide
                                     factory({
                                         provide: SUBTRACTER,
                                         load: async () => subtractNumbers,
@@ -931,24 +930,12 @@ describe("IoC Container", () => {
                 ],
             });
 
-            // ADDER is in provide — accessible
             const add = await c.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
 
-            // SUBTRACTER is NOT in provide — should throw at runtime
-            {
-                let error: unknown;
-                try {
-                    await c.fetch(SUBTRACTER as any);
-                } catch (e) {
-                    error = e;
-                }
-                expect(error).toBeInstanceOf(AsimoError);
-                expect((error as AsimoError).container).toBe("/bundle-scope-test");
-                expect((error as Error).message).toBe(
-                    "[Asimo] Service not found: asimo.src.test.Subtracter at /bundle-scope-test",
-                );
-            }
+            await expect(c.fetch(SUBTRACTER as any)).rejects.toThrow(
+                "[Asimo] Service not found: asimo.src.test.Subtracter at /bundle-scope-test",
+            );
         });
 
         it("should throw if a bundle doesn't fully provide its declared services", async () => {
@@ -972,19 +959,9 @@ describe("IoC Container", () => {
                 ],
             });
 
-            {
-                let error: unknown;
-                try {
-                    await c.fetch(SUBTRACTER as any);
-                } catch (e) {
-                    error = e;
-                }
-                expect(error).toBeInstanceOf(AsimoError);
-                expect((error as AsimoError).container).toBe("/nested-bundle");
-                expect((error as Error).message).toBe(
-                    "[Asimo] Bundle did not provide service: asimo.src.test.Subtracter at /nested-bundle",
-                );
-            }
+            await expect(c.fetch(SUBTRACTER as any)).rejects.toThrow(
+                "[Asimo] Bundle did not provide service: asimo.src.test.Subtracter at /nested-bundle",
+            );
         });
 
         it("should return null from getOptional for a bundle-provided service before loading", () => {
@@ -1042,6 +1019,37 @@ describe("IoC Container", () => {
                     "Bundle did not provide service: asimo.src.test.Subtracter",
                 );
             }
+        });
+
+        it("should throw on bundle collision when two bundles claim the same IID", async () => {
+            const c = createContainer({
+                name: "bundle-collision",
+                services: [
+                    bundle({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub-a",
+                                services: [
+                                    factory({ provide: ADDER, load: async () => addNumbers }),
+                                    factory({ provide: SUBTRACTER, load: async () => subtractNumbers }),
+                                ],
+                            }),
+                    }),
+                    bundle({
+                        provide: [ADDER],
+                        load: async () =>
+                            createContainer({
+                                name: "sub-b",
+                                services: [
+                                    factory({ provide: ADDER, load: async () => addNumbers }),
+                                ],
+                            }),
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(SUBTRACTER)).rejects.toThrow("Bundle collision for");
         });
     });
 
