@@ -1,412 +1,582 @@
-import {
-    IoCContainer,
-    AsmInterfaceDefinition,
-    Logger,
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
+export { AsimoError };
+export type { InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
+import type {
+    AsimoConfig,
+    AsyncIID,
+    Container,
+    InferType,
     InterfaceId,
     InterfaceNamespace,
+    RetryNotSupportedForSyncIID,
+    ServiceBundle,
+    ServiceDeps,
+    ServiceFactory,
+    ServiceInspectInfo,
     SyncIID,
-    AsyncIID,
-    AsmContext,
+    ValidService,
 } from "./asimo.types";
 
-export { IoCContainer, AsmContext, InterfaceId, SyncIID, AsyncIID };
+interface InternalContainer extends Container<any> {
+    getOptional(...iids: InterfaceId<any>[]): any;
+    fetchOptional(...iids: InterfaceId<any>[]): any;
+}
 
-/**
- * Create an interface id token that will be used to associate an interface namepsace with a typescript type
- * @param ns the interface namespace, e.g. "myapplication.services.Settings"
- * @returns an InterfaceId object
- * @deprecated use syncIID / asyncIID instead
- */
-export function interfaceId<T>(ns: InterfaceNamespace): AsyncIID<T> {
-    return { ns, sync: false } as AsyncIID<T>;
+export class AsimoLoadError extends AsimoError {
+    readonly cause: unknown;
+
+    constructor(message: string, container: string, cause?: unknown) {
+        super(message, container);
+        this.name = "AsimoLoadError";
+        this.cause = cause;
+    }
 }
 
 /**
  * Create an interface token for values that can be retrieved synchronously
- * @param ns the interface namespace, e.g. "myapplication.services.Settings"
+ * @param ns the interface namespace, e.g. "myapplication.services.Configuration"
  * @returns
  */
-export function syncIID<T>(ns: InterfaceNamespace): SyncIID<T> {
-    return { ns, sync: true } as SyncIID<T>;
+export function syncIID<T>(): <NS extends string>(ns: NS) => SyncIID<T, NS> {
+    return function <NS extends string>(ns: NS): SyncIID<T, NS> {
+        return { ns, sync: true } as unknown as SyncIID<T, NS>;
+    };
 }
 
 /**
  * Create an interface token for values that can be retrieved asynchronously
- * @param ns the interface namespac, e.g. "myapplication.services.Settings"
+ * @param ns the interface namespace, e.g. "common.utils.Fetch"
  * @returns
  */
-export function asyncIID<T>(ns: InterfaceNamespace): AsyncIID<T> {
-    return { ns, sync: false } as AsyncIID<T>;
+export function asyncIID<T>(): <NS extends string>(ns: NS) => AsyncIID<T, NS> {
+    return function <NS extends string>(ns: NS): AsyncIID<T, NS> {
+        return { ns, sync: false } as unknown as AsyncIID<T, NS>;
+    };
 }
 
-const SERVICE = "service:";
-const OBJECT = "object:";
-const GROUP = "group:";
-const NULL_PROMISE = Promise.resolve(null);
-const STL_ASM = "color: #669df6";
-const STL_DATA = "color: #e39f00;font-weight:bold";
-
-// global logger - same value for all contexts
-let logger: Logger | null = console;
-// counter used to name unnamed contexts
-let count = 0;
-
-/** Internal value to identify not found interfaces */
-const NOT_FOUND = Symbol("NOT_FOUND");
-const NOT_FOUND_PROMISE = Promise.resolve(NOT_FOUND);
+type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
 
 /**
- * Create an asimo IoC Container
- * @param nameOrOptions the context name or an options object with the following properties:
- * - name: the context name (default: a unique name will be created)
- * - parent: the parent context (default: null = root context)
- * @returns an asimo IoC Container
+ * Helper for declaring a service with explicit dependencies. Inference flows directly
+ * from `dependencies` to `load`'s context, so the latter receives a
+ * `Container<Deps[number]>` typed with exactly the listed IIDs.
+ * When `dependencies` is omitted, the load context is `Container<never>` — no services
+ * are accessible unless explicitly listed as dependencies.
+ * The invariant phantom on `Container` catches mismatches between the declared
+ * dependencies and what `load` actually uses — at compile time, with no manual annotation.
+ *
+ * @example
+ * factory({
+ *     provide: CALCULATOR,
+ *     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
+ *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTER>
+ * })
  */
-export function createContainer(
-    nameOrOptions?: string | { name?: string; parent?: IoCContainer },
-): IoCContainer {
-    let name = "";
-    let parent: IoCContainer | null = null;
-    if (typeof nameOrOptions === "string") {
-        name = nameOrOptions || `IoCContainer${++count}`;
-    } else {
-        name = nameOrOptions?.name || `IoCContainer${++count}`;
-        parent = nameOrOptions?.parent || null;
+export function factory<
+    const IID extends InterfaceId<any, any>,
+    const Deps extends ServiceDeps = [],
+>(params: {
+    /** Interface identifier provided by this service. */
+    provide: IID;
+    /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `Container<never>` (no accessible services). */
+    dependencies?: Deps;
+    /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
+    load(
+        context: Container<Deps[number]>,
+    ): IID extends SyncIID<infer T, any>
+        ? T
+        : IID extends AsyncIID<infer T, any>
+          ? Promise<T>
+          : never;
+    /** Max number of retries on load failure for async IIDs (default: 2). */
+    maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
+}): ServiceFactory<IID, Deps> {
+    return {
+        [__asimoServiceFactory]: true as const,
+        interface: params.provide,
+        dependencies: params.dependencies,
+        load: params.load,
+        maxRetries: params.maxRetries,
+        retryDelayMs: params.retryDelayMs,
+    } as ServiceFactory<IID, Deps>;
+}
+
+/**
+ * Helper for declaring a lazy-loading bundle of services. Similar to `factory()` but:
+ * - `provide` is an array of `AsyncIID`s (bundles cannot provide `SyncIID`s)
+ * - `load` is async and returns an `Container` with sub-factories and sub-bundles
+ * - The bundle is loaded on-demand when one of its provided IIDs is fetched
+ * - Only services listed in `provide` are exposed to the parent — services in
+ *   the sub-container that are not in `provide` are silently ignored
+ *
+ * @example
+ * bundle({
+ *     provide: [MULTIPLIER, DIVIDER],
+ *     load: async () => {
+ *         const mod = await import("./math-services");
+ *         return [mod.multiplierFactory, mod.dividerFactory];
+ *     },
+ * })
+ */
+export function bundle<
+    const IIDs extends AsyncIID<any, any>[],
+    const Deps extends ServiceDeps = [],
+>(params: {
+    /** Interface IDs provided by this bundle — all must be `AsyncIID`. */
+    provide: IIDs;
+    /** Optional dependencies used to type the `load` context. */
+    dependencies?: Deps;
+    /** Async factory invoked on first access to any provided IID. Returns an `Container` with sub-services registered. */
+    load(context: Container<Deps[number]>): Promise<Container<any>>;
+    /** Max number of retries on load failure (default: 2). */
+    maxRetries?: number;
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
+    retryDelayMs?: number;
+}): ServiceBundle<IIDs[number], Deps> {
+    return {
+        [__asimoServiceBundle]: true as const,
+        provide: params.provide,
+        dependencies: params.dependencies,
+        load: params.load,
+        maxRetries: params.maxRetries,
+        retryDelayMs: params.retryDelayMs,
+    } as ServiceBundle<IIDs[number], Deps>;
+}
+
+type ServiceEntry =
+    | {
+          readonly [__asimoServiceFactory]: true;
+          interface: InterfaceId<any, any>;
+          dependencies?: ServiceDeps;
+      }
+    | {
+          readonly [__asimoServiceBundle]: true;
+          provide: AsyncIID<any, any>[];
+          dependencies?: ServiceDeps;
+      };
+
+type ServiceIID<S> = S extends {
+    readonly [__asimoServiceFactory]: true;
+    interface: infer IID extends InterfaceId<any, any>;
+}
+    ? IID
+    : S extends {
+            readonly [__asimoServiceBundle]: true;
+            provide: infer IIDs extends InterfaceId<any, any>[];
+        }
+      ? IIDs[number]
+      : never;
+
+interface InternalEntry {
+    factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
+    bundle?: { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
+    instance?: any;
+    maxRetries?: number;
+    retryDelayMs?: number;
+    /** Marker set after a parent-chain traversal found no match — prevents repeated O(n) searches. */
+    notFound?: true;
+}
+
+/**
+ * Module-level WeakMap mapping containers to their internal service maps.
+ * - WeakMap ensures containers are garbage-collected when no longer referenced.
+ * - Per-module isolation: if the library is duplicated in node_modules
+ *   (two copies loaded), each instance has its own _serviceMaps — correct,
+ *   since containers from different builds are independent.
+ */
+const _serviceMaps = new WeakMap<Container<any>, Map<InterfaceNamespace, InternalEntry>>();
+
+export function createContainer<
+    const Services extends readonly ServiceEntry[],
+    const Parents extends readonly Container<any>[] | null | undefined = undefined,
+>(params: {
+    name: string;
+    extends?: Parents;
+    config?: AsimoConfig;
+    services?: [
+        ...{
+            [K in keyof Services]: ValidService<
+                Services[K],
+                | ServiceIID<Services[number]>
+                | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+            >;
+        },
+    ];
+}): Container<
+    | ServiceIID<Services[number]>
+    | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+> {
+    const cfg = params.config ?? ({} as AsimoConfig);
+    const onLoad = cfg.onLoad;
+    const onError = cfg.onError;
+    if (params.name.includes("/")) {
+        throw new Error(
+            `[Asimo] Container name must not contain forward slashes: "${params.name}"`,
+        );
     }
-    name = name.replace(/\//g, "\\/");
-    const path = `${parent?.path || ""}/${name}`;
+    if (params.services !== undefined && !Array.isArray(params.services)) {
+        throw new Error("[Asimo] services must be an array");
+    }
+    const parents = params.extends ? Object.freeze([...params.extends]) : null;
+    const services = params.services ?? [];
+    const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
+    const loadingBundles = new Set<InterfaceNamespace>();
+    const bundleLoadPromises = new Map<object, Promise<void>>();
 
-    // group counter used to create unique group ids
-    let groupCount = 0;
-    // registered factories - keys have the following format:
-    // "[object|service|group|loader]:[interfaceNamespace|groupId]"
-    const factories = new Map<string, (c: IoCContainer) => any | Promise<any>>();
-    // services or loaders that have already been instanciated
-    const services = new Map<string, Promise<any>>();
-    // objects that can be retrieved through get
-    let objects: Map<string, object> | null = null;
+    for (const service of services) {
+        if (__asimoServiceFactory in service) {
+            const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
+            serviceMap.set(sf.interface.ns, {
+                factory: sf,
+                maxRetries: sf.maxRetries,
+                retryDelayMs: sf.retryDelayMs,
+            });
+        } else if (__asimoServiceBundle in service) {
+            const sb = service as { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
+            for (const iid of sb.provide) {
+                serviceMap.set(iid.ns, {
+                    bundle: sb,
+                    maxRetries: sb.maxRetries,
+                    retryDelayMs: sb.retryDelayMs,
+                });
+            }
+        }
+    }
 
-    const ctxt: IoCContainer = {
-        /** The context name */
-        get name() {
-            return name;
-        },
-        /** The parent context, if any */
-        get parent() {
-            return parent;
-        },
-        /** The interface path, built from the context parent path */
-        get path() {
-            return path;
-        },
-        /** The interface definitions that are currently loaded in the context */
-        get definitions() {
-            const defs: AsmInterfaceDefinition[] = [];
-            for (const k of factories.keys()) {
-                // ex: "service:asimo.src.tests.Calculator"
-                const parts = k.split(":");
-                const def: AsmInterfaceDefinition = {
-                    iid: parts[1] ?? "",
-                    type: parts[0] as AsmInterfaceDefinition["type"],
+    const path = `${(parents?.[0] as Container<any>)?.path || ""}/${params.name}`;
+
+    const container: InternalContainer = {
+        name: params.name,
+        path,
+        parents: parents as readonly Container<any>[] | null,
+        *entries(): IterableIterator<ServiceInspectInfo> {
+            for (const [ns, entry] of serviceMap) {
+                if (entry.notFound) continue;
+                yield {
+                    ns,
+                    path: container.path,
+                    status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
                 };
-                if (def.type === "service") {
-                    def.loaded = services.has(k);
-                }
-                defs.push(def);
-            }
-            return defs;
-        },
-        /** Register an object instance */
-        set<T extends object>(iid: SyncIID<T>, o: T): void {
-            if (validate(iid, null, "set")) {
-                if (!objects) {
-                    objects = new Map();
-                }
-                objects.set(iid.ns, o);
             }
         },
-        /** Register a service factory */
-        registerService<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
-            if (validate(iid, factory, "registerService")) {
-                factories.set(SERVICE + iid.ns, factory);
-                removeGroupEntry(iid);
+        has(iid: InterfaceId<any>): boolean {
+            return this.inspect(iid) !== null;
+        },
+        inspect(iid?: InterfaceId<any>): any {
+            if (iid) {
+                return inspectService(iid);
+            }
+            return inspectAll();
+        },
+        dump(): string {
+            const all = inspectAll();
+            const lines = [`Asimo IoC Container: ${container.path}`];
+            for (const info of all) {
+                lines.push(`  ${info.path}: ${info.ns} - ${info.status}`);
+            }
+            return lines.join("\n");
+        },
+        dispose(iid: InterfaceId<any>): void {
+            const entry = serviceMap.get(iid.ns);
+            if (entry) {
+                entry.instance = undefined;
             }
         },
-        /** Register an object factory */
-        registerFactory<T>(iid: AsyncIID<T>, factory: (c: IoCContainer) => T | Promise<T>): void {
-            if (validate(iid, factory, "registerFactory")) {
-                factories.set(OBJECT + iid.ns, factory);
-                removeGroupEntry(iid);
+        get(...iids: InterfaceId<any>[]): any {
+            if (iids.length === 1) {
+                return loadService(iids[0]);
             }
+            return iids.map((iid) => loadService(iid));
         },
-        /** Register a factory group */
-        registerBundle(iids: InterfaceId<any>[], loader: () => Promise<unknown>): void {
-            const groupId = GROUP + ++groupCount;
-            if (typeof loader !== "function") {
-                logError(`[registerBundle] Invalid group loader: ${description(loader)}`);
-                return;
+        getOptional(...iids: InterfaceId<any>[]): any {
+            if (iids.length === 1) {
+                return getOptionalService(iids[0]);
             }
-            // factory that will load the group and cache its result in the services map
-            const groupFactory = () => {
-                // if loader has already been instantiated, return it
-                let ldp = services.get(groupId);
-                if (ldp) {
-                    return ldp;
-                }
-                ldp = getPromise(loader, ctxt);
-                services.set(groupId, ldp);
-                return ldp;
-            };
-            for (const iid of iids) {
-                validate(iid, null, "registerBundle") &&
-                    factories.set(GROUP + iid.ns, groupFactory);
-            }
+            return iids.map((iid) => getOptionalService(iid));
         },
-
-        /** Get a registered object */
-        get(iid0: SyncIID<any>, iid1OrDefault?: any, ...iids: SyncIID<any>[]): any {
-            const ns0 = iid0.ns;
-            if (
-                iid1OrDefault === undefined ||
-                iid1OrDefault === null ||
-                typeof iid1OrDefault !== "object" ||
-                !("ns" in iid1OrDefault) ||
-                typeof iid1OrDefault.ns !== "string"
-            ) {
-                // only one argument + optional default
-                const v = getObject(iid0);
-                if (v === NOT_FOUND) {
-                    if (iid1OrDefault !== undefined) {
-                        return iid1OrDefault;
-                    } else {
-                        logError(`Object not found: ${description(ns0)}`, true);
-                    }
-                }
-                return v;
-            } else {
-                // list of iids
-                const iidList = [iid0, iid1OrDefault, ...iids];
-                const values = iidList.map((iid) => getObject(iid));
-                const nsNotFounds: string[] = [];
-                for (let i = 0; values.length > i; i++) {
-                    if (values[i] === NOT_FOUND) {
-                        nsNotFounds.push(iidList[i].ns);
-                    }
-                }
-                if (nsNotFounds.length) {
-                    if (nsNotFounds.length === 1) {
-                        logError(`Object not found: "${nsNotFounds[0]}"`, true);
-                    } else {
-                        logError(`Objects not found: ["${nsNotFounds.join('", "')}"]`, true);
-                    }
-                }
-                return values;
+        async fetch(...iids: InterfaceId<any>[]): Promise<any> {
+            if (iids.length === 1) {
+                return loadService(iids[0]);
             }
+            return Promise.all(iids.map((iid) => loadService(iid)));
         },
-        /** Fetch a service or an object instance (services have priority) */
-        async fetch(
-            iid0: AsyncIID<any>,
-            iid1OrDefault?: any,
-            ...iids: AsyncIID<any>[]
-        ): Promise<any> {
-            if (
-                iid1OrDefault === undefined ||
-                iid1OrDefault === null ||
-                typeof iid1OrDefault !== "object" ||
-                !("ns" in iid1OrDefault) ||
-                typeof iid1OrDefault.ns !== "string"
-            ) {
-                // only one argument + optional default
-                const v = await fetchValue(iid0, true);
-                if (v === NOT_FOUND) {
-                    if (iid1OrDefault !== undefined) {
-                        return iid1OrDefault;
-                    } else {
-                        logError(`Interface not found: ${description(iid0.ns)}`, true);
-                    }
-                }
-                return v;
-            } else {
-                // list of iids
-                const iidList = [iid0, iid1OrDefault, ...iids];
-                const values = await Promise.allSettled(
-                    iidList.map((iid) => fetchValue(iid, true)),
-                );
-                const nsNotFounds: string[] = [];
-                for (let i = 0; values.length > i; i++) {
-                    const v = values[i];
-                    if (v.status === "rejected" || v.value === NOT_FOUND) {
-                        nsNotFounds.push(iidList[i].ns);
-                    }
-                }
-                if (nsNotFounds.length) {
-                    if (nsNotFounds.length === 1) {
-                        logError(`Interface not found: "${nsNotFounds[0]}"`, true);
-                    } else {
-                        logError(`Interfaces not found: ["${nsNotFounds.join('", "')}"]`, true);
-                    }
-                }
-                return values.map((v) => (v.status === "fulfilled" ? v.value : null));
+        async fetchOptional(...iids: InterfaceId<any>[]): Promise<any> {
+            if (iids.length === 1) {
+                return fetchOptionalService(iids[0]);
             }
-        },
-        get logger() {
-            return logger;
-        },
-        set logger(lg: Logger | null) {
-            logger = lg;
-        },
-        /**
-         * Log the asimo state into an array or in the console if no output argument is provided
-         * @param output
-         */
-        logState(output?: string[]) {
-            const out = output || [];
-            const defs = ctxt.definitions;
-            out.push(`Container ${ctxt.path}${defs.length === 0 ? " [empty]" : ":"}`);
-            out.push(...defs.map((d) => `+ ${d.iid} [${d.type}]${loadState(d)}`));
-            ctxt.parent?.logState(out);
-            if (!output) {
-                logger?.log(out);
-            }
-
-            function loadState(d: AsmInterfaceDefinition) {
-                if (d.type === "service") {
-                    return d.loaded ? ": loaded" : ": not loaded";
-                }
-                return "";
-            }
+            return Promise.all(iids.map((iid) => fetchOptionalService(iid)));
         },
     };
-    return ctxt;
 
-    function getObject<T>(iid: SyncIID<any>): T | typeof NOT_FOUND {
-        const r = objects?.get(iid.ns);
-        if (r !== undefined) return r as T;
-        if (parent) {
-            return parent.get(iid, NOT_FOUND);
+    _serviceMaps.set(container, serviceMap);
+
+    return container as unknown as Container<
+        | ServiceIID<Services[number]>
+        | (Parents extends readonly any[] ? ContainerIIDs<Parents[number]> : never)
+    >;
+
+    function loadService(iid: InterfaceId<any>): any {
+        const entry = serviceMap.get(iid.ns);
+        if (!entry) {
+            const value = getParentService(iid);
+            if (value !== null) {
+                serviceMap.set(iid.ns, { instance: value });
+                return value;
+            }
+            throwError(`Service not found: ${iid.ns}`);
         }
-        return NOT_FOUND;
+
+        if (entry.notFound) throwError(`Service not found: ${iid.ns}`);
+
+        if (entry.instance) return entry.instance;
+
+        if (entry.bundle && !entry.factory) {
+            return loadBundleAndResolve(entry, iid);
+        }
+
+        if (entry.factory) {
+            if (entry.factory.interface.sync) {
+                return resolveEntry(entry)!;
+            }
+            return loadAsyncWithRetry(entry);
+        }
+
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
 
-    async function fetchValue<T>(
-        iid: AsyncIID<any>,
-        lookupGroups = true,
-    ): Promise<T | typeof NOT_FOUND> {
-        const ns = iid.ns;
-        const serviceId = SERVICE + ns;
-        const srv = services.get(serviceId);
-        if (srv !== undefined) {
-            // already created
-            return srv;
+    function resolveEntry(entry: InternalEntry): any {
+        if (entry.instance) return entry.instance;
+        if (entry.factory) {
+            entry.instance = entry.factory.load(container);
+            onLoad?.(entry.factory.interface, container);
+            return entry.instance;
         }
-        const f = factories.get(serviceId);
-        if (f) {
-            // service factory exists: instanciate the service
-            let p = getPromise(f, ctxt);
-            let resolve: (v: T | typeof NOT_FOUND) => void;
-            const pr = new Promise((r) => {
-                resolve = r;
-            });
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
+    }
 
-            p.then((v: any) => {
-                if (v && (typeof v === "object" || typeof v === "function")) {
-                    services.set(serviceId, v);
-                    resolve(v);
-                } else {
-                    logError(`Invalid factory output: "${ns}"`);
-                    // transform undefined or null into NOT_FOUND
-                    services.set(serviceId, NULL_PROMISE);
-                    resolve(NOT_FOUND);
-                }
-            });
-            services.set(serviceId, pr); // will be changed when pr is resolved
-            return pr as Promise<T | typeof NOT_FOUND>;
-        } else {
-            const f2 = factories.get(OBJECT + ns);
-            if (f2) {
-                // object factory exists: instantiate the object
-                return getPromise(f2, ctxt);
-            } else if (lookupGroups) {
-                const f3 = factories.get(GROUP + ns);
-                if (f3) {
-                    // a group loader exists: instantiate the loader and then lookup again
-                    const g = getPromise(f3, ctxt);
-                    return g.then(() => {
-                        // look for an interface factory once the group has loaded
-                        return fetchValue(iid, false) as any;
-                    });
+    async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
+        const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
+
+        const loadPromise = retryAsyncFactoryLoad(entry, maxRetries, baseDelay);
+        entry.instance = loadPromise;
+
+        try {
+            const value = await loadPromise;
+            entry.instance = value;
+            onLoad?.(entry.factory!.interface, container);
+            return value;
+        } catch (err) {
+            entry.instance = undefined;
+            throw err;
+        }
+    }
+
+    async function retryAsyncFactoryLoad(
+        entry: InternalEntry,
+        maxRetries: number,
+        baseDelay: number,
+    ): Promise<any> {
+        let lastError: unknown;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                const result = entry.factory!.load(container);
+                return await result;
+            } catch (err) {
+                if (err instanceof AsimoError) throw err;
+                lastError = err;
+                if (attempt < maxRetries) {
+                    await new Promise((r) => setTimeout(r, baseDelay * 2 ** attempt));
                 }
             }
-            if (parent) {
-                return parent.fetch(iid, NOT_FOUND);
+        }
+        const error = new AsimoLoadError(
+            `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
+            container.path,
+            lastError,
+        );
+        onError?.(error, container);
+        throw error;
+    }
+
+    function inspectService(iid: InterfaceId<any>): ServiceInspectInfo | null {
+        const entry = serviceMap.get(iid.ns);
+        if (entry && !entry.notFound) {
+            return {
+                ns: iid.ns,
+                path: container.path,
+                status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
+            };
+        }
+        if (parents) {
+            for (const parent of parents) {
+                const result = (parent as InternalContainer).inspect(iid);
+                if (result) {
+                    return result;
+                }
             }
         }
-        return NOT_FOUND_PROMISE;
+        return null;
     }
 
-    function validate(
-        iid: InterfaceId<any>,
-        factory: ((c: IoCContainer) => any) | null,
-        context: "registerService" | "registerFactory" | "registerBundle" | "set",
-    ) {
-        if (typeof iid !== "object" || typeof iid.ns !== "string" || iid.ns === "") {
-            logError(`[${context}] Invalid interface id: ${description(iid)}`);
-            return false;
+    function inspectAll(): ServiceInspectInfo[] {
+        const results: ServiceInspectInfo[] = [];
+        for (const [ns, entry] of serviceMap) {
+            if (entry.notFound) continue;
+            results.push({
+                ns,
+                path: container.path,
+                status: entry.instance ? "loaded" : entry.bundle ? "pending" : "registered",
+            });
         }
-        if (factory && typeof factory !== "function") {
-            logError(`[${context}] Invalid factory: ${description(factory)}`);
-            return false;
+        if (parents) {
+            const seen = new Set(serviceMap.keys());
+            for (const parent of parents) {
+                const parentResults = (
+                    parent as InternalContainer
+                ).inspect() as ServiceInspectInfo[];
+                for (const pr of parentResults) {
+                    if (!seen.has(pr.ns)) {
+                        results.push(pr);
+                        seen.add(pr.ns);
+                    }
+                }
+            }
         }
-        return true;
+        return results;
     }
 
-    function description(o: any) {
-        let desc = "" + o;
+    function throwError(message: string): never {
+        const error = new AsimoError(message, container.path);
+        onError?.(error, container);
+        throw error;
+    }
+
+    async function resolveOrRetry(entry: InternalEntry): Promise<any> {
+        if (entry.instance) return entry.instance;
+        if (entry.factory) {
+            if (entry.factory.interface.sync) return resolveEntry(entry)!;
+            return loadAsyncWithRetry(entry);
+        }
+        throwError("Corrupt service entry in serviceMap: no factory or bundle");
+    }
+
+    async function loadBundleAndResolve(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
+        const bundle = entry.bundle!;
+        const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
+        const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
+
+        // If this bundle is already being loaded (concurrent access), wait and re-resolve
+        if (bundleLoadPromises.has(bundle)) {
+            const existingLoad = bundleLoadPromises.get(bundle)!;
+            await existingLoad;
+            const updatedEntry = serviceMap.get(iid.ns);
+            if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
+                throwError(`Bundle did not provide service: ${iid.ns}`);
+            }
+            return resolveOrRetry(updatedEntry);
+        }
+
+        // Check for circular: bundle's own load triggers re-entry
+        for (const providedIid of bundle.provide) {
+            if (loadingBundles.has(providedIid.ns)) {
+                throwError(`Circular bundle loading detected for: ${providedIid.ns}`);
+            }
+        }
+
+        for (const providedIid of bundle.provide) {
+            loadingBundles.add(providedIid.ns);
+        }
+
+        const loadPromise = (async () => {
+            let lastError: unknown;
+            const provideNs = new Set(bundle.provide.map((iid) => iid.ns));
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const subContainer = await bundle.load(container as any);
+                    const subMap = _serviceMaps.get(subContainer as Container<any>);
+                    if (subMap) {
+                        for (const [ns, subEntry] of subMap) {
+                            if (provideNs.has(ns)) {
+                                const existing = serviceMap.get(ns);
+                                if (existing && existing.bundle !== bundle) {
+                                    throwError(
+                                        `Bundle collision for "${ns}": already registered by another bundle or factory`,
+                                    );
+                                }
+                                serviceMap.set(ns, subEntry);
+                            }
+                        }
+                    }
+                    return;
+                } catch (err) {
+                    if (err instanceof AsimoError) throw err;
+                    lastError = err;
+                    if (attempt < maxRetries) {
+                        await new Promise((r) => setTimeout(r, baseDelay * 2 ** attempt));
+                    }
+                }
+            }
+            const error = new AsimoLoadError(
+                `Bundle load failed for "${iid.ns}" after ${maxRetries + 1} attempts`,
+                container.path,
+                lastError,
+            );
+            onError?.(error, container);
+            throw error;
+        })();
+
+        bundleLoadPromises.set(bundle, loadPromise);
+
         try {
-            desc = JSON.stringify(o);
-        } catch (ex) {}
-        return desc;
-    }
-
-    function removeGroupEntry(iid: InterfaceId<any>) {
-        factories.delete(GROUP + iid.ns);
-    }
-
-    function logError(msg: string, throwError = false) {
-        if (logger === console) {
-            console.log(`%cASM [${path}] %c${msg}`, STL_ASM, "color: ", STL_DATA);
-        } else {
-            logger?.log(`ASM [${path}] ${msg}`);
-        }
-        if (throwError) {
-            throw new Error(`ASM [${path}] ${msg}`);
+            await loadPromise;
+            const updatedEntry = serviceMap.get(iid.ns);
+            if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
+                throwError(`Bundle did not provide service: ${iid.ns}`);
+            }
+            return resolveOrRetry(updatedEntry);
+        } finally {
+            for (const providedIid of bundle.provide) {
+                loadingBundles.delete(providedIid.ns);
+            }
+            bundleLoadPromises.delete(bundle);
         }
     }
 
-    async function getPromise<T>(f: (c: IoCContainer) => T | Promise<T>, ctxt: IoCContainer) {
-        let v: any | null = null;
-        try {
-            v = (await f(ctxt)) as any;
-        } catch (ex) {
-            v = null;
-            logError(`Instantiation error: ${(ex as any)?.message || ex}`);
+    function getOptionalService(iid: InterfaceId<any>): any {
+        const entry = serviceMap.get(iid.ns);
+        if (entry) {
+            if (entry.notFound) return null;
+            if (entry.bundle && !entry.instance && !entry.factory) {
+                return null;
+            }
+            if (entry.factory && !entry.factory.interface.sync) {
+                return resolveOrRetry(entry);
+            }
+            return resolveEntry(entry);
         }
-        return v;
+        return getParentService(iid);
+    }
+
+    /** Same as `getOptionalService` but systematically returns a promise */
+    function fetchOptionalService(iid: InterfaceId<any>): Promise<any> {
+        const result = getOptionalService(iid);
+        return result instanceof Promise ? result : Promise.resolve(result);
+    }
+
+    function getParentService(iid: InterfaceId<any>): any {
+        if (parents) {
+            for (const parent of parents) {
+                const parentEntry = (parent as InternalContainer).getOptional(iid);
+                if (parentEntry !== null && parentEntry !== undefined) {
+                    return parentEntry;
+                }
+            }
+        }
+        serviceMap.set(iid.ns, { notFound: true });
+        return null;
     }
 }
-
-let _asm: IoCContainer;
-
-// Expose asm on global object to ease debugging from the browser console
-if ((globalThis as any)["asm"]) {
-    // asm must be unique
-    _asm = (globalThis as any)["asm"];
-} else {
-    _asm = createContainer("asm");
-}
-(globalThis as any)["asm"] = _asm;
-
-/**
- * Root context
- */
-export const asm = _asm;

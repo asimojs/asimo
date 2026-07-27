@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "rootDir": "src",
     "outDir": "lib",
     "esModuleInterop": true,
-    "target": "es6",
-    "module": "es6",
-    "moduleResolution": "node",
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
     "strict": true,
-    "removeComments": false,
-    "preserveConstEnums": true,
+    "skipLibCheck": true,
     "lib": [
       "ESNext",
       "DOM"
@@ -18,8 +19,9 @@
     "old",
     "node_modules",
     "**/*.spec.ts",
-    "**/__tests__",
-    "**/__mocks__"
+    "**/test",
+    "**/mock",
+    "src/content"
   ],
   "include": [
     "src/**/*"
