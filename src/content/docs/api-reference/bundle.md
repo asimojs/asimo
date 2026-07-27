@@ -23,8 +23,8 @@ function bundle<
 ## Parameters
 
 | Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `provide` | `AsyncIID[]` | Yes | — | IIDs this bundle provides. Must all be `AsyncIID`. |
+|---|---|---|---|---|---|
+| `provide` | `AsyncIID[]` | Yes | — | IIDs this bundle provides. **Only these IIDs are exposed to the parent** — sub-services not listed here are silently dropped. Must all be `AsyncIID`. |
 | `dependencies` | `InterfaceId[]` | No | `[]` | IIDs this bundle depends on from the parent container. |
 | `load` | `(context: Container<Deps>) => Promise<Container>` | Yes | — | Async function returning a container with sub-services. |
 | `maxRetries` | `number` | No | `2` (from config) | Max retries on bundle load failure. |
@@ -105,7 +105,7 @@ bundle({
 2. On first `fetch()` of any provided IID, `load` is invoked.
 3. **Concurrent guard**: if another `fetch()` arrives while the bundle is loading, it waits for the same promise.
 4. **Circular detection**: if the bundle's `load` re-enters itself, an `AsimoError` is thrown.
-5. The sub-container's service entries are merged into the parent's service map (only entries matching `provide` namespaces).
+5. **Scope filtering**: only sub-service entries whose namespace matches an IID in `provide` are merged into the parent's service map. Other entries in the sub-container are silently dropped and remain inaccessible from the parent.
 6. The requested IID is resolved using the now-merged factory/bundle entry.
 
 ## Compile-Time Constraints

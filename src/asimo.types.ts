@@ -91,8 +91,11 @@ export interface ServiceFactory<
  *
  * A bundle declares one or more `AsyncIID`s it provides via `provide`.
  * When one of those IIDs is fetched, the bundle's `load()` is called (once),
- * which returns an `Container` with the bundle's sub-factories and sub-bundles
- * already registered. The parent container then extracts and merges those entries.
+ * which returns a `Container` with the bundle's sub-factories and sub-bundles
+ * already registered. The parent container then extracts and merges only the
+ * entries whose namespace matches one of the IIDs in `provide` — sub-services
+ * not listed in `provide` are silently dropped and will not be accessible on
+ * the parent container.
  *
  * Bundles support optional `dependencies` to type the `load` context.
  * Bundles cannot be used with `SyncIID`s — only `AsyncIID`s.

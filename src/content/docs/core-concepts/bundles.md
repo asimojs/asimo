@@ -92,6 +92,35 @@ When `HEAVY_FEATURE` is fetched, the top-level bundle loads. `SUB_SERVICE` loads
 5. **Merge**: the sub-container's service entries are merged into the parent's service map.
 6. The requested service is resolved from the now-merged entries.
 
+## Scope Filtering
+
+Only IIDs listed in the bundle's `provide` array are exposed to the parent container. Services in the sub-container that are **not** listed in `provide` are silently dropped:
+
+```ts
+bundle({
+    provide: [ANALYTICS],                   // only ANALYTICS is accessible
+    load: async () => {
+        const mod = await import("./analytics");
+        return createContainer({
+            name: "analytics",
+            services: [
+                factory({ provide: ANALYTICS, load: () => mod.analytics }),
+                factory({ provide: TELEMETRY, load: () => mod.telemetry }),
+                // ↑ TELEMETRY is created but NOT exposed to the parent
+            ],
+        });
+    },
+});
+
+// ✅ ANALYTICS is accessible
+const a = await container.fetch(ANALYTICS);
+
+// ❌ TELEMETRY is not in provide — throws Service not found
+const t = await container.fetch(TELEMETRY);
+```
+
+This scoping is intentional — the bundle's `provide` array is the authoritative list of what the bundle exports. The sub-container may contain additional internal services (helpers, shared dependencies, etc.) that should not leak into the parent. Use `provide` to control exactly which IIDs are made available.
+
 ## Bundle Retry
 
 Bundles support the same retry mechanism as async factories:
