@@ -42,11 +42,11 @@ This matters for three reasons:
 
 asimo takes this further by making the container **type-safe at compile time** — a missing or miswired dependency is a TypeScript error, not a runtime crash — and adding **asynchronous lazy loading** as a first-class concept via bundles.
 
-## AI assessments
+## Asimo assessments
 
-> **Overall Assessment: Excellent**
->
 > This is a well-engineered, production-quality TypeScript IoC container. ~2KB gzipped, zero dependencies, runs everywhere. The type system design is its standout feature — compile-time dependency validation using branded error types is genuinely impressive.
+> 
+> **Overall Assessment: Excellent**
 >
 > — DeepSeek V4 Pro
 
@@ -54,9 +54,9 @@ asimo takes this further by making the container **type-safe at compile time** �
 >
 > — GLM-5.2
 
-> **Overall: A high-quality, well-engineered TypeScript IoC library**
->
 > The type-safety story is the standout feature — it pushes what would normally be runtime errors into the compiler, which is exactly what an IoC container should do.
+>
+> **Overall: A high-quality, well-engineered TypeScript IoC library**
 >
 > — Minimax-M3
 
@@ -64,7 +64,7 @@ asimo takes this further by making the container **type-safe at compile time** �
 
 ### Zero Dependencies
 
-No decorators, no `reflect-metadata`, no class registration. Pure TypeScript functions and inference. Adds ~3 KB gzipped with no supply chain risk.
+No decorators, no `reflect-metadata`, no class registration. Pure TypeScript functions and inference. Adds ~2KB gzipped with no supply chain risk.
 
 ### Full Compile-Time Safety
 
@@ -160,7 +160,7 @@ For applications with dozens of interdependent services, asimo eliminates the ma
 **Progressive Code Loading.** In production, asimo's `bundle()` wraps dynamic `import()` so that features load only when the user needs them — not at startup:
 
 ```
-Initial load (~3 KB + core services)
+Initial load (~2 KB + core services)
     ├── User navigates to /dashboard → dashboard bundle loads
     ├── User clicks "Export report" → report bundle loads
     └── User never visits /admin → admin bundle never loads
