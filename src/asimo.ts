@@ -180,7 +180,13 @@ interface InternalEntry {
     notFound?: true;
 }
 
-/** Internal service maps keyed by container */
+/**
+ * Module-level WeakMap mapping containers to their internal service maps.
+ * - WeakMap ensures containers are garbage-collected when no longer referenced.
+ * - Per-module isolation: if the library is duplicated in node_modules
+ *   (two copies loaded), each instance has its own _serviceMaps — correct,
+ *   since containers from different builds are independent.
+ */
 const _serviceMaps = new WeakMap<Container<any>, Map<InterfaceNamespace, InternalEntry>>();
 
 export function createContainer<
