@@ -5,6 +5,10 @@ description: Type-safe asynchronous IoC for browser and server runtimes
 
 **asimo** is a zero-dependency, fully type-safe Inversion of Control (IoC) container for TypeScript. It lets you declare typed service interfaces, wire dependencies with automatic type inference, and lazy-load code bundles on demand — all with compile-time safety guarantees.
 
+**asimo** can be used both on the server and in the browser
+- on the client-side, asimo allows to keep the application load time minimal by progressively loading application modules on-demand through dynamic imports.
+- on the server-side, asimo allows to also reduce the application bootstrap time - especially when combined with fast node engines like bun - which allows to completely unload services when the traffic is non-existent.
+
 ```ts
 import { syncIID, factory, createContainer } from "@asimojs/asimo";
 
@@ -42,6 +46,103 @@ This matters for three reasons:
 
 asimo takes this further by making the container **type-safe at compile time** — a missing or miswired dependency is a TypeScript error, not a runtime crash — and adding **asynchronous lazy loading** as a first-class concept via bundles.
 
+
+## Asimo key features
+
+~2KB, zero dependencies, **full compile-time type safety**, lazy code-splitting bundles.
+
+
+### Sync and Async Dependencies
+
+asimo lets you declare whether a service is always-available or loaded on demand:
+
+- **Sync services** (`syncIID`) are always ready — think loggers, config objects, date providers. Their factories return a value immediately, and you fetch them with `container.get()`.
+- **Async services** (`asyncIID`) represent code that should only load when actually needed — typically feature modules behind a `bundle()` that wraps a dynamic `import()`. You fetch them with `container.fetch()`, which returns a Promise.
+
+This split is enforced by the compiler: calling `get()` on an async IID is a TypeScript error, so you can't accidentally block on something that isn't loaded yet. The editor tells you which dependencies need async handling before you run the code.
+
+### Full Compile-Time Safety
+
+Dependency wiring mistakes don't have to be runtime bugs. asimo's type system catches them at build time:
+
+- **Wrong dependency** — if a factory requests a service that isn't registered, you get a TypeScript error with the missing service name
+- **Sync vs async mismatch** — calling `get()` on an async-only dependency or using retry options on a sync factory are flagged by the compiler
+- **Invalid IID tokens** — inline object literals are rejected; only properly branded `syncIID()`/`asyncIID()` tokens are accepted
+
+Your editor catches wiring errors as you type, before tests or users ever hit them.
+
+### Automatic Dependency Inference
+
+Declare what a service needs and the `load` context is typed automatically:
+
+```ts
+factory({
+    provide: CALCULATOR,
+    dependencies: [MULTIPLIER, ADDER],
+    load: (c) => {
+        const multiply = c.get(MULTIPLIER); // type: (a,b) => number
+        const add = c.get(ADDER);           // type: (a,b) => number
+    },
+})
+```
+
+### Lazy Bundles for Code Splitting
+
+Services in `bundle()` load only on first access, wrapping dynamic `import()` for progressive loading:
+
+```ts
+bundle({
+    provide: [ANALYTICS, TELEMETRY],
+    load: () => import("./heavy-module"),
+})
+```
+
+```
+Initial load (~2 KB + core services)
+    ├── User navigates to /dashboard → dashboard bundle loads
+    ├── User clicks "Export report" → report bundle loads
+    └── User never visits /admin → admin bundle never loads
+```
+
+Concurrent-access safe, nested bundles supported, retry with exponential backoff. 
+
+Note: **Bundle strategy is decoupled from service code** — you declare `asyncIID` tokens in your services and define or update loading groups separately without impacting the application code.
+
+### Hierarchical Containers
+
+Child containers inherit shared app-level singletons via `extends`:
+
+```ts
+const reqCtx = createContainer({
+    name: "request-123",
+    extends: [app],
+    services: [/* request-scoped services */],
+});
+```
+
+### Built for Testing
+
+Every test creates its own isolated container — no global registries, no framework reset, zero setup/teardown. Mock any service by replacing a factory's `load` with a test double. Override only what needs mocking with `extends`. Handle optional services with `getOptional()`.
+
+### Retry with Exponential Backoff
+
+Async services automatically retry on failure — configurable per-service, per-container, or globally.
+
+### Runs Everywhere
+
+Works identically in browser, Node.js, Bun, Deno, and Cloudflare Workers.
+
+## How It Compares
+
+|  | asimo | Manual DI | Decorator-based (Inversify/TSyringe) |
+|---|---|---|---|
+| **Dependencies** | 0 | 0 | reflect-metadata + decorators |
+| **Bundle size** | ~2 KB | N/A | ~15–50 KB |
+| **Lazy loading** | Built-in `bundle()` | Manual | Limited |
+| **Type safety** | Full compile-time | Partial | Partial |
+| **Learning curve** | Low (3 concepts) | N/A | High (decorators, containers) |
+| **Framework agnostic** | Yes | Yes | Yes |
+
 ## Asimo assessments
 
 > This is a well-engineered, production-quality TypeScript IoC container. ~2KB gzipped, zero dependencies, runs everywhere. The type system design is its standout feature — compile-time dependency validation using branded error types is genuinely impressive.
@@ -57,142 +158,8 @@ asimo takes this further by making the container **type-safe at compile time** �
 > The type-safety story is the standout feature — it pushes what would normally be runtime errors into the compiler, which is exactly what an IoC container should do.
 >
 > **Overall: A high-quality, well-engineered TypeScript IoC library**
->
+> 
 > — Minimax-M3
-
-## Why asimo?
-
-### Zero Dependencies
-
-No decorators, no `reflect-metadata`, no class registration. Pure TypeScript functions and inference. Adds ~2KB gzipped with no supply chain risk.
-
-### Full Compile-Time Safety
-
-asimo's type system catches wiring mistakes before your code runs:
-
-- **Wrong dependency** → compile error with the namespace in the message
-- **Sync IID on `get()` → ok**. Async IID on `get()` → compile error
-- **Retry params on a sync factory** → compile error
-- **Missing brand symbol** → compile error (no inline object literals)
-
-### Automatic Dependency Inference
-
-Declare what a service needs and the `load` context is typed automatically — no manual annotations:
-
-```ts
-factory({
-    provide: CALCULATOR,
-    dependencies: [MULTIPLIER, ADDER],
-    load: (c) => {
-        // c is Container<typeof MULTIPLIER | typeof ADDER>
-        const multiply = c.get(MULTIPLIER); // type: (a,b) => number
-        const add = c.get(ADDER);           // type: (a,b) => number
-    },
-})
-```
-
-### Sync and Async dependencies ###
-
-asimo distinguishes two kinds of dependencies:
-- **Sync dependencies** (`syncIID`) are services that are always available synchronously — things like loggers, configuration objects, or system API wrappers (e.g., a `DateProvider`). Their factories return a value directly, so they are retrieved with container.get().
-- **Async dependencies** (`asyncIID`) are services whose code should not be loaded until the moment they are actually needed — for instance, feature modules behind a bundle() that are fetched on demand with container.fetch().
-This split lets asimo enforce the boundary at compile time: trying to synchronously get() an async dependency is a type error. Conversely, you can always fetch() a sync dependency if needed, but the compiler reminds you which services truly require async handling.
-
-### Lazy Bundles for Code Splitting
-
-Services wrapped in `bundle()` load only when first accessed — perfect for progressive loading and dynamic `import()`:
-
-```ts
-bundle({
-    provide: [ANALYTICS, TELEMETRY],
-    load: () => import("./heavy-module"),
-})
-```
-
-### Hierarchical Containers
-
-Request-scoped child containers that inherit shared app-level singletons:
-
-```ts
-const reqCtx = createContainer({
-    name: "request-123",
-    extends: [app],            // inherits DB, Config, Logger
-    services: [/* request-scoped services */],
-});
-```
-
-### Test and Lazy-Loading
-
-**Built for Testability.** Every test creates its own isolated container. No global registries, no DI framework reset between tests, no teardown boilerplate:
-
-```ts
-describe("UserService", () => {
-    it("fetches user by ID", async () => {
-        const container = createContainer({
-            name: "test",
-            services: [
-                factory({
-                    provide: DB,
-                    load: () => ({ query: vi.fn().mockResolvedValue([{ id: 1 }]) }),
-                }),
-                factory({
-                    provide: USER_SVC,
-                    dependencies: [DB],
-                    load: (c) => new UserService(c.get(DB)),
-                }),
-            ],
-        });
-        const svc = container.get(USER_SVC);
-        expect(await svc.getUser(1)).toEqual({ id: 1 });
-    });
-});
-```
-
-- **Zero setup/teardown** — containers are garbage-collected when tests go out of scope
-- **Mock any service** — replace a factory's `load` with a test double; no mocking framework required
-- **Partial overrides via `extends`** — create a test container that inherits real services and overrides only what needs mocking
-- **Optional dependencies with `getOptional`** — gracefully handle services that may not exist in a given test context - or optional configuration objects (e.g.
-a widget library may have its default configuration defined through an optional Configuration Service)
-- **Lifecycle hooks** — verify and optimize your application loading behavior with `config.onLoad` assertions
-
-For applications with dozens of interdependent services, asimo eliminates the manual wiring and fragile global state that make tests hard to write and maintain.
-
-**Progressive Code Loading.** In production, asimo's `bundle()` wraps dynamic `import()` so that features load only when the user needs them — not at startup:
-
-```
-Initial load (~2 KB + core services)
-    ├── User navigates to /dashboard → dashboard bundle loads
-    ├── User clicks "Export report" → report bundle loads
-    └── User never visits /admin → admin bundle never loads
-```
-
-- **Smaller initial payload** — ship the core and defer everything else
-- **Lazy by default** — a bundle's `load` is called once, on first `fetch()` of any provided service
-- **Concurrent access safe** — concurrent requests for the same bundle wait for a single load
-- **Nested bundles** — a loaded bundle can itself contain sub-bundles that load progressively deeper
-- **Retry with backoff** — flaky bundle loads (network-bound dynamic imports) retry automatically
-
-The same modular structure that makes testing easy — isolated containers per scope, services declared as factories with typed dependencies — is what enables progressive loading in production. You test features the same way they load: on demand, in isolation, with explicit boundaries.
-
-### Retry with Exponential Backoff
-
-Async services automatically retry on failure. Configurable per-service, per-container, or globally.
-
-### Runs Everywhere
-
-Works identically in the browser, Node.js, Bun, Deno, and Cloudflare Workers. Zero environment-specific code.
-
-## How It Compares
-
-|  | asimo | Manual DI | Decorator-based (Inversify/TSyringe) |
-|---|---|---|---|
-| **Dependencies** | 0 | 0 | reflect-metadata + decorators |
-| **Bundle size** | ~3 KB | N/A | ~15–50 KB |
-| **Lazy loading** | Built-in `bundle()` | Manual | Limited |
-| **Type safety** | Full compile-time | Partial | Partial |
-| **Learning curve** | Low (3 concepts) | N/A | High (decorators, containers) |
-| **Framework agnostic** | Yes | Yes | Yes |
-
 
 ## Next Steps
 

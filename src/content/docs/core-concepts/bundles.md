@@ -165,3 +165,20 @@ const app = createContainer({
 ```
 
 The browser downloads `app.js` (~3 KB + core services) and loads feature code as users interact with the application.
+
+## Decoupling Declaration from Strategy
+
+Bundle creation is separate from service code — service authors declare their dependency as an `asyncIID`, and bundle authors define the loading strategy independently:
+
+```ts
+// auth-service.ts — service author declares the IID
+export const AUTH_SVC = asyncIID<AuthService>()("app.services.Auth");
+
+// auth-bundle.ts — bundle author defines loading strategy
+export const authBundle = bundle({
+    provide: [AUTH_SVC],
+    load: () => import("./auth-service-impl"),
+});
+```
+
+This separation means you can change how services are grouped, split, and loaded without touching the service implementations or their consumers. A service that starts as a standalone bundle can be merged into a larger bundle, split across multiple bundles, or have its retry policy adjusted — all by editing the bundle definition, not the application code.
