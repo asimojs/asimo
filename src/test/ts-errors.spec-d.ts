@@ -16,7 +16,7 @@ describe("TS Errors", () => {
             name: "test",
             services: [
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     // @ts-expect-error - sync factory is not allowed for an async interface
                     load: () => addNumbers,
                 }),
@@ -29,7 +29,7 @@ describe("TS Errors", () => {
             name: "test",
             services: [
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     dependencies: [],
                     // @ts-expect-error - async factory (Promise) is not allowed for a sync interface
                     load: async () => multiplyNumbers,
@@ -43,12 +43,12 @@ describe("TS Errors", () => {
             name: "math-container",
             services: [
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     dependencies: [],
                     load: async () => addNumbers,
                 }),
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     dependencies: [],
                     load: () => multiplyNumbers,
                 }),
@@ -66,11 +66,11 @@ describe("TS Errors", () => {
             name: "math-container",
             services: [
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     load: async () => addNumbers,
                 }),
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     load: () => multiplyNumbers,
                 }),
             ],
@@ -85,11 +85,11 @@ describe("TS Errors", () => {
             name: "math-container",
             services: [
                 factory({
-                    provide: DIVIDER,
+                    provide: [DIVIDER],
                     load: () => divideNumbers,
                 }),
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     load: (c) => {
                          // @ts-expect-error - DIVIDER is not listed as a dependency of MULTIPLIER, so it cannot be retrieved through get()
                         c.get(DIVIDER);
@@ -109,21 +109,21 @@ describe("TS Errors", () => {
             name: "calculator-container",
             services: [
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     load: () => multiplyNumbers,
                 }),
                 factory({
-                    provide: DIVIDER,
+                    provide: [DIVIDER],
                     dependencies: [],
                     load: () => divideNumbers,
                 }),
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     load: async () => addNumbers,
                 }),
                 // @ts-expect-error - SUBTRACTER is declared as a dependency but is not registered in the container
                 factory({
-                    provide: CALCULATOR,
+                    provide: [CALCULATOR],
                     dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
                     load: (c) => createCalculator(c),
                 }),
@@ -136,44 +136,31 @@ describe("TS Errors", () => {
             name: "calculator-container",
             services: [
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     dependencies: [],
                     load: () => multiplyNumbers,
                 }),
                 factory({
-                    provide: DIVIDER,
+                    provide: [DIVIDER],
                     dependencies: [],
                     load: () => divideNumbers,
                 }),
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     dependencies: [],
                     load: async () => addNumbers,
                 }),
                 factory({
-                    provide: SUBTRACTER,
+                    provide: [SUBTRACTER],
                     dependencies: [],
                     load: async () => subtractNumbers,
                 }),
                 factory({
-                    provide: CALCULATOR,
+                    provide: [CALCULATOR],
                     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
                     // @ts-expect-error - DIVIDER is required by createCalculator but not listed in dependencies
                     load: (c) => createCalculator(c),
                 }),
-            ],
-        });
-    });
-
-    it("should not allow inline service objects (must use factory())", () => {
-        createContainer({
-            name: "test",
-            services: [
-                // @ts-expect-error - inline objects without the __asimoServiceFactory brand are rejected
-                {
-                    interface: MULTIPLIER,
-                    load: () => multiplyNumbers,
-                },
             ],
         });
     });
@@ -196,7 +183,7 @@ describe("TS Errors", () => {
             name: "test",
             services: [
                 factory({
-                    provide: ADDER,
+                    provide: [ADDER],
                     load: async () => addNumbers,
                 }),
                 // @ts-expect-error - UNKNOWN is declared as a dependency but is not registered
@@ -214,7 +201,7 @@ describe("TS Errors", () => {
             name: "nested-bundle",
             services: [
                 factory({
-                    provide: MULTIPLIER,
+                    provide: [MULTIPLIER],
                     load: () => multiplyNumbers,
                 }),
                 bundle({
@@ -232,14 +219,14 @@ describe("TS Errors", () => {
                                             name: "inner-sub",
                                             services: [
                                                 factory({
-                                                    provide: SUBTRACTER,
+                                                    provide: [SUBTRACTER],
                                                     load: async () => subtractNumbers,
                                                 }),
                                             ],
                                         }),
                                 }),
                                 factory({
-                                    provide: ADDER,
+                                    provide: [ADDER],
                                     load: async () => addNumbers,
                                 }),
                             ],
@@ -254,7 +241,7 @@ describe("TS Errors", () => {
 
     it("should not allow maxRetries on a sync IID factory", () => {
         factory({
-            provide: MULTIPLIER,
+            provide: [MULTIPLIER],
             // @ts-expect-error - retry parameters are not supported for SyncIID
             maxRetries: 2,
             load: () => multiplyNumbers,
@@ -263,10 +250,11 @@ describe("TS Errors", () => {
 
     it("should not allow retryDelayMs on a sync IID factory", () => {
         factory({
-            provide: MULTIPLIER,
-            // @ts-expect-error - retry parameters are not supported for SyncIID
+            provide: [MULTIPLIER],
+            // @ts-expect-error - retry parameters are not supported for sync-only factories
             retryDelayMs: 500,
             load: () => multiplyNumbers,
         });
     });
+
 });

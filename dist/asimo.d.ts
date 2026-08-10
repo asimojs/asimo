@@ -1,7 +1,7 @@
 import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
 export { AsimoError };
 export type { InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
-import type { AsimoConfig, AsyncIID, Container, InferType, InterfaceId, InterfaceNamespace, RetryNotSupportedForSyncIID, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
+import type { AsimoConfig, AsyncIID, Container, InferType, InterfaceId, InterfaceNamespace, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
 export declare class AsimoLoadError extends AsimoError {
     readonly cause: unknown;
     constructor(message: string, container: string, cause?: unknown);
@@ -28,25 +28,35 @@ type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
  * The invariant phantom on `Container` catches mismatches between the declared
  * dependencies and what `load` actually uses — at compile time, with no manual annotation.
  *
+ * `provide` is an array of IIDs and `load` must return a single value that implements
+ * all provided interfaces. For a single service, use `provide: [MY_IID] as const`.
+ *
  * @example
+ * // Single IID
  * factory({
- *     provide: CALCULATOR,
+ *     provide: [CALCULATOR] as const,
  *     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
- *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTER>
+ *     load: (c) => createCalculator(c),
+ * })
+ *
+ * // Multiple IIDs — one service implements several interfaces
+ * factory({
+ *     provide: [ADDER, MULTIPLIER] as const,
+ *     load: () => new Calculator(),
  * })
  */
-export declare function factory<const IID extends InterfaceId<any, any>, const Deps extends ServiceDeps = []>(params: {
-    /** Interface identifier provided by this service. */
-    provide: IID;
+export declare function factory<const IIDs extends InterfaceId<any, any>[], const Deps extends ServiceDeps = []>(params: {
+    /** Interface IDs provided by this factory — must be an array, even for a single IID. */
+    provide: IIDs;
     /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `Container<never>` (no accessible services). */
     dependencies?: Deps;
-    /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
-    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
-    /** Max number of retries on load failure for async IIDs (default: 2). */
-    maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
+    /** Factory invoked on first access. Receives a container exposing only the listed dependencies. Must return a single value that implements all provided interfaces. */
+    load(context: Container<Deps[number]>): Extract<IIDs[number], AsyncIID<any, any>> extends never ? IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never : Promise<IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never>;
+    /** Max number of retries on load failure for async IIDs (default: 2). Only meaningful when at least one IID is async. */
+    maxRetries?: number;
     /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
-    retryDelayMs?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
-}): ServiceFactory<IID, Deps>;
+    retryDelayMs?: number;
+}): ServiceFactory<IIDs, Deps>;
 /**
  * Helper for declaring a lazy-loading bundle of services. Similar to `factory()` but:
  * - `provide` is an array of `AsyncIID`s (bundles cannot provide `SyncIID`s)
@@ -78,7 +88,7 @@ export declare function bundle<const IIDs extends AsyncIID<any, any>[], const De
 }): ServiceBundle<IIDs[number], Deps>;
 type ServiceEntry = {
     readonly [__asimoServiceFactory]: true;
-    interface: InterfaceId<any, any>;
+    provide: InterfaceId<any, any>[];
     dependencies?: ServiceDeps;
 } | {
     readonly [__asimoServiceBundle]: true;
@@ -87,8 +97,8 @@ type ServiceEntry = {
 };
 type ServiceIID<S> = S extends {
     readonly [__asimoServiceFactory]: true;
-    interface: infer IID extends InterfaceId<any, any>;
-} ? IID : S extends {
+    provide: infer IIDs extends InterfaceId<any, any>[];
+} ? IIDs[number] : S extends {
     readonly [__asimoServiceBundle]: true;
     provide: infer IIDs extends InterfaceId<any, any>[];
 } ? IIDs[number] : never;

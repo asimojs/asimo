@@ -41,6 +41,13 @@ export type InterfaceId<T, NS extends string = string> = SyncIID<T, NS> | AsyncI
 export type InferType<T extends InterfaceId<any, any>> = NonNullable<T['_type']>;
 /** A readonly array of interface IDs used in the `dependencies` property of a ServiceFactory. */
 export type ServiceDeps = InterfaceId<any, any>[];
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+/**
+ * Extracts the return type of a factory `load` function from an array of IIDs.
+ * The factory returns a single value whose type is the intersection of all provided IID types.
+ * When any IID is async, the return is wrapped in `Promise`.
+ */
+export type FactoryLoadResult<IIDs extends InterfaceId<any, any>[]> = Extract<IIDs[number], AsyncIID<any, any>> extends never ? IIDs[number] extends InterfaceId<infer T, any> ? UnionToIntersection<T> : never : Promise<IIDs[number] extends InterfaceId<infer T, any> ? UnionToIntersection<T> : never>;
 /**
  * Unique symbol brand marking objects produced by the `factory()` helper.
  * `createIocContainer` only accepts services carrying this brand — inline object
@@ -58,19 +65,25 @@ export declare const __asimoServiceBundle: unique symbol;
  * receives an `Container` typed with exactly those IIDs. When omitted, `Deps` defaults
  * to `[]` and `load` receives `Container<never>` (no service accessible).
  *
+ * `provide` is an array of IIDs — the `load` function returns a single value
+ * that implements all provided interfaces. For a single service, use
+ * `provide: [MY_IID] as const`.
+ *
  * The `__asimoServiceFactory` brand ensures only objects originating from the `factory()`
  * helper can be used as services in `createIocContainer`.
  */
-export interface ServiceFactory<IID extends InterfaceId<any, any>, Deps extends ServiceDeps = []> {
+export interface ServiceFactory<IIDs extends InterfaceId<any, any>[], Deps extends ServiceDeps = []> {
     /** Brand — ensures this object was produced by `factory()`. */
     readonly [__asimoServiceFactory]: true;
-    interface: IID;
+    /** Interface IDs this factory provides — the loaded value must satisfy all of them. */
+    provide: IIDs;
     /** Optional list of interface IDs this service depends on — used to type the load context. */
     dependencies?: Deps;
-    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T : IID extends AsyncIID<infer T, any> ? Promise<T> : never;
-    /** Max number of retries on load failure for async IIDs (default: 2). Ignored for sync IIDs. */
+    /** Factory invoked on first access. Returns a single value satisfying all provided IIDs. */
+    load(context: Container<Deps[number]>): FactoryLoadResult<IIDs>;
+    /** Max number of retries on load failure for async IIDs (default: 2). Only meaningful when at least one IID is async. */
     maxRetries?: number;
-    /** Base delay in ms between retries, doubled after each attempt (default: 1000). Ignored for sync IIDs. */
+    /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
     retryDelayMs?: number;
 }
 /**
@@ -137,9 +150,9 @@ export interface RetryNotSupportedForSyncIID {
  */
 export type ValidService<S, AllIIDs extends InterfaceId<any, any>> = S extends {
     readonly [__asimoServiceFactory]: true;
-    interface: infer IID extends InterfaceId<any, any>;
+    provide: infer IIDs extends InterfaceId<any, any>[];
     dependencies?: infer Deps;
-} ? Deps extends ServiceDeps ? [Deps[number]] extends [AllIIDs] ? ServiceFactory<IID, Deps> : ServiceDependencyNotRegistered<Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string> : ServiceFactory<IID, []> : S extends {
+} ? Deps extends ServiceDeps ? [Deps[number]] extends [AllIIDs] ? ServiceFactory<IIDs, Deps> : ServiceDependencyNotRegistered<Exclude<Deps[number], AllIIDs> extends InterfaceId<any, infer NS> ? NS : string> : ServiceFactory<IIDs, []> : S extends {
     readonly [__asimoServiceBundle]: true;
     provide: infer IIDs extends AsyncIID<any, any>[];
     dependencies?: infer Deps;
@@ -290,3 +303,4 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
      */
     dispose(iid: InterfaceId<any, any>): void;
 }
+export {};

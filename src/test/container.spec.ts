@@ -19,11 +19,12 @@ describe("IoC Container", () => {
                 name: "adder-container",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                 ],
             });
+
             expect(context.name).toBe("adder-container");
             const add = await context.fetch(ADDER);
             expect(add(2, 3)).toBe(5);
@@ -34,7 +35,7 @@ describe("IoC Container", () => {
                 name: "multiplier-container",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -49,11 +50,11 @@ describe("IoC Container", () => {
                 name: "math-container",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -78,15 +79,15 @@ describe("IoC Container", () => {
                 name: "math-container",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -107,7 +108,7 @@ describe("IoC Container", () => {
                 name: "math-container",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -125,7 +126,7 @@ describe("IoC Container", () => {
                 name: "math-container",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -152,7 +153,7 @@ describe("IoC Container", () => {
                 name: "math-container",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -202,11 +203,25 @@ describe("IoC Container", () => {
                 (createContainer as any)({
                     name: "test",
                     services: {
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     },
                 }),
             ).toThrow("[Asimo] services must be an array");
+        });
+
+        it("should reject inline objects without the factory() brand", () => {
+            expect(() =>
+                (createContainer as any)({
+                    name: "brand-test",
+                    services: [
+                        {
+                            interface: [MULTIPLIER],
+                            load: () => multiplyNumbers,
+                        },
+                    ],
+                }),
+            ).toThrow("Invalid service registration");
         });
 
     });
@@ -220,7 +235,7 @@ describe("IoC Container", () => {
                 name: "substraction",
                 services: [
                     factory({
-                        provide: SUBTRACTER,
+                        provide: [SUBTRACTER],
                         load: async () => subtractNumbers,
                     }),
                 ],
@@ -230,7 +245,7 @@ describe("IoC Container", () => {
                 extends: [c1],
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                 ],
@@ -239,7 +254,7 @@ describe("IoC Container", () => {
                 name: "division",
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -249,7 +264,7 @@ describe("IoC Container", () => {
                 extends: [c2, c3],
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -272,7 +287,7 @@ describe("IoC Container", () => {
                 name: "substraction",
                 services: [
                     factory({
-                        provide: SUBTRACTER,
+                        provide: [SUBTRACTER],
                         load: async () => subtractNumbers,
                     }),
                 ],
@@ -281,7 +296,7 @@ describe("IoC Container", () => {
                 name: "addition",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                 ],
@@ -354,7 +369,7 @@ describe("IoC Container", () => {
                 extends: [c4],
                 services: [
                     factory({
-                        provide: CALCULATOR,
+                        provide: [CALCULATOR],
                         dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
                         load: (c) => createCalculator(c),
                     }),
@@ -438,7 +453,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -457,7 +472,7 @@ describe("IoC Container", () => {
                 name: "p1",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -466,7 +481,7 @@ describe("IoC Container", () => {
                 name: "p2",
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -486,7 +501,7 @@ describe("IoC Container", () => {
                 name: "gp",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -511,7 +526,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -527,7 +542,7 @@ describe("IoC Container", () => {
                 name: "another-parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -542,21 +557,21 @@ describe("IoC Container", () => {
                 name: "calculator-container",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                     // SUBTRACTER is not registered — this passes typecheck
                     // because we bypass it with `as any`, but throws at runtime
                     factory({
-                        provide: CALCULATOR,
+                        provide: [CALCULATOR],
                         dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER] as any,
                         load: (ctx: any) => createCalculator(ctx),
                     }) as any,
@@ -596,11 +611,11 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -628,11 +643,11 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -659,7 +674,7 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -693,11 +708,11 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -728,14 +743,14 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => {
                                             adderLoadCount++;
                                             return addNumbers;
                                         },
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => {
                                             subtracterLoadCount++;
                                             return subtractNumbers;
@@ -784,7 +799,7 @@ describe("IoC Container", () => {
                                 name: "outer-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     bundle({
@@ -796,7 +811,7 @@ describe("IoC Container", () => {
                                                 name: "inner-sub",
                                                 services: [
                                                     factory({
-                                                        provide: SUBTRACTER,
+                                                        provide: [SUBTRACTER],
                                                         load: async () => subtractNumbers,
                                                     }),
                                                 ],
@@ -883,14 +898,14 @@ describe("IoC Container", () => {
                                                 name: "inner-sub",
                                                 services: [
                                                     factory({
-                                                        provide: SUBTRACTER,
+                                                        provide: [SUBTRACTER],
                                                         load: async () => subtractNumbers,
                                                     }),
                                                 ],
                                             }),
                                     }),
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -917,11 +932,11 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -950,7 +965,7 @@ describe("IoC Container", () => {
                                 name: "bundle-sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -975,7 +990,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -999,7 +1014,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1031,8 +1046,8 @@ describe("IoC Container", () => {
                             createContainer({
                                 name: "sub-a",
                                 services: [
-                                    factory({ provide: ADDER, load: async () => addNumbers }),
-                                    factory({ provide: SUBTRACTER, load: async () => subtractNumbers }),
+                                    factory({ provide: [ADDER], load: async () => addNumbers }),
+                                    factory({ provide: [SUBTRACTER], load: async () => subtractNumbers }),
                                 ],
                             }),
                     }),
@@ -1042,7 +1057,7 @@ describe("IoC Container", () => {
                             createContainer({
                                 name: "sub-b",
                                 services: [
-                                    factory({ provide: ADDER, load: async () => addNumbers }),
+                                    factory({ provide: [ADDER], load: async () => addNumbers }),
                                 ],
                             }),
                     }),
@@ -1053,6 +1068,255 @@ describe("IoC Container", () => {
         });
     });
 
+    describe("Multi-IID factory (one service implementing multiple interfaces)", () => {
+        it("should provide multiple sync IIDs from a single service", () => {
+            const c = createContainer({
+                name: "multi-sync",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            const svc = c.get(MULTIPLIER) as any;
+            expect(svc.multiply(3, 4)).toBe(12);
+            expect(svc.divide(12, 4)).toBe(3);
+
+            const sameSvc = c.get(DIVIDER) as any;
+            expect(sameSvc).toBe(svc);
+        });
+
+        it("should provide multiple async IIDs from a single service", async () => {
+            const c = createContainer({
+                name: "multi-async",
+                services: [
+                    factory({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () => ({ add: addNumbers, subtract: subtractNumbers }) as any,
+                    }),
+                ],
+            });
+
+            const svc = await c.fetch(ADDER) as any;
+            expect(svc.add(2, 3)).toBe(5);
+            expect(svc.subtract(5, 3)).toBe(2);
+
+            const sameSvc = await c.fetch(SUBTRACTER) as any;
+            expect(sameSvc).toBe(svc);
+        });
+
+        it("should load the factory only once for all IIDs", async () => {
+            let loadCount = 0;
+            const c = createContainer({
+                name: "multi-load-once",
+                services: [
+                    factory({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () => {
+                            loadCount++;
+                            return { add: addNumbers, subtract: subtractNumbers } as any;
+                        },
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            expect(loadCount).toBe(1);
+
+            await c.fetch(SUBTRACTER);
+            expect(loadCount).toBe(1);
+        });
+
+        it("should load sync multi-IID factory only once", () => {
+            let loadCount = 0;
+            const c = createContainer({
+                name: "multi-sync-once",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => {
+                            loadCount++;
+                            return { multiply: multiplyNumbers, divide: divideNumbers } as any;
+                        },
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            expect(loadCount).toBe(1);
+
+            c.get(DIVIDER);
+            expect(loadCount).toBe(1);
+        });
+
+        it("should fire onLoad for each IID when factory loads", () => {
+            const calls: Array<{ iid: string }> = [];
+            const c = createContainer({
+                name: "multi-onload",
+                config: {
+                    onLoad: (iid) => calls.push({ iid: iid.ns }),
+                },
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            expect(calls).toEqual([
+                { iid: MULTIPLIER.ns },
+                { iid: DIVIDER.ns },
+            ]);
+        });
+
+        it("should fire onLoad for each IID in async multi-IID factory", async () => {
+            const calls: Array<{ iid: string }> = [];
+            const c = createContainer({
+                name: "multi-async-onload",
+                config: {
+                    onLoad: (iid) => calls.push({ iid: iid.ns }),
+                },
+                services: [
+                    factory({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () => ({ add: addNumbers, subtract: subtractNumbers }) as any,
+                    }),
+                ],
+            });
+
+            await c.fetch(ADDER);
+            await c.fetch(SUBTRACTER);
+            expect(calls).toEqual([
+                { iid: ADDER.ns },
+                { iid: SUBTRACTER.ns },
+            ]);
+        });
+
+        it("should show registered status for all IIDs before loading", () => {
+            const c = createContainer({
+                name: "multi-inspect",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
+            expect(c.inspect(DIVIDER)!.status).toBe("registered");
+        });
+
+        it("should show loaded status for all IIDs after loading", () => {
+            const c = createContainer({
+                name: "multi-loaded",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.status).toBe("loaded");
+            expect(c.inspect(DIVIDER)!.status).toBe("loaded");
+        });
+
+        it("should list all IIDs from multi-IID factory in entries()", () => {
+            const c = createContainer({
+                name: "multi-entries",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            const entries = Array.from(c.entries());
+            expect(entries).toHaveLength(2);
+            const nsList = entries.map((e) => e.ns);
+            expect(nsList).toContain(MULTIPLIER.ns);
+            expect(nsList).toContain(DIVIDER.ns);
+        });
+
+        it("should support has() for each IID", () => {
+            const c = createContainer({
+                name: "multi-has",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            expect(c.has(MULTIPLIER)).toBe(true);
+            expect(c.has(DIVIDER)).toBe(true);
+        });
+
+        it("should allow dispose on individual IIDs", () => {
+            const c = createContainer({
+                name: "multi-dispose",
+                services: [
+                    factory({
+                        provide: [MULTIPLIER, DIVIDER],
+                        load: () => ({ multiply: multiplyNumbers, divide: divideNumbers }) as any,
+                    }),
+                ],
+            });
+
+            c.get(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.status).toBe("loaded");
+
+            c.dispose(MULTIPLIER);
+            expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
+        });
+
+        it("should retry multi-IID async factory", async () => {
+            let callCount = 0;
+            const c = createContainer({
+                name: "multi-retry",
+                services: [
+                    factory({
+                        provide: [ADDER, SUBTRACTER],
+                        load: async () => {
+                            callCount++;
+                            if (callCount < 3) throw new Error("fail");
+                            return { add: addNumbers, subtract: subtractNumbers } as any;
+                        },
+                    }),
+                ],
+            });
+
+            const svc = await c.fetch(ADDER) as any;
+            expect(svc.add(2, 3)).toBe(5);
+            expect(callCount).toBe(3);
+        });
+
+        it("should throw AsimoLoadError on exhausted retries for multi-IID", async () => {
+            const c = createContainer({
+                name: "multi-retry-exhausted",
+                services: [
+                    factory({
+                        provide: [ADDER],
+                        maxRetries: 0,
+                        load: async () => {
+                            throw new Error("fail");
+                        },
+                    }),
+                ],
+            });
+
+            await expect(c.fetch(ADDER)).rejects.toThrow(AsimoLoadError);
+        });
+    });
+
     describe("Retry with exponential backoff", () => {
         it("should retry an async factory with default maxRetries (2) and eventually succeed", async () => {
             let callCount = 0;
@@ -1060,7 +1324,7 @@ describe("IoC Container", () => {
                 name: "retry-factory",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             callCount++;
                             if (callCount < 3) throw new Error("fail");
@@ -1094,7 +1358,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1119,7 +1383,7 @@ describe("IoC Container", () => {
                 name: "retry-exhausted",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         maxRetries: 0,
                         load: async () => {
                             callCount++;
@@ -1156,7 +1420,7 @@ describe("IoC Container", () => {
                 name: "retry-refetch",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         maxRetries: 0,
                         load: async () => {
                             callCount++;
@@ -1192,7 +1456,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1216,7 +1480,7 @@ describe("IoC Container", () => {
                 name: "retry-custom",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         maxRetries: 1,
                         retryDelayMs: 50,
                         load: async () => {
@@ -1255,7 +1519,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1281,7 +1545,7 @@ describe("IoC Container", () => {
                 name: "retry-sync",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => {
                             callCount++;
                             throw new Error("fail");
@@ -1301,7 +1565,7 @@ describe("IoC Container", () => {
                 config: { maxRetries: 1, retryDelayMs: 30 },
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             callCount++;
                             if (callCount < 2) throw new Error("fail");
@@ -1328,7 +1592,7 @@ describe("IoC Container", () => {
                 config: { maxRetries: 2, retryDelayMs: 500 },
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         maxRetries: 0,
                         load: async () => {
                             callCount++;
@@ -1353,7 +1617,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1375,7 +1639,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             attempt++;
                             if (attempt < 2) throw new Error("fail");
@@ -1406,11 +1670,11 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                     factory({
-                                        provide: SUBTRACTER,
+                                        provide: [SUBTRACTER],
                                         load: async () => subtractNumbers,
                                     }),
                                 ],
@@ -1439,7 +1703,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             throw new Error("fail");
                         },
@@ -1460,7 +1724,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1483,7 +1747,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1510,7 +1774,7 @@ describe("IoC Container", () => {
                 },
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             throw new Error("fail");
                         },
@@ -1567,7 +1831,7 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1585,7 +1849,7 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1601,7 +1865,7 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                 ],
@@ -1617,11 +1881,11 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -1644,7 +1908,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1672,7 +1936,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -1694,7 +1958,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1705,7 +1969,7 @@ describe("IoC Container", () => {
                 extends: [parent],
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -1727,7 +1991,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1738,7 +2002,7 @@ describe("IoC Container", () => {
                 extends: [parent],
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -1756,7 +2020,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1767,7 +2031,7 @@ describe("IoC Container", () => {
                 extends: [parent],
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1785,11 +2049,11 @@ describe("IoC Container", () => {
                 name: "entries-test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -1810,7 +2074,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1820,7 +2084,7 @@ describe("IoC Container", () => {
                 extends: [parent],
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -1836,7 +2100,7 @@ describe("IoC Container", () => {
                 name: "entries-status",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1855,7 +2119,7 @@ describe("IoC Container", () => {
         it("should return true for a registered service", () => {
             const c = createContainer({
                 name: "has-test",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             expect(c.has(MULTIPLIER)).toBe(true);
         });
@@ -1863,7 +2127,7 @@ describe("IoC Container", () => {
         it("should return false for an unknown service", () => {
             const c = createContainer({
                 name: "has-test",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             expect(c.has(UNKNOWN)).toBe(false);
         });
@@ -1871,7 +2135,7 @@ describe("IoC Container", () => {
         it("should return true for a service in an ancestor", () => {
             const parent = createContainer({
                 name: "parent",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             const child = createContainer({
                 name: "child",
@@ -1884,7 +2148,7 @@ describe("IoC Container", () => {
         it("should cache not-found results", () => {
             const c = createContainer({
                 name: "has-cache",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             expect(c.has(UNKNOWN)).toBe(false);
             // Repeated call exercises the cached notFound entry
@@ -1896,7 +2160,7 @@ describe("IoC Container", () => {
         it("should unload a loaded sync service", () => {
             const c = createContainer({
                 name: "dispose-sync",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
 
             c.get(MULTIPLIER);
@@ -1909,7 +2173,7 @@ describe("IoC Container", () => {
         it("should unload a loaded async service", async () => {
             const c = createContainer({
                 name: "dispose-async",
-                services: [factory({ provide: ADDER, load: async () => addNumbers })],
+                services: [factory({ provide: [ADDER], load: async () => addNumbers })],
             });
 
             await c.fetch(ADDER);
@@ -1925,7 +2189,7 @@ describe("IoC Container", () => {
                 name: "dispose-refetch",
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => {
                             callCount++;
                             return addNumbers;
@@ -1945,7 +2209,7 @@ describe("IoC Container", () => {
         it("should not throw on unknown IID", () => {
             const c = createContainer({
                 name: "dispose-unknown",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             expect(() => c.dispose(UNKNOWN)).not.toThrow();
         });
@@ -1953,7 +2217,7 @@ describe("IoC Container", () => {
         it("should not throw on unloaded service", () => {
             const c = createContainer({
                 name: "dispose-unloaded",
-                services: [factory({ provide: MULTIPLIER, load: () => multiplyNumbers })],
+                services: [factory({ provide: [MULTIPLIER], load: () => multiplyNumbers })],
             });
             expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
             expect(() => c.dispose(MULTIPLIER)).not.toThrow();
@@ -1966,7 +2230,7 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -1983,7 +2247,7 @@ describe("IoC Container", () => {
                 name: "test",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -2006,7 +2270,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -2031,7 +2295,7 @@ describe("IoC Container", () => {
                                 name: "sub",
                                 services: [
                                     factory({
-                                        provide: ADDER,
+                                        provide: [ADDER],
                                         load: async () => addNumbers,
                                     }),
                                 ],
@@ -2051,7 +2315,7 @@ describe("IoC Container", () => {
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -2062,7 +2326,7 @@ describe("IoC Container", () => {
                 extends: [parent],
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -2080,7 +2344,7 @@ Asimo IoC Container: /parent/child
                 name: "parent",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -2091,7 +2355,7 @@ Asimo IoC Container: /parent/child
                 extends: [parent],
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -2109,7 +2373,7 @@ Asimo IoC Container: /parent/child
                 name: "gp",
                 services: [
                     factory({
-                        provide: MULTIPLIER,
+                        provide: [MULTIPLIER],
                         load: () => multiplyNumbers,
                     }),
                 ],
@@ -2120,7 +2384,7 @@ Asimo IoC Container: /parent/child
                 extends: [grandparent],
                 services: [
                     factory({
-                        provide: DIVIDER,
+                        provide: [DIVIDER],
                         load: () => divideNumbers,
                     }),
                 ],
@@ -2131,7 +2395,7 @@ Asimo IoC Container: /parent/child
                 extends: [parent],
                 services: [
                     factory({
-                        provide: ADDER,
+                        provide: [ADDER],
                         load: async () => addNumbers,
                     }),
                 ],

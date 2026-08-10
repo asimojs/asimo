@@ -66,42 +66,50 @@ type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
  * The invariant phantom on `Container` catches mismatches between the declared
  * dependencies and what `load` actually uses — at compile time, with no manual annotation.
  *
+ * `provide` is an array of IIDs and `load` must return a single value that implements
+ * all provided interfaces. For a single service, use `provide: [MY_IID]`.
+ *
  * @example
+ * // Single IID
  * factory({
- *     provide: CALCULATOR,
+ *     provide: [CALCULATOR],
  *     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
- *     load: (c) => createCalculator(c), // 'c' is Container<typeof MULTIPLIER | typeof ADDER | typeof SUBTRACTER>
+ *     load: (c) => createCalculator(c),
+ * })
+ *
+ * // Multiple IIDs — one service implements several interfaces
+ * factory({
+ *     provide: [ADDER, MULTIPLIER],
+ *     load: () => new Calculator(),
  * })
  */
 export function factory<
-    const IID extends InterfaceId<any, any>,
+    const IIDs extends InterfaceId<any, any>[],
     const Deps extends ServiceDeps = [],
 >(params: {
-    /** Interface identifier provided by this service. */
-    provide: IID;
+    /** Interface IDs provided by this factory — must be an array, even for a single IID. */
+    provide: IIDs;
     /** Interface IDs this service depends on — types the `load` context. Optional; when omitted, `load` receives `Container<never>` (no accessible services). */
     dependencies?: Deps;
-    /** Factory invoked on first access. Receives a container exposing only the listed dependencies. */
+    /** Factory invoked on first access. Receives a container exposing only the listed dependencies. Must return a single value that implements all provided interfaces. */
     load(
         context: Container<Deps[number]>,
-    ): IID extends SyncIID<infer T, any>
-        ? T
-        : IID extends AsyncIID<infer T, any>
-          ? Promise<T>
-          : never;
-    /** Max number of retries on load failure for async IIDs (default: 2). */
-    maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
+    ): Extract<IIDs[number], AsyncIID<any, any>> extends never
+        ? IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never
+        : Promise<IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never>;
+    /** Max number of retries on load failure for async IIDs (default: 2). Only meaningful when at least one IID is async. */
+    maxRetries?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
     /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
-    retryDelayMs?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
-}): ServiceFactory<IID, Deps> {
+    retryDelayMs?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
+}): ServiceFactory<IIDs, Deps> {
     return {
         [__asimoServiceFactory]: true as const,
-        interface: params.provide,
+        provide: params.provide,
         dependencies: params.dependencies,
         load: params.load,
         maxRetries: params.maxRetries,
         retryDelayMs: params.retryDelayMs,
-    } as ServiceFactory<IID, Deps>;
+    } as ServiceFactory<IIDs, Deps>;
 }
 
 /**
@@ -149,7 +157,7 @@ export function bundle<
 type ServiceEntry =
     | {
           readonly [__asimoServiceFactory]: true;
-          interface: InterfaceId<any, any>;
+          provide: InterfaceId<any, any>[];
           dependencies?: ServiceDeps;
       }
     | {
@@ -160,9 +168,9 @@ type ServiceEntry =
 
 type ServiceIID<S> = S extends {
     readonly [__asimoServiceFactory]: true;
-    interface: infer IID extends InterfaceId<any, any>;
+    provide: infer IIDs extends InterfaceId<any, any>[];
 }
-    ? IID
+    ? IIDs[number]
     : S extends {
             readonly [__asimoServiceBundle]: true;
             provide: infer IIDs extends InterfaceId<any, any>[];
@@ -171,7 +179,7 @@ type ServiceIID<S> = S extends {
       : never;
 
 interface InternalEntry {
-    factory?: ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
+    factory?: ServiceFactory<InterfaceId<any, any>[], ServiceDeps>;
     bundle?: { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
     instance?: any;
     maxRetries?: number;
@@ -225,15 +233,18 @@ export function createContainer<
     const serviceMap = new Map<InterfaceNamespace, InternalEntry>();
     const loadingBundles = new Set<InterfaceNamespace>();
     const bundleLoadPromises = new Map<object, Promise<void>>();
+    const multiIidLoadCache = new WeakMap<object, Promise<any>>();
 
     for (const service of services) {
         if (__asimoServiceFactory in service) {
-            const sf = service as ServiceFactory<InterfaceId<any, any>, ServiceDeps>;
-            serviceMap.set(sf.interface.ns, {
-                factory: sf,
-                maxRetries: sf.maxRetries,
-                retryDelayMs: sf.retryDelayMs,
-            });
+            const sf = service as ServiceFactory<InterfaceId<any, any>[], ServiceDeps>;
+            for (const iid of sf.provide) {
+                serviceMap.set(iid.ns, {
+                    factory: sf,
+                    maxRetries: sf.maxRetries,
+                    retryDelayMs: sf.retryDelayMs,
+                });
+            }
         } else if (__asimoServiceBundle in service) {
             const sb = service as { provide: AsyncIID<any, any>[]; maxRetries?: number; retryDelayMs?: number; load(ctx: Container<any>): Promise<Container<any>> };
             for (const iid of sb.provide) {
@@ -243,6 +254,8 @@ export function createContainer<
                     retryDelayMs: sb.retryDelayMs,
                 });
             }
+        } else {
+            throw new AsimoError("Invalid service registration: services must be created via factory() or bundle()", `/${params.name}`);
         }
     }
 
@@ -338,52 +351,72 @@ export function createContainer<
         }
 
         if (entry.factory) {
-            if (entry.factory.interface.sync) {
-                return resolveEntry(entry)!;
+            if (entry.factory.provide.every((p) => p.sync)) {
+                return resolveFactoryEntry(entry)!;
             }
-            return loadAsyncWithRetry(entry);
+            return resolveFactoryEntryAsync(entry);
         }
 
         throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
 
-    function resolveEntry(entry: InternalEntry): any {
+    function resolveFactoryEntry(entry: InternalEntry): any {
         if (entry.instance) return entry.instance;
-        if (entry.factory) {
-            entry.instance = entry.factory.load(container);
-            onLoad?.(entry.factory.interface, container);
-            return entry.instance;
+        const factory = entry.factory!;
+        const value = factory.load(container as any);
+        for (const p of factory.provide) {
+            const e = serviceMap.get(p.ns);
+            if (e) {
+                e.instance = value;
+                onLoad?.(p, container);
+            }
         }
-        throwError("Corrupt service entry in serviceMap: no factory or bundle");
+        return value;
     }
 
-    async function loadAsyncWithRetry(entry: InternalEntry): Promise<any> {
+    async function resolveFactoryEntryAsync(entry: InternalEntry): Promise<any> {
+        if (entry.instance) return entry.instance;
+        const factory = entry.factory!;
+
+        const cached = multiIidLoadCache.get(factory);
+        if (cached) return cached;
+
         const maxRetries = entry.maxRetries ?? cfg.maxRetries ?? 2;
         const baseDelay = entry.retryDelayMs ?? cfg.retryDelayMs ?? 1000;
 
-        const loadPromise = retryAsyncFactoryLoad(entry, maxRetries, baseDelay);
-        entry.instance = loadPromise;
+        const loadPromise = retryAsyncFactoryLoad(factory, maxRetries, baseDelay);
+        multiIidLoadCache.set(factory, loadPromise);
 
         try {
             const value = await loadPromise;
-            entry.instance = value;
-            onLoad?.(entry.factory!.interface, container);
+            for (const p of factory.provide) {
+                const e = serviceMap.get(p.ns);
+                if (e) {
+                    e.instance = value;
+                    onLoad?.(p, container);
+                }
+            }
+            multiIidLoadCache.delete(factory);
             return value;
         } catch (err) {
-            entry.instance = undefined;
+            multiIidLoadCache.delete(factory);
+            for (const p of factory.provide) {
+                const e = serviceMap.get(p.ns);
+                if (e) e.instance = undefined;
+            }
             throw err;
         }
     }
 
     async function retryAsyncFactoryLoad(
-        entry: InternalEntry,
+        factory: ServiceFactory<InterfaceId<any, any>[], ServiceDeps>,
         maxRetries: number,
         baseDelay: number,
     ): Promise<any> {
         let lastError: unknown;
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-                const result = entry.factory!.load(container);
+                const result = factory.load(container as any);
                 return await result;
             } catch (err) {
                 if (err instanceof AsimoError) throw err;
@@ -394,7 +427,7 @@ export function createContainer<
             }
         }
         const error = new AsimoLoadError(
-            `Load failed for "${entry.factory!.interface.ns}" after ${maxRetries + 1} attempts`,
+            `Load failed for "${factory.provide.map((p) => p.ns).join(", ")}" after ${maxRetries + 1} attempts`,
             container.path,
             lastError,
         );
@@ -455,11 +488,11 @@ export function createContainer<
         throw error;
     }
 
-    async function resolveOrRetry(entry: InternalEntry): Promise<any> {
+    async function resolveOrRetry(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
         if (entry.instance) return entry.instance;
         if (entry.factory) {
-            if (entry.factory.interface.sync) return resolveEntry(entry)!;
-            return loadAsyncWithRetry(entry);
+            if (entry.factory.provide.every((p) => p.sync)) return resolveFactoryEntry(entry)!;
+            return resolveFactoryEntryAsync(entry);
         }
         throwError("Corrupt service entry in serviceMap: no factory or bundle");
     }
@@ -477,7 +510,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveOrRetry(updatedEntry);
+            return resolveOrRetry(updatedEntry, iid);
         }
 
         // Check for circular: bundle's own load triggers re-entry
@@ -537,7 +570,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveOrRetry(updatedEntry);
+            return resolveOrRetry(updatedEntry, iid);
         } finally {
             for (const providedIid of bundle.provide) {
                 loadingBundles.delete(providedIid.ns);
@@ -553,10 +586,13 @@ export function createContainer<
             if (entry.bundle && !entry.instance && !entry.factory) {
                 return null;
             }
-            if (entry.factory && !entry.factory.interface.sync) {
-                return resolveOrRetry(entry);
+            if (entry.factory) {
+                if (entry.factory.provide.every((p) => p.sync)) {
+                    return resolveFactoryEntry(entry)!;
+                }
+                return resolveFactoryEntryAsync(entry);
             }
-            return resolveEntry(entry);
+            return resolveFactoryEntry(entry);
         }
         return getParentService(iid);
     }
