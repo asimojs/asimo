@@ -59,6 +59,7 @@ All errors thrown via `throwError(message: string): never` which creates `AsimoE
 
 ## Conventions
 
+- Code variables should have meaningful names - do not use single letter variables
 - Every change must include corresponding tests — new features get new tests, bug fixes get regression tests
 - No comments in code unless necessary (JSDoc on public APIs is OK)
 - Imports use `verbatimModuleSyntax` — `import type` for type-only imports

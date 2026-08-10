@@ -215,9 +215,10 @@ export interface AsimoConfig {
     retryDelayMs?: number;
     /**
      * Called when a service factory is invoked for the first time.
-     * Fires at most once per (iid, container) pair on successful load.
+     * Fires at most once per factory on successful load. For factories providing
+     * multiple IIDs, the array contains all provided IIDs.
      */
-    onLoad?: (iid: InterfaceId<any, any>, container: Container<any>) => void;
+    onLoad?: (iids: InterfaceId<any, any>[], container: Container<any>) => void;
     /**
      * Called when an AsimoError occurs during service loading.
      * Receives the error object and the container reference.

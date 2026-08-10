@@ -364,13 +364,11 @@ export function createContainer<
         if (entry.instance) return entry.instance;
         const factory = entry.factory!;
         const value = factory.load(container as any);
-        for (const p of factory.provide) {
-            const e = serviceMap.get(p.ns);
-            if (e) {
-                e.instance = value;
-                onLoad?.(p, container);
-            }
+        for (const iid of factory.provide) {
+            const service = serviceMap.get(iid.ns);
+            if (service) service.instance = value;
         }
+        onLoad?.(factory.provide, container);
         return value;
     }
 
@@ -389,14 +387,12 @@ export function createContainer<
 
         try {
             const value = await loadPromise;
-            for (const p of factory.provide) {
-                const e = serviceMap.get(p.ns);
-                if (e) {
-                    e.instance = value;
-                    onLoad?.(p, container);
-                }
+            for (const iid of factory.provide) {
+                const service = serviceMap.get(iid.ns);
+                if (service) service.instance = value;
             }
             multiIidLoadCache.delete(factory);
+            onLoad?.(factory.provide, container);
             return value;
         } catch (err) {
             multiIidLoadCache.delete(factory);

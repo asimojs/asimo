@@ -1151,12 +1151,12 @@ describe("IoC Container", () => {
             expect(loadCount).toBe(1);
         });
 
-        it("should fire onLoad for each IID when factory loads", () => {
-            const calls: Array<{ iid: string }> = [];
+        it("should fire onLoad once with all IIDs when factory loads", () => {
+            const calls: Array<{ iids: string[] }> = [];
             const c = createContainer({
                 name: "multi-onload",
                 config: {
-                    onLoad: (iid) => calls.push({ iid: iid.ns }),
+                    onLoad: (iids) => calls.push({ iids: iids.map((i) => i.ns) }),
                 },
                 services: [
                     factory({
@@ -1168,17 +1168,16 @@ describe("IoC Container", () => {
 
             c.get(MULTIPLIER);
             expect(calls).toEqual([
-                { iid: MULTIPLIER.ns },
-                { iid: DIVIDER.ns },
+                { iids: [MULTIPLIER.ns, DIVIDER.ns] },
             ]);
         });
 
-        it("should fire onLoad for each IID in async multi-IID factory", async () => {
-            const calls: Array<{ iid: string }> = [];
+        it("should fire onLoad once with all IIDs in async multi-IID factory", async () => {
+            const calls: Array<{ iids: string[] }> = [];
             const c = createContainer({
                 name: "multi-async-onload",
                 config: {
-                    onLoad: (iid) => calls.push({ iid: iid.ns }),
+                    onLoad: (iids) => calls.push({ iids: iids.map((i) => i.ns) }),
                 },
                 services: [
                     factory({
@@ -1191,8 +1190,7 @@ describe("IoC Container", () => {
             await c.fetch(ADDER);
             await c.fetch(SUBTRACTER);
             expect(calls).toEqual([
-                { iid: ADDER.ns },
-                { iid: SUBTRACTER.ns },
+                { iids: [ADDER.ns, SUBTRACTER.ns] },
             ]);
         });
 
@@ -1613,7 +1611,7 @@ describe("IoC Container", () => {
             const c = createContainer({
                 name: "onload-sync",
                 config: {
-                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                    onLoad: (iids, container) => calls.push({ iid: iids[0].ns, container: container.path }),
                 },
                 services: [
                     factory({
@@ -1635,7 +1633,7 @@ describe("IoC Container", () => {
             const c = createContainer({
                 name: "onload-async",
                 config: {
-                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                    onLoad: (iids, container) => calls.push({ iid: iids[0].ns, container: container.path }),
                 },
                 services: [
                     factory({
@@ -1660,7 +1658,7 @@ describe("IoC Container", () => {
             const c = createContainer({
                 name: "onload-bundle",
                 config: {
-                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                    onLoad: (iids, container) => calls.push({ iid: iids[0].ns, container: container.path }),
                 },
                 services: [
                     bundle({
@@ -1699,7 +1697,7 @@ describe("IoC Container", () => {
                 name: "onload-fail",
                 config: {
                     maxRetries: 0,
-                    onLoad: (iid) => calls.push(iid.ns),
+                    onLoad: (iids) => calls.push(iids[0].ns),
                 },
                 services: [
                     factory({
@@ -1720,7 +1718,7 @@ describe("IoC Container", () => {
             const c = createContainer({
                 name: "onload-cached",
                 config: {
-                    onLoad: (iid, container) => calls.push({ iid: iid.ns, container: container.path }),
+                    onLoad: (iids, container) => calls.push({ iid: iids[0].ns, container: container.path }),
                 },
                 services: [
                     factory({
