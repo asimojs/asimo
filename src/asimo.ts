@@ -484,7 +484,7 @@ export function createContainer<
         throw error;
     }
 
-    async function resolveOrRetry(entry: InternalEntry, iid: InterfaceId<any>): Promise<any> {
+    async function resolveOrRetry(entry: InternalEntry): Promise<any> {
         if (entry.instance) return entry.instance;
         if (entry.factory) {
             if (entry.factory.provide.every((p) => p.sync)) return resolveFactoryEntry(entry)!;
@@ -506,7 +506,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveOrRetry(updatedEntry, iid);
+            return resolveOrRetry(updatedEntry);
         }
 
         // Check for circular: bundle's own load triggers re-entry
@@ -566,7 +566,7 @@ export function createContainer<
             if (!updatedEntry || (!updatedEntry.factory && !updatedEntry.instance)) {
                 throwError(`Bundle did not provide service: ${iid.ns}`);
             }
-            return resolveOrRetry(updatedEntry, iid);
+            return resolveOrRetry(updatedEntry);
         } finally {
             for (const providedIid of bundle.provide) {
                 loadingBundles.delete(providedIid.ns);
