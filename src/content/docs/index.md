@@ -19,7 +19,7 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: LOGGER,
+            provide: [LOGGER], // a service can implemnt multiple interfaces
             load: () => ({ log: (msg) => console.log(`[app] ${msg}`) }),
         }),
     ],
@@ -77,7 +77,7 @@ Declare what a service needs and the `load` context is typed automatically:
 
 ```ts
 factory({
-    provide: CALCULATOR,
+    provide: [CALCULATOR],
     dependencies: [MULTIPLIER, ADDER],
     load: (c) => {
         const multiply = c.get(MULTIPLIER); // type: (a,b) => number

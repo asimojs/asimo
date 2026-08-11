@@ -25,7 +25,7 @@ const ID = asyncIID<MyInterface>()("domain.module.InterfaceName");
 import { factory } from "@asimojs/asimo";
 
 factory({
-    provide: ID,                            // required: IID token
+    provide: [ID],                          // required: IID token - a service can implement multiple interfaces
     dependencies: [DEP1, DEP2],             // optional: types the load context
     load: (c) => { /* c is Container<DEP1 | DEP2> */ },
     maxRetries: 3,                          // optional, async IIDs only
@@ -55,7 +55,7 @@ import { createContainer } from "@asimojs/asimo";
 createContainer({
     name: "mycontainer",                    // required: no "/" allowed
     extends: [parentContainer],             // optional: multiple parents supported
-    config: { maxRetries: 3 },             // optional: AsimoConfig
+    config: { maxRetries: 3 },              // optional: AsimoConfig
     services: [factory1, bundle1],          // optional: array of services
 });
 ```
@@ -95,9 +95,9 @@ const USER_REPO = syncIID<UserRepo>()("app.UserRepo");
 const app = createContainer({
     name: "app",
     services: [
-        factory({ provide: LOGGER, load: () => createLogger() }),
+        factory({ provide: [LOGGER], load: () => createLogger() }),
         factory({
-            provide: DB,
+            provide: [DB],
             dependencies: [LOGGER],
             load: async (c) => {
                 const log = c.get(LOGGER);
@@ -106,7 +106,7 @@ const app = createContainer({
             },
         }),
         factory({
-            provide: USER_REPO,
+            provide: [USER_REPO],
             dependencies: [DB, LOGGER],
             load: (c) => new PostgresUserRepo(c.get(DB), c.get(LOGGER)),
         }),
@@ -137,8 +137,8 @@ function handleRequest(req: Request) {
         name: `req-${randomId()}`,
         extends: [app],         // inherit DB, Logger, Config from app
         services: [
-            factory({ provide: REQUEST, load: () => req }),
-            factory({ provide: SESSION, load: () => loadSession(req) }),
+            factory({ provide: [REQUEST], load: () => req }),
+            factory({ provide: [SESSION], load: () => loadSession(req) }),
         ],
     });
     // ctx has all app services + REQUEST + SESSION
@@ -154,12 +154,12 @@ const container = createContainer({
     services: [
         // Override with mock
         factory({
-            provide: DB,
+            provide: [DB],
             load: () => ({ query: vi.fn().mockResolvedValue([{ id: 1 }]) }),
         }),
         // Service under test uses the mock DB
         factory({
-            provide: USER_REPO,
+            provide: [USER_REPO],
             dependencies: [DB],
             load: (c) => new UserRepo(c.get(DB)),
         }),
@@ -225,7 +225,7 @@ container.fetch(iid) where:
 ### Dependency inference
 
 ```
-factory({ provide: IID, dependencies: [A, B], load: (c) => ... }) where:
+factory({ provide: [IID], dependencies: [A, B], load: (c) => ... }) where:
   - c is typed as Container<A | B>
   - c.get(A) returns A's type T_A
   - c.get(B) returns B's type T_B
@@ -258,12 +258,12 @@ const USER_SVC = syncIID<UserService>()("app.UserService");
 
 // 2. Define services
 const loggerFactory = factory({
-    provide: LOGGER,
+    provide: [LOGGER],
     load: () => ({ log: (msg) => console.log(`[app] ${msg}`) }),
 });
 
 const configFactory = factory({
-    provide: CONFIG,
+    provide: [CONFIG],
     load: async () => {
         const resp = await fetch("/config.json");
         return resp.json();
@@ -271,7 +271,7 @@ const configFactory = factory({
 });
 
 const userServiceFactory = factory({
-    provide: USER_SVC,
+    provide: [USER_SVC],
     dependencies: [CONFIG, LOGGER],
     load: (c) => {
         const config = c.get(CONFIG);

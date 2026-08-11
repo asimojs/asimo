@@ -53,21 +53,21 @@ function l(i) {
 	if (i.name.includes("/")) throw Error(`[Asimo] Container name must not contain forward slashes: "${i.name}"`);
 	if (i.services !== void 0 && !Array.isArray(i.services)) throw Error("[Asimo] services must be an array");
 	let l = i.extends ? Object.freeze([...i.extends]) : null, u = i.services ?? [], d = /* @__PURE__ */ new Map(), f = /* @__PURE__ */ new Set(), p = /* @__PURE__ */ new Map(), m = /* @__PURE__ */ new WeakMap();
-	for (let n of u) if (e in n) {
-		let e = n;
+	for (let r of u) if (e in r) {
+		let e = r;
 		for (let t of e.provide) d.set(t.ns, {
 			factory: e,
 			maxRetries: e.maxRetries,
 			retryDelayMs: e.retryDelayMs
 		});
-	} else if (t in n) {
-		let e = n;
+	} else if (t in r) {
+		let e = r;
 		for (let t of e.provide) d.set(t.ns, {
 			bundle: e,
 			maxRetries: e.maxRetries,
 			retryDelayMs: e.retryDelayMs
 		});
-	}
+	} else throw new n("Invalid service registration: services must be created via factory() or bundle()", `/${i.name}`);
 	let h = `${l?.[0]?.path || ""}/${i.name}`, g = {
 		name: i.name,
 		path: h,
@@ -125,9 +125,9 @@ function l(i) {
 		let t = e.factory, n = t.load(g);
 		for (let e of t.provide) {
 			let t = d.get(e.ns);
-			t && (t.instance = n, o?.(e, g));
+			t && (t.instance = n);
 		}
-		return n;
+		return o?.(t.provide, g), n;
 	}
 	async function y(e) {
 		if (e.instance) return e.instance;
@@ -139,9 +139,9 @@ function l(i) {
 			let e = await r;
 			for (let n of t.provide) {
 				let t = d.get(n.ns);
-				t && (t.instance = e, o?.(n, g));
+				t && (t.instance = e);
 			}
-			return m.delete(t), e;
+			return m.delete(t), o?.(t.provide, g), e;
 		} catch (e) {
 			m.delete(t);
 			for (let e of t.provide) {
@@ -195,7 +195,7 @@ function l(i) {
 		let t = new n(e, g.path);
 		throw s?.(t, g), t;
 	}
-	async function w(e, t) {
+	async function w(e) {
 		if (e.instance) return e.instance;
 		if (e.factory) return e.factory.provide.every((e) => e.sync) ? v(e) : y(e);
 		C("Corrupt service entry in serviceMap: no factory or bundle");
@@ -205,7 +205,7 @@ function l(i) {
 		if (p.has(i)) {
 			await p.get(i);
 			let e = d.get(t.ns);
-			return (!e || !e.factory && !e.instance) && C(`Bundle did not provide service: ${t.ns}`), w(e, t);
+			return (!e || !e.factory && !e.instance) && C(`Bundle did not provide service: ${t.ns}`), w(e);
 		}
 		for (let e of i.provide) f.has(e.ns) && C(`Circular bundle loading detected for: ${e.ns}`);
 		for (let e of i.provide) f.add(e.ns);
@@ -231,7 +231,7 @@ function l(i) {
 		try {
 			await u;
 			let e = d.get(t.ns);
-			return (!e || !e.factory && !e.instance) && C(`Bundle did not provide service: ${t.ns}`), w(e, t);
+			return (!e || !e.factory && !e.instance) && C(`Bundle did not provide service: ${t.ns}`), w(e);
 		} finally {
 			for (let e of i.provide) f.delete(e.ns);
 			p.delete(i);

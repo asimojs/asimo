@@ -41,7 +41,7 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: GREETER,
+            provide: [GREETER],
             load: () => ({
                 greet: (name) => `Hello, ${name}!`,
             }),
@@ -71,7 +71,7 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: CONFIG,
+            provide: [CONFIG],
             load: async () => {
                 const resp = await fetch("/config.json");
                 return resp.json();  // returns Promise<Config>
@@ -90,7 +90,7 @@ When a service depends on others, list them in `dependencies`:
 
 ```ts
 factory({
-    provide: GREETER,
+    provide: [GREETER],
     dependencies: [CONFIG],
     load: (c) => {
         // c is Container<typeof CONFIG>
@@ -115,7 +115,7 @@ const app = createContainer({
     name: "app",
     services: [
         // Core services loaded eagerly
-        factory({ provide: LOGGER, load: () => createLogger() }),
+        factory({ provide: [LOGGER], load: () => createLogger() }),
 
         // Analytics loads lazily — only when first accessed
         bundle({
@@ -137,7 +137,7 @@ Create child containers that inherit from a parent:
 const parentApp = createContainer({
     name: "core",
     services: [
-        factory({ provide: DB, load: () => createPool() }),
+        factory({ provide: [DB], load: () => createPool() }),
     ],
 });
 
@@ -145,7 +145,7 @@ const requestCtx = createContainer({
     name: "request-42",
     extends: [parentApp],  // inherits DB from parent
     services: [
-        factory({ provide: REQUEST, load: () => currentRequest }),
+        factory({ provide: [REQUEST], load: () => currentRequest }),
     ],
 });
 

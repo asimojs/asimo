@@ -49,8 +49,8 @@ const container = createContainer({
 const container = createContainer({
     name: "app",
     services: [
-        factory({ provide: LOGGER, load: () => createLogger() }),
-        factory({ provide: DB, dependencies: [LOGGER], load: (c) => createDB(c.get(LOGGER)) }),
+        factory({ provide: [LOGGER], load: () => createLogger() }),
+        factory({ provide: [DB], dependencies: [LOGGER], load: (c) => createDB(c.get(LOGGER)) }),
     ],
 });
 // container: Container<typeof LOGGER | typeof DB>
@@ -63,7 +63,7 @@ const child = createContainer({
     name: "child",
     extends: [parentContainer],
     services: [
-        factory({ provide: CHILD_SVC, load: () => createChild() }),
+        factory({ provide: [CHILD_SVC], load: () => createChild() }),
     ],
 });
 // child: Container<typeof LOGGER | typeof DB | typeof CHILD_SVC>
@@ -89,8 +89,8 @@ const app = createContainer({
     config: {
         maxRetries: 3,
         retryDelayMs: 2000,
-        onLoad(iid, container) {
-            console.log(`Loaded: ${iid.ns}`);
+        onLoad(iids, container) {
+            console.log(`Loaded: ${iids[0].ns}`);
         },
         onError(error, container) {
             console.error(error.message);

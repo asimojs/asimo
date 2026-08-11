@@ -44,7 +44,8 @@ export type ServiceDeps = InterfaceId<any, any>[];
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 /**
  * Extracts the return type of a factory `load` function from an array of IIDs.
- * The factory returns a single value whose type is the intersection of all provided IID types.
+ * The factory produces a single value that must satisfy every provided interface,
+ * so the type is the intersection (`&`) of all IID types (e.g. `Adder & Multiplier`).
  * When any IID is async, the return is wrapped in `Promise`.
  */
 export type FactoryLoadResult<IIDs extends InterfaceId<any, any>[]> = Extract<IIDs[number], AsyncIID<any, any>> extends never ? IIDs[number] extends InterfaceId<infer T, any> ? UnionToIntersection<T> : never : Promise<IIDs[number] extends InterfaceId<infer T, any> ? UnionToIntersection<T> : never>;
@@ -67,7 +68,7 @@ export declare const __asimoServiceBundle: unique symbol;
  *
  * `provide` is an array of IIDs — the `load` function returns a single value
  * that implements all provided interfaces. For a single service, use
- * `provide: [MY_IID] as const`.
+ * `provide: [MY_IID]`.
  *
  * The `__asimoServiceFactory` brand ensures only objects originating from the `factory()`
  * helper can be used as services in `createIocContainer`.
@@ -173,9 +174,10 @@ export interface AsimoConfig {
     retryDelayMs?: number;
     /**
      * Called when a service factory is invoked for the first time.
-     * Fires at most once per (iid, container) pair on successful load.
+     * Fires at most once per factory on successful load. For factories providing
+     * multiple IIDs, the array contains all provided IIDs.
      */
-    onLoad?: (iid: InterfaceId<any, any>, container: Container<any>) => void;
+    onLoad?: (iids: InterfaceId<any, any>[], container: Container<any>) => void;
     /**
      * Called when an AsimoError occurs during service loading.
      * Receives the error object and the container reference.

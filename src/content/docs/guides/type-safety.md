@@ -36,7 +36,7 @@ When a `dependencies` entry is not registered in the container or its parents, a
 
 ```ts
 factory({
-    provide: SERVICE,
+    provide: [SERVICE],
     dependencies: [NEVER_REGISTERED],
     load: (c) => { ... },
 });
@@ -54,7 +54,7 @@ The `load` context is typed with exactly the listed dependencies:
 
 ```ts
 factory({
-    provide: SERVICE,
+    provide: [SERVICE],
     dependencies: [MULTIPLIER, ADDER],
     load: (c) => {
         c.get(MULTIPLIER);  // ✅ type: (a,b) => number
@@ -77,7 +77,7 @@ Accessing an unlisted dependency from the `load` context produces a type error. 
 createContainer({
     name: "app",
     services: [
-        { provide: LOGGER, load: () => ({ log: console.log }) },
+        { provide: [LOGGER], load: () => ({ log: console.log }) },
     ],
 });
 ```
@@ -88,7 +88,7 @@ createContainer({
 createContainer({
     name: "app",
     services: [
-        factory({ provide: LOGGER, load: () => ({ log: console.log }) }),
+        factory({ provide: [LOGGER], load: () => ({ log: console.log }) }),
     ],
 });
 ```
@@ -103,7 +103,7 @@ Retry parameters (`maxRetries`, `retryDelayMs`) are only valid on async IIDs:
 const ID = syncIID<SomeType>()("app.SomeType");
 
 factory({
-    provide: ID,
+    provide: [ID],
     maxRetries: 3,  // ❌ TypeScript error: RetryNotSupportedForSyncIID
 });
 ```
@@ -151,7 +151,7 @@ interface Calculator { compute(a: number, b: number): number; }
 const CALC = syncIID<Calculator>()("app.Calc");
 
 factory({
-    provide: CALC,
+    provide: [CALC],
     load: () => ({ wrong: true }),  // ❌ not assignable to Calculator
 });
 ```

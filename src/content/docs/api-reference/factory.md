@@ -3,38 +3,39 @@ title: factory
 description: API reference for factory()
 ---
 
-Declares a service with optional dependencies. The `load` function is invoked once — on first access — and its return value is cached.
+Declares a service with optional dependencies. The `load` function is invoked once — on first access — and its return value is cached. `provide` is an array of IIDs — the service must implement all of them (multiple IIDs must be used when a service implements multiple interfaces).
 
 ## Signature
 
 ```ts
 function factory<
-    const IID extends InterfaceId<any, any>,
+    const IIDs extends InterfaceId<any, any>[],
     const Deps extends ServiceDeps = [],
 >(params: {
-    provide: IID;
+    provide: IIDs;
     dependencies?: Deps;
-    load(context: Container<Deps[number]>): IID extends SyncIID<infer T, any> ? T
-                                 : IID extends AsyncIID<infer T, any> ? Promise<T>
-                                 : never;
-    maxRetries?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
-    retryDelayMs?: IID extends SyncIID<any, any> ? RetryNotSupportedForSyncIID : number;
-}): ServiceFactory<IID, Deps>
+    load(context: Container<Deps[number]>):
+        Extract<IIDs[number], AsyncIID<any, any>> extends never
+            ? IIDs[number] extends InterfaceId<infer T> ? UnionToIntersection<T> : never
+            : Promise<...UnionToIntersection...>;
+    maxRetries?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
+    retryDelayMs?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
+}): ServiceFactory<IIDs, Deps>
 ```
 
 ## Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `provide` | `InterfaceId<T>` | Yes | — | The IID token this factory provides. |
+| `provide` | `InterfaceId[]` | Yes | — | Array of IID tokens this factory provides. Must be an array, even for a single IID. |
 | `dependencies` | `InterfaceId[]` | No | `[]` | IIDs this service depends on. Types `load`'s context. |
-| `load` | `(context: Container<Deps>) => T \| Promise<T>` | Yes | — | Factory function, called once on first access. |
-| `maxRetries` | `number` | No | `2` (from config) | Max retries on load failure. Only for async IIDs. |
-| `retryDelayMs` | `number` | No | `1000` (from config) | Base delay in ms, doubled after each attempt. Only for async IIDs. |
+| `load` | `(context: Container<Deps>) => T \| Promise<T>` | Yes | — | Factory function, called once on first access. The return value must implement all provided IIDs. |
+| `maxRetries` | `number` | No | `2` (from config) | Max retries on load failure. Only for factories with at least one async IID. |
+| `retryDelayMs` | `number` | No | `1000` (from config) | Base delay in ms, doubled after each attempt. Only for factories with at least one async IID. |
 
 ## Return Value
 
-A `ServiceFactory<IID, Deps>` branded object accepted by `createContainer()`.
+A `ServiceFactory<IIDs, Deps>` branded object accepted by `createContainer()`.
 
 ## Examples
 
@@ -42,7 +43,7 @@ A `ServiceFactory<IID, Deps>` branded object accepted by `createContainer()`.
 
 ```ts
 factory({
-    provide: LOGGER,
+    provide: [LOGGER],
     load: () => ({
         log: (msg: string) => console.log(msg),
     }),
@@ -53,7 +54,7 @@ factory({
 
 ```ts
 factory({
-    provide: CONFIG,
+    provide: [CONFIG],
     load: async () => {
         const resp = await fetch("/config.json");
         return resp.json();
@@ -65,7 +66,7 @@ factory({
 
 ```ts
 factory({
-    provide: CALCULATOR,
+    provide: [CALCULATOR],
     dependencies: [MULTIPLIER, ADDER],
     load: (c) => {
         const multiply = c.get(MULTIPLIER);
@@ -75,11 +76,26 @@ factory({
 });
 ```
 
+### Factory with Multiple IIDs
+
+When a single service implements several interfaces:
+
+```ts
+factory({
+    provide: [MULTIPLIER, DIVIDER],
+    dependencies: [],
+    load: () => ({
+        multiply: (a, b) => a * b,
+        divide: (a, b) => a / b,
+    }),
+});
+```
+
 ### Factory with Retry
 
 ```ts
 factory({
-    provide: UNSTABLE_SVC,
+    provide: [UNSTABLE_SVC],
     load: async () => {
         const result = await unreliableCall();
         return result;
@@ -91,10 +107,11 @@ factory({
 
 ## Runtime Behavior
 
-1. On first `get()`/`fetch()` of the IID, `load` is invoked.
-2. Sync factories: result is cached immediately and returned synchronously.
-3. Async factories: a `Promise` is cached first, then replaced with the resolved value.
-4. Cached values are returned on subsequent accesses — `load` is never called twice for the same IID + container pair.
+1. On first `get()`/`fetch()` of any provided IID, `load` is invoked once.
+2. The same instance is cached for all IIDs provided by the factory.
+3. Sync factories: result is cached immediately and returned synchronously.
+4. Async factories: a `Promise` is cached first, then replaced with the resolved value.
+5. Cached values are returned on subsequent accesses — `load` is never called twice for the same factory.
 
 ## Compile-Time Constraints
 
@@ -102,9 +119,9 @@ factory({
 |---|---|
 | `provide` must be `SyncIID` or `AsyncIID` | Type error on invalid token |
 | `dependencies` must be registered in container or parents | `ServiceDependencyNotRegistered` error |
-| `maxRetries` on `SyncIID` | `RetryNotSupportedForSyncIID` error |
-| `retryDelayMs` on `SyncIID` | `RetryNotSupportedForSyncIID` error |
-| `load` return must match IID's `<T>` | Type error on mismatch |
+| `maxRetries` when all IIDs are sync | `RetryNotSupportedForSyncIID` error |
+| `retryDelayMs` when all IIDs are sync | `RetryNotSupportedForSyncIID` error |
+| `load` return must match the intersection of all IID types | Type error on mismatch |
 
 ## Related
 

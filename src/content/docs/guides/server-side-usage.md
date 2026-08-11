@@ -16,9 +16,9 @@ import { createContainer, factory, bundle } from "@asimojs/asimo";
 const app = createContainer({
     name: "app",
     services: [
-        factory({ provide: CONFIG, load: () => Bun.env }),
+        factory({ provide: [CONFIG], load: () => Bun.env }),
         factory({
-            provide: DB,
+            provide: [DB],
             dependencies: [CONFIG],
             load: (c) => {
                 const cfg = c.get(CONFIG);
@@ -46,9 +46,9 @@ async function handleRequest(req: Request) {
         name: `req-${crypto.randomUUID().slice(0, 8)}`,
         extends: [app],
         services: [
-            factory({ provide: REQUEST, load: () => req }),
+            factory({ provide: [REQUEST], load: () => req }),
             factory({
-                provide: REQUEST_ID,
+                provide: [REQUEST_ID],
                 load: () => crypto.randomUUID(),
             }),
         ],
@@ -139,8 +139,8 @@ app.use((req, res, next) => {
         name: `req-${crypto.randomUUID().slice(0, 8)}`,
         extends: [app],
         services: [
-            factory({ provide: REQUEST, load: () => req }),
-            factory({ provide: RESPONSE, load: () => res }),
+            factory({ provide: [REQUEST], load: () => req }),
+            factory({ provide: [RESPONSE], load: () => res }),
         ],
     });
     next();
@@ -156,11 +156,11 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: PG_POOL,
+            provide: [PG_POOL],
             load: () => new Pool({ max: 20 }), // created once, shared by all requests
         }),
         factory({
-            provide: REDIS,
+            provide: [REDIS],
             load: () => createClient().connect(), // created once
         }),
     ],
@@ -196,7 +196,7 @@ export default {
         const container = createContainer({
             name: "handler",
             services: [
-                factory({ provide: REQUEST, load: () => req }),
+                factory({ provide: [REQUEST], load: () => req }),
                 // Each invocation gets its own container — no shared state
             ],
         });
@@ -212,7 +212,7 @@ For cold start optimization, pre-create the shared parent container at module sc
 const shared = createContainer({
     name: "shared",
     services: [
-        factory({ provide: CONFIG, load: () => parseEnv() }),
+        factory({ provide: [CONFIG], load: () => parseEnv() }),
     ],
 });
 
@@ -222,7 +222,7 @@ export default {
             name: "handler",
             extends: [shared], // reuse shared singletons
             services: [
-                factory({ provide: REQUEST, load: () => req }),
+                factory({ provide: [REQUEST], load: () => req }),
             ],
         });
         return handleRequest(container);

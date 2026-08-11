@@ -29,8 +29,8 @@ const app = createContainer({
     name: "app",
     services: [
         // Eager: always needed
-        factory({ provide: CONFIG, load: () => loadConfig() }),
-        factory({ provide: LOGGER, load: () => createLogger() }),
+        factory({ provide: [CONFIG], load: () => loadConfig() }),
+        factory({ provide: [LOGGER], load: () => createLogger() }),
 
         // Lazy: loaded on first access
         bundle({ provide: [ANALYTICS], load: () => import("./analytics-bundle") }),
@@ -55,14 +55,14 @@ export default createContainer({
     name: "analytics",
     services: [
         factory({
-            provide: ANALYTICS,
+            provide: [ANALYTICS],
             load: async () => {
                 const lib = await import("expensive-analytics-lib");
                 return new Analytics(lib.init());
             },
         }),
         factory({
-            provide: TRACKER,
+            provide: [TRACKER],
             dependencies: [ANALYTICS],
             load: (c) => new Tracker(c.get(ANALYTICS)),
         }),
@@ -138,8 +138,8 @@ const metrics: Array<{ ns: string; time: number }> = [];
 const app = createContainer({
     name: "app",
     config: {
-        onLoad(iid) {
-            metrics.push({ ns: iid.ns, time: Date.now() });
+        onLoad(iids) {
+            iids.forEach(i => metrics.push({ ns: i.ns, time: Date.now() }));
         },
     },
     services: [...],
@@ -155,8 +155,8 @@ Bundles can depend on eagerly-loaded services to avoid circular import chains:
 
 ```ts
 // Core: loaded at startup
-factory({ provide: DB, load: () => createPool() })
-factory({ provide: AUTH, load: () => createAuth() })
+factory({ provide: [DB], load: () => createPool() })
+factory({ provide: [AUTH], load: () => createAuth() })
 
 // Feature: loaded on demand, gets DB and AUTH from the parent
 bundle({

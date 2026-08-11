@@ -21,7 +21,7 @@ If none of these configurations are provided, the **built-in default** will be u
 ```ts
 // 1. Per-service
 factory({
-    provide: UNSTABLE_SVC,
+    provide: [UNSTABLE_SVC],
     load: async () => mightFail(),
     maxRetries: 5,
     retryDelayMs: 500,
@@ -76,7 +76,7 @@ Example with baseDelay = 1000ms, maxRetries = 3:
 
 ```ts
 factory({
-    provide: SYNC_IID,
+    provide: [SYNC_IID],
     maxRetries: 3,  // ❌ TypeScript error: RetryNotSupportedForSyncIID
 });
 ```
@@ -135,7 +135,7 @@ try {
 const app = createContainer({
     name: "app",
     config: {
-        onLoad(iid, container) {
+        onLoad(iids, container) {
             // Called when a service loads successfully (factory or bundle)
             console.log(`Service loaded: ${iid.ns} in ${container.path}`);
         },
@@ -148,7 +148,7 @@ const app = createContainer({
 });
 ```
 
-- **`onLoad`** — fires at most once per `(iid, container)` pair on successful load. Useful for instrumentation, logging, or performance tracking.
+- **`onLoad`** — fires once per factory on successful load. Receives all IIDs provided by the factory as an array. Useful for instrumentation, logging, or performance tracking.
 - **`onError`** — fires whenever an `AsimoError` is thrown during service resolution. Use for error reporting or graceful degradation.
 
 ## Error Messages

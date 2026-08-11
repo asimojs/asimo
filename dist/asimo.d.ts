@@ -1,7 +1,7 @@
 import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
 export { AsimoError };
 export type { InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
-import type { AsimoConfig, AsyncIID, Container, InferType, InterfaceId, InterfaceNamespace, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
+import type { AsimoConfig, AsyncIID, Container, InferType, InterfaceId, InterfaceNamespace, RetryNotSupportedForSyncIID, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
 export declare class AsimoLoadError extends AsimoError {
     readonly cause: unknown;
     constructor(message: string, container: string, cause?: unknown);
@@ -29,19 +29,19 @@ type ContainerIIDs<C> = C extends Container<infer IIDs> ? IIDs : never;
  * dependencies and what `load` actually uses — at compile time, with no manual annotation.
  *
  * `provide` is an array of IIDs and `load` must return a single value that implements
- * all provided interfaces. For a single service, use `provide: [MY_IID] as const`.
+ * all provided interfaces. For a single service, use `provide: [MY_IID]`.
  *
  * @example
  * // Single IID
  * factory({
- *     provide: [CALCULATOR] as const,
+ *     provide: [CALCULATOR],
  *     dependencies: [MULTIPLIER, ADDER, SUBTRACTER],
  *     load: (c) => createCalculator(c),
  * })
  *
  * // Multiple IIDs — one service implements several interfaces
  * factory({
- *     provide: [ADDER, MULTIPLIER] as const,
+ *     provide: [ADDER, MULTIPLIER],
  *     load: () => new Calculator(),
  * })
  */
@@ -53,9 +53,9 @@ export declare function factory<const IIDs extends InterfaceId<any, any>[], cons
     /** Factory invoked on first access. Receives a container exposing only the listed dependencies. Must return a single value that implements all provided interfaces. */
     load(context: Container<Deps[number]>): Extract<IIDs[number], AsyncIID<any, any>> extends never ? IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never : Promise<IIDs[number] extends InterfaceId<infer T, any> ? (T extends any ? (k: T) => void : never) extends (k: infer I) => void ? I : never : never>;
     /** Max number of retries on load failure for async IIDs (default: 2). Only meaningful when at least one IID is async. */
-    maxRetries?: number;
+    maxRetries?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
     /** Base delay in ms between retries, doubled after each attempt (default: 1000). */
-    retryDelayMs?: number;
+    retryDelayMs?: Extract<IIDs[number], AsyncIID<any, any>> extends never ? RetryNotSupportedForSyncIID : number;
 }): ServiceFactory<IIDs, Deps>;
 /**
  * Helper for declaring a lazy-loading bundle of services. Similar to `factory()` but:

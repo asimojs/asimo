@@ -16,11 +16,11 @@ describe("UserService", () => {
             name: "test",
             services: [
                 factory({
-                    provide: API_CLIENT,
+                    provide: [API_CLIENT],
                     load: () => mockApiClient, // test double
                 }),
                 factory({
-                    provide: USER_SERVICE,
+                    provide: [USER_SERVICE],
                     dependencies: [API_CLIENT],
                     load: (c) => new UserService(c.get(API_CLIENT)),
                 }),
@@ -46,14 +46,14 @@ const container = createContainer({
     services: [
         // Mock: return a fake DB connection
         factory({
-            provide: DB,
+            provide: [DB],
             load: () => ({
                 query: vi.fn().mockResolvedValue([{ id: 1, name: "Test" }]),
             }),
         }),
         // Real service under test
         factory({
-            provide: USER_REPO,
+            provide: [USER_REPO],
             dependencies: [DB],
             load: (c) => new UserRepo(c.get(DB)),
         }),
@@ -65,7 +65,7 @@ const container = createContainer({
 
 ```ts
 factory({
-    provide: CONFIG,
+    provide: [CONFIG],
     load: async () => ({ apiUrl: "http://localhost:9999", featureFlags: {} }),
 });
 ```
@@ -78,8 +78,8 @@ Use `extends` to reuse a base container but override specific services:
 const baseContainer = createContainer({
     name: "base",
     services: [
-        factory({ provide: CONFIG, load: () => loadRealConfig() }),
-        factory({ provide: DB, dependencies: [CONFIG], load: createRealDB }),
+        factory({ provide: [CONFIG], load: () => loadRealConfig() }),
+        factory({ provide: [DB], dependencies: [CONFIG], load: createRealDB }),
     ],
 });
 
@@ -88,7 +88,7 @@ const testContainer = createContainer({
     name: "test",
     extends: [baseContainer],
     services: [
-        factory({ provide: CONFIG, load: () => ({ apiUrl: "mock" }) }),
+        factory({ provide: [CONFIG], load: () => ({ apiUrl: "mock" }) }),
         // DB resolves from the child first (mock CONFIG), uses it
     ],
 });
@@ -122,7 +122,7 @@ const container = createContainer({
     name: "test",
     services: [
         factory({
-            provide: FLAKY_SVC,
+            provide: [FLAKY_SVC],
             load: async () => {
                 attempts++;
                 if (attempts < 3) throw new Error("transient failure");
@@ -146,7 +146,7 @@ const container = createContainer({
     name: "test",
     services: [
         factory({
-            provide: FAILING_SVC,
+            provide: [FAILING_SVC],
             load: async () => { throw new Error("always fails"); },
             maxRetries: 2,
         }),
@@ -167,8 +167,8 @@ const mockBundle = bundle({
     load: async () => createContainer({
         name: "mock-features",
         services: [
-            factory({ provide: FEATURE_A, load: () => mockFeatureA }),
-            factory({ provide: FEATURE_B, load: () => mockFeatureB }),
+            factory({ provide: [FEATURE_A], load: () => mockFeatureA }),
+            factory({ provide: [FEATURE_B], load: () => mockFeatureB }),
         ],
     }),
 });
@@ -191,11 +191,11 @@ const loaded: string[] = [];
 const container = createContainer({
     name: "test",
     config: {
-        onLoad(iid) { loaded.push(iid.ns); },
+        onLoad(iids) { iids.forEach(i => loaded.push(i.ns)); },
     },
     services: [
-        factory({ provide: SVC_A, load: () => ({}) }),
-        factory({ provide: SVC_B, load: () => ({}) }),
+        factory({ provide: [SVC_A], load: () => ({}) }),
+        factory({ provide: [SVC_B], load: () => ({}) }),
     ],
 });
 

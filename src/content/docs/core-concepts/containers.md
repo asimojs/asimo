@@ -75,7 +75,7 @@ Child containers inherit services from their parents. When a service is requeste
 const core = createContainer({
     name: "core",
     services: [
-        factory({ provide: CONFIG, load: async () => loadConfig() }),
+        factory({ provide: [CONFIG], load: async () => loadConfig() }),
     ],
 });
 
@@ -83,7 +83,7 @@ const feature = createContainer({
     name: "feature",
     extends: [core],  // inherits CONFIG
     services: [
-        factory({ provide: FEATURE_SVC, load: () => new FeatureSvc() }),
+        factory({ provide: [FEATURE_SVC], load: () => new FeatureSvc() }),
     ],
 });
 

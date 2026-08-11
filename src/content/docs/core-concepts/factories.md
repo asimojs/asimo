@@ -11,7 +11,7 @@ Factories declare how a service is created. They are the building blocks of ever
 import { factory } from "@asimojs/asimo";
 
 factory({
-    provide: LOGGER,
+    provide: [LOGGER],
     load: () => ({ log: (msg: string) => console.log(msg) }),
 });
 ```
@@ -25,13 +25,13 @@ The return type of `load` determines whether the service resolves synchronously 
 ```ts
 // Sync factory — load returns T directly
 factory({
-    provide: MULTIPLIER,
+    provide: [MULTIPLIER],
     load: () => (a: number, b: number) => a * b,
 });
 
 // Async factory — load returns Promise<T>
 factory({
-    provide: CONFIG,
+    provide: [CONFIG],
     load: async () => {
         const resp = await fetch("/config.json");
         return resp.json();
@@ -45,7 +45,7 @@ When a service needs other services, list them in `dependencies`. The `load` con
 
 ```ts
 factory({
-    provide: CALCULATOR,
+    provide: [CALCULATOR],
     dependencies: [MULTIPLIER, ADDER, DIVIDER],
     load: (c) => {
         // c is Container<typeof MULTIPLIER | typeof ADDER | typeof DIVIDER>
@@ -75,7 +75,7 @@ Factories can mix sync and async dependencies. The `load` function chooses the r
 
 ```ts
 factory({
-    provide: SERVICE,
+    provide: [SERVICE],
     dependencies: [SYNC_DEP, ASYNC_DEP],
     load: (c) => {
         const syncDep = c.get(SYNC_DEP);          // sync retrieval
@@ -88,7 +88,7 @@ For fully async dependency resolution, make `load` async and use `fetch()`:
 
 ```ts
 factory({
-    provide: SERVICE,
+    provide: [SERVICE],
     dependencies: [DB, CONFIG],
     load: async (c) => {
         const db = await c.fetch(DB);
@@ -104,7 +104,7 @@ Async factories support automatic retry with exponential backoff:
 
 ```ts
 factory({
-    provide: FLICKERING_SERVICE,
+    provide: [FLICKERING_SERVICE],
     load: async () => unstableInit(),
     maxRetries: 5,        // default: 2 (from container config)
     retryDelayMs: 500,    // default: 1000 (from container config)
@@ -133,7 +133,7 @@ Factories produced by `factory()` carry a unique `Symbol` brand (`__asimoService
 createContainer({
     name: "app",
     services: [
-        { provide: LOGGER, load: () => ({ log: console.log }) },
+        { provide: [LOGGER], load: () => ({ log: console.log }) },
     ],
 });
 
@@ -141,7 +141,7 @@ createContainer({
 createContainer({
     name: "app",
     services: [
-        factory({ provide: LOGGER, load: () => ({ log: console.log }) }),
+        factory({ provide: [LOGGER], load: () => ({ log: console.log }) }),
     ],
 });
 ```

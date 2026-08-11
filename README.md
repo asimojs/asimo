@@ -14,7 +14,7 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: LOGGER,
+            provide: [LOGGER],
             load: () => ({ log: (msg) => console.log(`[app] ${msg}`) }),
         }),
     ],
@@ -66,12 +66,12 @@ const app = createContainer({
     services: [
         // Sync service — retrieved with get()
         factory({
-            provide: LOGGER,
+            provide: [LOGGER],
             load: () => ({ log: (msg) => console.log(msg) }),
         }),
         // Async service — retrieved with fetch()
         factory({
-            provide: CONFIG,
+            provide: [CONFIG],
             load: async () => {
                 const resp = await fetch("/config.json");
                 return resp.json();
@@ -98,7 +98,7 @@ const optional = app.getOptional(OPTIONAL);   // null if not registered
 
 ```ts
 factory({
-    provide: USER_SERVICE,
+    provide: [USER_SERVICE],
     dependencies: [DB, LOGGER],
     load: (c) => {
         // c is typed as Container<typeof DB | typeof LOGGER>
@@ -109,6 +109,17 @@ factory({
 });
 ```
 
+### One service, multiple interfaces
+
+When a service implements several interfaces, list them all in `provide`:
+
+```ts
+factory({
+    provide: [LOGGER, AUDITOR],
+    load: () => new ConsoleLogger(),  // implements both Logger and Auditor
+});
+```
+
 ### Per-request container
 
 ```ts
@@ -116,7 +127,7 @@ const reqCtx = createContainer({
     name: "request-42",
     extends: [app],  // inherits all app services
     services: [
-        factory({ provide: REQUEST, load: () => currentRequest }),
+        factory({ provide: [REQUEST], load: () => currentRequest }),
     ],
 });
 ```

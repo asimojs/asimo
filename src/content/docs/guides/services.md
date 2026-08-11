@@ -60,7 +60,7 @@ export function createCalculator(
 
 ```ts
 factory({
-    provide: CALCULATOR,
+    provide: [CALCULATOR],
     dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
     load: (c) => createCalculator(c),
 })
@@ -109,7 +109,7 @@ export class Calculator {
 
 ```ts
 factory({
-    provide: CALCULATOR,
+    provide: [CALCULATOR],
     dependencies: [MULTIPLIER, DIVIDER, ADDER, SUBTRACTER],
     load: (c) => new Calculator(c),
 })

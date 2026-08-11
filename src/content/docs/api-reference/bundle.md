@@ -89,7 +89,7 @@ bundle({
     load: async () => createContainer({
         name: "feature-group",
         services: [
-            factory({ provide: CORE_SVC, load: () => new CoreSvc() }),
+            factory({ provide: [CORE_SVC], load: () => new CoreSvc() }),
             bundle({
                 provide: [SUB_FEATURE],
                 load: () => import("./sub-feature"),

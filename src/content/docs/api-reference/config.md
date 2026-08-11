@@ -14,8 +14,8 @@ import type { AsimoConfig } from "@asimojs/asimo";
 export const config: AsimoConfig = {
     maxRetries: 3,
     retryDelayMs: 500,
-    onLoad(iid, container) {
-        console.log(`[${container.path}] ${iid.ns} loaded`);
+    onLoad(iids, container) {
+        iids.forEach(i => console.log(`[${container.path}] ${i.ns} loaded`));
     },
     onError(error, container) {
         reportError(error, container.path);
@@ -39,7 +39,7 @@ Individual containers can still override specific properties through per-service
 interface AsimoConfig {
     maxRetries?: number;
     retryDelayMs?: number;
-    onLoad?: (iid: InterfaceId<any, any>, container: Container<any>) => void;
+    onLoad?: (iids: InterfaceId<any, any>[], container: Container<any>) => void;
     onError?: (error: AsimoError, container: Container<any>) => void;
 }
 ```
@@ -62,7 +62,7 @@ createContainer({
     config: { maxRetries: 5 },  // global default: 5 retries
     services: [
         factory({
-            provide: SVC_A,
+            provide: [SVC_A],
             load: async () => mightFail(),
             maxRetries: 10,  // per-service override: 10 retries
         }),
@@ -93,17 +93,17 @@ retryDelayMs = 1000:
 ### `onLoad`
 
 ```ts
-(iid: InterfaceId<any, any>, container: Container<any>) => void
+(iids: InterfaceId<any, any>[], container: Container<any>) => void
 ```
 
-Callback invoked when a service or bundle loads successfully. Fires at most once per `(iid, container)` pair.
+Callback invoked when a service factory loads successfully. Fires once per factory on successful load. For factories providing multiple IIDs, the array contains all provided IIDs.
 
 ```ts
 const app = createContainer({
     name: "app",
     config: {
-        onLoad(iid, container) {
-            console.log(`[${container.path}] ${iid.ns} loaded`);
+        onLoad(iids, container) {
+            iids.forEach(i => console.log(`[${container.path}] ${i.ns} loaded`));
         },
     },
 });

@@ -11,7 +11,7 @@ Without bundles, all services in a container are registered eagerly. With bundle
 
 ```ts
 // Without bundles: analytics loads at startup even if never used
-factory({ provide: ANALYTICS, load: () => createAnalytics() })
+factory({ provide: [ANALYTICS], load: () => createAnalytics() })
 
 // With bundles: analytics loads only when first accessed
 bundle({ provide: [ANALYTICS], load: () => import("./analytics") })
@@ -74,7 +74,7 @@ bundle({
                     provide: [SUB_SERVICE],
                     load: () => import("./sub-service"),
                 }),
-                factory({ provide: CORE, load: () => mod.core }),
+                factory({ provide: [CORE], load: () => mod.core }),
             ],
         });
     },
@@ -104,8 +104,8 @@ bundle({
         return createContainer({
             name: "analytics",
             services: [
-                factory({ provide: ANALYTICS, load: () => mod.analytics }),
-                factory({ provide: TELEMETRY, load: () => mod.telemetry }),
+                factory({ provide: [ANALYTICS], load: () => mod.analytics }),
+                factory({ provide: [TELEMETRY], load: () => mod.telemetry }),
                 // ↑ TELEMETRY is created but NOT exposed to the parent
             ],
         });
@@ -153,8 +153,8 @@ const app = createContainer({
     name: "app",
     services: [
         // Core: loaded eagerly
-        factory({ provide: CONFIG, load: () => loadConfig() }),
-        factory({ provide: LOGGER, load: () => createLogger() }),
+        factory({ provide: [CONFIG], load: () => loadConfig() }),
+        factory({ provide: [LOGGER], load: () => createLogger() }),
 
         // Feature bundles: loaded on demand
         bundle({ provide: [AUTH_SVC], load: () => import("./auth-bundle") }),
