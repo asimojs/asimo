@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.0
+
+### Breaking changes
+
+- **Multi-interface services**: `factory()` now takes `provide` as an array of IIDs. A single-interface service must use `provide: [MY_IID]` (previously `provide: MY_IID`).
+- **`onLoad` callback signature**: now receives an array of IIDs — `(iids, container)` instead of `(iid, container)`.
+- **`ServiceFactory` shape**: the `interface` property is replaced by `provide: InterfaceId[]`. The loaded value is a single object that must satisfy every provided interface.
+
+### Features
+
+- A single factory can now provide multiple interfaces; the `load` result is typed as the intersection of all provided IID types (e.g. `Adder & Multiplier`) via the new `FactoryLoadResult` type.
+- Async multi-interface factories share one load promise across all their IIDs, so the load runs only once even when several interfaces are fetched.
+
+### Fixes
+
+- Invalid service registrations (not created via `factory()` or `bundle()`) now throw an `AsimoError` at container creation.
+
 ## 6.0.0
 
 **Full rewrite of the asimo library.** ~2KB gzipped, zero dependencies.

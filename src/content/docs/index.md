@@ -19,7 +19,7 @@ const app = createContainer({
     name: "app",
     services: [
         factory({
-            provide: [LOGGER], // a service can implemnt multiple interfaces
+            provide: [LOGGER], // a service can implement multiple interfaces
             load: () => ({ log: (msg) => console.log(`[app] ${msg}`) }),
         }),
     ],
