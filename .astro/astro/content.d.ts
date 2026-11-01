@@ -180,6 +180,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"api-reference/context.md": {
+	id: "api-reference/context.md";
+  slug: "api-reference/context";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "api-reference/createContainer.md": {
 	id: "api-reference/createContainer.md";
   slug: "api-reference/createcontainer";
@@ -253,6 +260,13 @@ declare module 'astro:content' {
 "getting-started.md": {
 	id: "getting-started.md";
   slug: "getting-started";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"guides/contextual-functions.md": {
+	id: "guides/contextual-functions.md";
+  slug: "guides/contextual-functions";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

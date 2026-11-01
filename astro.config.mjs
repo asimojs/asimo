@@ -35,6 +35,7 @@ export default defineConfig({
                     label: "Guides",
                     items: [
                         { label: "Services", link: "/guides/services" },
+                        { label: "Contextual Functions", link: "/guides/contextual-functions" },
                         { label: "Testing", link: "/guides/testing" },
                         { label: "Progressive Loading", link: "/guides/progressive-load" },
                         { label: "Type Safety", link: "/guides/type-safety" },
@@ -46,6 +47,7 @@ export default defineConfig({
                     items: [
                         { label: "syncIID / asyncIID", link: "/api-reference/iids" },
                         { label: "InferType", link: "/api-reference/infertype" },
+                        { label: "Context / ContextDeps", link: "/api-reference/context" },
                         { label: "Container Interface", link: "/api-reference/container" },
                         { label: "createContainer", link: "/api-reference/createcontainer" },
                         { label: "factory", link: "/api-reference/factory" },

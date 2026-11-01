@@ -47,6 +47,27 @@ bundle({
 });
 ```
 
+### Creating contextual functions
+
+```ts
+import type { Context, ContextDeps } from "@asimojs/asimo";
+
+// A contextual function takes a single props object with a `context` prop.
+function componentB({ context }: { context: Context<typeof MULTIPLIER> }) { ... }
+
+// ContextDeps<typeof componentB> extracts componentB's dependencies.
+function componentA({
+    context,
+}: {
+    context: Context<typeof ADDER | ContextDeps<typeof componentB>>;
+}) {
+    const b = componentB({ context });      // a wider context is accepted
+}
+```
+
+Use `Context<IIDs>` instead of `Container<IIDs>` for contextual function props. `Context` accepts containers providing extra IIDs, while still rejecting missing dependencies at compile time. A contextual function may omit `context`; `ContextDeps` then resolves to `never`.
+
+
 ### Creating a container
 
 ```ts
@@ -176,6 +197,8 @@ const container = createContainer({
 | Use `get()` for sync IIDs | `container.get(SYNC_ID)` |
 | Use `fetch()` for async IIDs | `await container.fetch(ASYNC_ID)` |
 | Use `getOptional()` / `fetchOptional()` for optional services | Optional global config object |
+| Use `Context<IIDs>` for contextual function props | `function componentB({ context }: { context: Context<typeof MULTIPLIER> })` |
+| Compose contextual function dependencies with `ContextDeps<typeof componentB>` | `Context<typeof ADDER \| ContextDeps<typeof componentB>>` |
 | Always wrap services with `factory()` or `bundle()` | Never pass inline objects to `services` |
 | List all direct dependencies explicitly | `dependencies: [A, B]` |
 | Name containers without `/` | `name: "my-container"` |
@@ -191,6 +214,7 @@ const container = createContainer({
 | Pass `maxRetries` to sync IID factories | Compile error |
 | Put `SyncIID` in `bundle().provide` | Compile error |
 | Access unlisted dependencies from factory `load` | Type error — context is scoped |
+| Use `Container<IIDs>` for contextual function props that receive a wider context | Invariance — compile error; use `Context<IIDs>` |
 | Skip `factory()` wrapper | Compile error — missing brand symbol |
 | Use `/` in container names | Runtime error |
 | Assume services are loaded at container creation | Loading is lazy — on first access |
