@@ -1,7 +1,7 @@
 import { AsimoError, __asimoServiceBundle, __asimoServiceFactory } from "./asimo.types";
 export { AsimoError };
-export type { InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
-import type { AsimoConfig, AsyncIID, Container, InferType, InterfaceId, InterfaceNamespace, RetryNotSupportedForSyncIID, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
+export type { Context, ContextDeps, InferType, InterfaceId, AsyncIID, SyncIID, InterfaceNamespace, ServiceDeps, ServiceFactory, ServiceBundle, ValidService, AsimoConfig, ServiceInspectInfo, Container };
+import type { AsimoConfig, AsyncIID, Container, Context, ContextDeps, InferType, InterfaceId, InterfaceNamespace, RetryNotSupportedForSyncIID, ServiceBundle, ServiceDeps, ServiceFactory, ServiceInspectInfo, SyncIID, ValidService } from "./asimo.types";
 export declare class AsimoLoadError extends AsimoError {
     readonly cause: unknown;
     constructor(message: string, container: string, cause?: unknown);

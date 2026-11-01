@@ -3,6 +3,7 @@ import { bundle, createContainer, factory } from "../asimo";
 import { addNumbers, divideNumbers, multiplyNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
 import { createCalculator } from "./examples/calculator";
+import { componentA } from "./examples/componentA";
 
 /**
  * This spec file is a typecheck-only spec (the `-d` suffix is picked up by vitest's
@@ -255,6 +256,16 @@ describe("TS Errors", () => {
             retryDelayMs: 500,
             load: () => multiplyNumbers,
         });
+    });
+
+    it("should reject a component context missing required dependencies", () => {
+        const c = createContainer({
+            name: "components-missing",
+            services: [factory({ provide: [ADDER], load: async () => addNumbers })],
+        });
+
+        // @ts-expect-error - MULTIPLIER is required by componentA
+        componentA({ context: c });
     });
 
 });

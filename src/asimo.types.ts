@@ -349,4 +349,59 @@ export interface Container<IIDs extends InterfaceId<any, any> = InterfaceId<any,
     dispose(iid: InterfaceId<any, any>): void;
 }
 
+/**
+ * The container type a contextual function receives through its `context` prop.
+ *
+ * A contextual function takes a single props object with an optional `context`
+ * property. It is framework-agnostic: React function components are one example.
+ *
+ * `Container<IIDs>` is invariant via its `_iids` phantom. `Context<IIDs>`
+ * keeps the container API but replaces that phantom with a contravariant one:
+ * a container must provide at least the required `IIDs`, while containers
+ * holding additional IIDs are accepted. This is safe for component props
+ * because a contextual function only reads the dependencies it declares.
+ *
+ * @example
+ * type MultiplierContext = Context<typeof MULTIPLIER>;
+ *
+ * function MultiplyView({ context }: { context: MultiplierContext }) { ... }
+ *
+ * declare const appContext: Container<typeof ADDER | typeof MULTIPLIER>;
+ * MultiplyView({ context: appContext }); // wider container is accepted
+ */
+export type Context<IIDs extends InterfaceId<any, any>> =
+    Omit<Container<IIDs>, "_iids"> & { readonly _iids?: (iids: IIDs) => any };
+
+/**
+ * Extracts the IIDs a contextual function declares through its `context` prop.
+ *
+ * A contextual function takes a single props object. The props may include a
+ * `context: Context<IIDs>` property, and may have other properties. `context` is
+ * optional: if omitted, `ContextDeps` resolves to `never`, so it contributes no
+ * dependencies when composed.
+ *
+ * Use `typeof` when passing a contextual function:
+ * `ContextDeps<typeof MultiplyView>`.
+ *
+ * @example
+ * function MultiplyView({ context }: { context: Context<typeof MULTIPLIER> }) { ... }
+ * type MultiplyViewDeps = ContextDeps<typeof MultiplyView>; // typeof MULTIPLIER
+ *
+ * // CalculatorView needs its own ADDER dependency plus everything MultiplyView needs
+ * function CalculatorView({
+ *     context,
+ * }: {
+ *     context: Context<typeof ADDER | ContextDeps<typeof MultiplyView>>;
+ * }) {
+ *     return <MultiplyView context={context} />;
+ * }
+ */
+export type ContextDeps<Fn> =
+    Fn extends (props: infer Props) => any
+        ? Props extends { context: Context<infer IIDs> }
+            ? IIDs
+            : never
+        : never;
+
+
 

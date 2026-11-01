@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { AsimoError, AsimoLoadError, bundle, createContainer, factory } from "../asimo";
+import type { ContextDeps } from "../asimo";
 import { addNumbers, multiplyNumbers, divideNumbers, subtractNumbers } from "./examples/operations";
 import { ADDER, CALCULATOR, DIVIDER, MULTIPLIER, SUBTRACTER, UNKNOWN } from "./examples/types";
 import { createCalculator, Calculator } from "./examples/calculator";
+import { componentA } from "./examples/componentA";
+import { componentB } from "./examples/componentB";
 
 describe("IoC Container", () => {
     describe("Container with no parents", () => {
@@ -2219,6 +2222,30 @@ describe("IoC Container", () => {
             });
             expect(c.inspect(MULTIPLIER)!.status).toBe("registered");
             expect(() => c.dispose(MULTIPLIER)).not.toThrow();
+        });
+    });
+
+    describe("Contextual function dependency composition", () => {
+        it("should infer a contextual function's dependencies with ContextDeps", () => {
+            expectTypeOf<ContextDeps<typeof componentB>>().toEqualTypeOf<
+                typeof MULTIPLIER | typeof DIVIDER
+            >();
+        });
+
+        it("should compose dependencies from a contextual function", async () => {
+            const c = createContainer({
+                name: "components",
+                services: [
+                    factory({ provide: [ADDER], load: async () => addNumbers }),
+                    factory({ provide: [MULTIPLIER], load: () => multiplyNumbers }),
+                    factory({ provide: [DIVIDER], load: () => divideNumbers }),
+                ],
+            });
+
+            const component = componentA({ context: c });
+
+            expect(component.multiply(3, 4)).toBe(12);
+            expect(await component.add(2, 3)).toBe(5);
         });
     });
 
